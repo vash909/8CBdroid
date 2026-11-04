@@ -4,8 +4,13 @@ Android development skeleton for FT8 on CB / 11 metres, with planned
 compatibility with [WSJT-CB](https://github.com/vash909/WSJT-CB).
 
 **Status: development environment and demo UI.** A debug APK can be built.
-Decoding, transmission, USB devices and desktop connections are not implemented.
-Operational buttons are disabled.
+Station callsign and locator can be saved and restored after reopening the app.
+Decoding, transmission, USB devices and desktop connections are not implemented;
+their operational buttons are disabled.
+
+In **Stazione**, enter a complete CB callsign and a 4- or 6-character Maidenhead
+locator, then tap **Salva impostazioni**. Wait for confirmation before closing.
+Other settings remain demo controls. [Phone verification steps](docs/DEVELOPMENT.md#prova-delle-impostazioni-sul-telefono).
 
 ## Planned connection paths
 
@@ -49,12 +54,17 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 
 | Path | Responsibility |
 | --- | --- |
-| `app/` | Android app, Compose, four demo sections and placeholder adapters |
+| `app/` | Android app, Compose, station ViewModel/DataStore and placeholder adapters |
 | `core/` | Station models, CB callsigns, FT8 profile and radio/audio/DSP contracts |
 | `protocol/wsjtcb/` | UDP constants, offline header/heartbeat codec and LAN contract |
 | `native/` | Optional CMake/C++ starting point for future native engines |
 | `scripts/` | Local environment setup and checks |
 | `.github/workflows/` | Build, JVM tests, lint and debug APK on GitHub Actions |
+
+Tests include DataStore file persistence across reopening, settings validation,
+loading/saving failures and duplicate-save prevention. Develop on focused
+branches with short PR descriptions. Merge only after the owner's explicit OK,
+once the PR build has been checked.
 
 Pinned versions: JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.2.21,
 Compose BOM 2025.10.01, compile/target SDK 36, minimum Android 8.0 / API 26.

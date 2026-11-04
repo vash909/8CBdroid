@@ -6,7 +6,8 @@
 - [x] Contratti per backend CAT, audio, FT8 e collegamento desktop.
 - [x] Codec offline di intestazione e generazione heartbeat WSJT-CB.
 - [x] Bootstrap locale, test, lint e workflow GitHub con APK debug.
-- [ ] Stato applicazione condiviso, ViewModel e persistenza DataStore.
+- [x] Nominativo e locator condivisi tramite ViewModel e salvati con DataStore.
+- [ ] Estendere stato condiviso e persistenza alle future impostazioni operative.
 - [ ] Listener UDP con lifecycle, gestione peer e negoziazione schema.
 - [ ] Parsing Status / Decode / LoggedADIF e gestione Replay / Close.
 - [ ] Comandi LAN supportati, con verifica sul desktop WSJT-CB.
