@@ -1,19 +1,19 @@
-# Attribuzioni
+# Third-party notices
 
-8CBdroid è un nuovo scheletro Android. Non include ancora il motore DSP
-desktop, Hamlib o una libreria seriale USB.
+8CBdroid is an Android development skeleton. It does not yet include the
+desktop DSP engine, Hamlib or a USB serial library.
 
-- [WSJT-CB](https://github.com/vash909/WSJT-CB), derivato da WSJT-X di Joe
-  Taylor K1JT e collaboratori, modificato da Vash / 1AT106 / 1XZ001 e con i
-  crediti riportati upstream. Protocollo UDP, parametri FT8 e grammatica CB
-  sono stati usati come riferimento al commit indicato nella documentazione.
-  Upstream distribuito sotto GPLv3. Lo scheletro adotta GPL-3.0-only.
-- Gradle Wrapper e Gradle: Apache-2.0. Gli script e il JAR del wrapper
-  provengono dal tag ufficiale `v8.13.0`.
-- Kotlin e AndroidX / Jetpack Compose: Apache-2.0.
+- [WSJT-CB](https://github.com/vash909/WSJT-CB), derived from WSJT-X by Joe
+  Taylor K1JT and contributors, modified by Vash / 1AT106 / 1XZ001, with
+  further credits listed upstream. Its UDP protocol, FT8 parameters and CB
+  grammar serve as references at the commit pinned in the documentation.
+  Upstream is distributed under GPLv3. This skeleton uses GPL-3.0-only.
+- Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
+  from the official `v8.13.0` tag.
+- Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
 - JUnit 4: EPL-1.0.
-- I pacchetti JDK/SDK scaricati per lo sviluppo conservano le rispettive
-  licenze e non sono inclusi nel repository o nell’APK.
+- JDK/SDK packages downloaded for development retain their respective
+  licenses and are not included in the repository or APK.
 
-Per le dipendenze future mantenere un inventario di versioni e licenze,
-incluse le eventuali librerie native e le loro dipendenze transitive.
+Maintain a version and license inventory for future dependencies, including
+native libraries and their transitive dependencies.

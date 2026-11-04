@@ -1,15 +1,15 @@
-name: Funzionalità o integrazione
-description: Pianifica lo sviluppo di 8CBdroid
+name: Feature or integration
+description: Plan an 8CBdroid development task
 body:
   - type: textarea
     id: goal
     attributes:
-      label: Comportamento desiderato
-      description: Descrivi il caso d’uso e il risultato verificabile.
+      label: Expected behavior
+      description: Describe the use case and a verifiable outcome.
     validations:
       required: true
   - type: textarea
     id: hardware
     attributes:
-      label: Hardware e ambiente
-      description: Se pertinente, telefono/Android, radio, cavo e versione WSJT-CB.
+      label: Hardware and environment
+      description: If relevant, include the phone/Android version, radio, cable and WSJT-CB version.

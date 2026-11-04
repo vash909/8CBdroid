@@ -32,6 +32,7 @@ data class LanUiState(
     val validPort: Boolean get() = port.toIntOrNull()?.let { it in 1..65535 } == true
     val validAddress: Boolean get() = LanSettings.isDesktopAddressValid(desktopAddress.trim())
     val canStart: Boolean get() = canEdit && validPort && validAddress
+    val canReplay: Boolean get() = !busy && connection.phase == LanPhase.CONNECTED
 }
 
 class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
@@ -75,6 +76,23 @@ class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
             }
         }
     }
+
+    fun requestReplay() {
+        if (!current().canReplay) return
+        inputs.update { it.copy(busy = true, error = null) }
+        viewModelScope.launch {
+            commands.withLock {
+                try {
+                    val result = bridge.requestReplay()
+                    if (result is BackendResult.Unavailable) inputs.update { it.copy(error = result.reason) }
+                } finally {
+                    inputs.update { it.copy(busy = false) }
+                }
+            }
+        }
+    }
+
+    fun clearDecodes() { bridge.clearDecodes() }
 
     override fun onCleared() { bridge.close() }
 

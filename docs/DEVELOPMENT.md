@@ -47,7 +47,8 @@ The APK is `app/build/outputs/apk/debug/app-debug.apk`. Authorize USB debugging
 on the connected phone before installation.
 
 Tests cover CB callsigns, Maidenhead locators, wire parsing, real loopback UDP,
-LAN ViewModel lifecycle ordering and DataStore reopening. They do not establish
+LAN ViewModel lifecycle ordering, Decode/Replay fixtures, history limits and
+DataStore reopening. They do not establish
 real-phone/WSJT-CB interoperability or radio/audio/DSP functionality.
 
 ## Phone checks
@@ -66,7 +67,7 @@ adb shell am start -n net.vash.ft8cbdroid/.MainActivity
 4. Check the saved values are restored. Try `1AT` or `SS99`: Save should be disabled.
 5. Save another valid pair and repeat. Unsaved edits must not replace stored values.
 
-For the second feature PR, follow [LAN setup and verification](WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test).
+For LAN status, live decodes and replay, follow [LAN setup and verification](WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test).
 A PC-side simulator is included:
 
 ```bash
@@ -74,7 +75,9 @@ python3 scripts/wsjtcb_lan_probe.py --host PHONE_WIFI_IPV4
 ```
 
 Also test against real WSJT-CB, port conflicts, Stop/Start, rotation, backgrounding,
-Close and peer timeout. Stay on the same LAN; the PC sends to the phone's address,
+Clear, Close and peer timeout. Use an Italian or other non-English phone locale
+and confirm all app screens, controls and messages remain English. English-only
+resources are packaged, including library controls. Stay on the same LAN; the PC sends to the phone's address,
 not the reverse. Radio/audio controls remain disabled.
 
 ## Pull requests and CI

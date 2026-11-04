@@ -9,7 +9,8 @@
 - [x] Desktop Status display and foreground lifecycle management.
 - [x] Local bootstrap, tests, lint and GitHub debug APK workflow.
 - [ ] Extend persistence to future operational settings.
-- [ ] LAN Decode / LoggedADIF parsing and Replay handling.
+- [x] LAN Decode/Clear parsing, bounded activity history and explicit Replay.
+- [ ] LoggedADIF parsing and desktop log display.
 - [ ] Supported desktop commands, verified against WSJT-CB.
 - [ ] First documented radio and OTG cable: permissions, serial transport, frequency and PTT.
 - [ ] Select Hamlib/JNI or Android CAT drivers for the first supported hardware.
