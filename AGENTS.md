@@ -12,7 +12,8 @@
 - Use English for all project content, including documentation, UI text, code
   comments, commit messages and bodies, PR titles and descriptions, and review
   comments. Apply this rule to all new or modified content.
-- The entire application's user-facing language must be English, including
+- All software in this repository must use English. The entire application's
+  user-facing language must be English, including
   screens, navigation, labels, buttons, placeholders, validation and error
   messages, dialogs, notifications, and accessibility descriptions. Treat
   existing non-English UI text as pending translation, not as a convention
