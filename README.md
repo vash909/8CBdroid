@@ -3,8 +3,8 @@
 Scheletro di un’app Android per FT8 in banda CB (11 m), con compatibilità
 prevista con [WSJT-CB](https://github.com/vash909/WSJT-CB).
 
-**Stato: ambiente di sviluppo e interfaccia demo.** L’app si compila e si avvia,
-ma non decodifica, non trasmette, non apre dispositivi USB e non si connette
+**Stato: ambiente di sviluppo e interfaccia demo.** È disponibile una build APK
+debug, ma l’app non decodifica, non trasmette, non apre dispositivi USB e non si connette
 ancora al desktop. I pulsanti operativi sono disabilitati.
 
 ## Percorsi previsti
