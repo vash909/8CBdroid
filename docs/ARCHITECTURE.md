@@ -72,6 +72,10 @@ bridge sarà separato dal motore FT8 locale e dai driver radio. Il trasporto
 di rete dovrà produrre eventi di dominio per la UI, negoziare lo schema e
 tenere traccia di istanza desktop, endpoint, scadenza heartbeat e stato.
 
-Le impostazioni UI sono conservate soltanto nello stato Compose salvabile;
-aggiungere DataStore quando sarà definito il modello definitivo. Non c’è
-ancora un repository persistente né uno stato condiviso fra processi.
+Nominativo e locator sono gestiti da `StationSettingsViewModel`, esposti come
+`StateFlow` e osservati dalla UI rispettandone il lifecycle. Un repository
+Preferences DataStore salva i due campi insieme soltanto dopo la richiesta
+esplicita dell’utente. La UI attende la lettura iniziale e conferma il salvataggio
+solo dopo il completamento della scrittura; gli errori permettono un nuovo tentativo.
+Il file DataStore ha una sola istanza per processo, tramite il delegate sul
+contesto applicazione. Le altre impostazioni restano nello stato Compose demo.

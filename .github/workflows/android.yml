@@ -32,7 +32,7 @@ jobs:
       - uses: gradle/actions/wrapper-validation@v4
       - uses: gradle/actions/setup-gradle@v4
       - name: Test, lint and debug APK
-        run: ./gradlew --no-daemon :core:test :protocol:wsjtcb:test :app:lintDebug :app:assembleDebug
+        run: ./gradlew --no-daemon :core:test :protocol:wsjtcb:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: 8CBdroid-debug
@@ -46,6 +46,7 @@ jobs:
           path: |
             core/build/reports/tests/
             protocol/wsjtcb/build/reports/tests/
+            app/build/reports/tests/
             app/build/reports/lint-results-debug.*
           if-no-files-found: ignore
           retention-days: 14

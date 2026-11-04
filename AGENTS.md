@@ -9,3 +9,23 @@
 - Run `bash scripts/check.sh` after code changes. Environment: `source scripts/env.sh`.
 - Never commit `.tooling/`, `local.properties`, signing keys or credentials.
 - Update the English README and relevant docs when behavior or setup changes.
+- Keep the repository private unless the user explicitly requests a visibility change.
+- Preserve GPL-3.0-only and `docs/COMMERCIAL_DISTRIBUTION.md`: selling is allowed,
+  but attribution alone does not satisfy GPL source and recipient-rights obligations.
+
+## Development and pull requests
+
+- Develop in small feature branches and open focused PRs in this repository.
+  Each PR should deliver one independently verifiable behavior. Reserve direct
+  commits to `main` for trivial documentation fixes explicitly requested by the user.
+- Keep PR titles and descriptions short, clear and immediately understandable.
+  State the resulting behavior and the relevant validation; avoid implementation diaries.
+- Before requesting review, run local tests, lint and the debug build, then check
+  the GitHub Actions result. Include concrete steps for testing on a phone when relevant.
+- After creating the PR and its build, wait for the user's explicit OK before
+  merging. Never merge or enable auto-merge without that approval. Passing checks
+  alone are not permission to merge.
+- Use JVM tests for domain/protocol rules and persistence/ViewModel tests for
+  saved settings. Use a real phone for USB OTG, audio, VOX and radio interoperability.
+- Keep the initial development sequence focused: persistent station settings,
+  LAN heartbeat/status, LAN decodes, then a first documented radio/cable backend.

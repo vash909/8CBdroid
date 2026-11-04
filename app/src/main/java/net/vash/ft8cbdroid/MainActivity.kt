@@ -14,14 +14,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.vash.ft8cbdroid.core.CbCallsign
+import net.vash.ft8cbdroid.core.MaidenheadLocator
+import net.vash.ft8cbdroid.core.StationIdentity
 import net.vash.ft8cbdroid.protocol.WsjtCbProtocol
+import net.vash.ft8cbdroid.settings.DataStoreStationPreferencesRepository
+import net.vash.ft8cbdroid.settings.SettingsFailure
+import net.vash.ft8cbdroid.settings.StationSettingsUiState
+import net.vash.ft8cbdroid.settings.StationSettingsViewModel
+import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { EightCbApp() }
+        val stationViewModel = ViewModelProvider(
+            this,
+            StationSettingsViewModel.factory(
+                DataStoreStationPreferencesRepository(applicationContext.stationPreferences),
+            ),
+        )[StationSettingsViewModel::class.java]
+        setContent {
+            val station by stationViewModel.uiState.collectAsStateWithLifecycle()
+            EightCbApp(
+                station = station,
+                onCallsignChange = stationViewModel::changeCallsign,
+                onGridChange = stationViewModel::changeGrid,
+                onSaveStation = stationViewModel::save,
+                onRetryLoad = stationViewModel::retryLoad,
+            )
+        }
     }
 }
 
@@ -33,10 +57,14 @@ private val palette = darkColorScheme(
 )
 
 @Composable
-fun EightCbApp() {
+fun EightCbApp(
+    station: StationSettingsUiState,
+    onCallsignChange: (String) -> Unit = {},
+    onGridChange: (String) -> Unit = {},
+    onSaveStation: () -> Unit = {},
+    onRetryLoad: () -> Unit = {},
+) {
     var section by rememberSaveable { mutableIntStateOf(0) }
-    var callsign by rememberSaveable { mutableStateOf("") }
-    var grid by rememberSaveable { mutableStateOf("") }
     var desktop by rememberSaveable { mutableStateOf("") }
     var port by rememberSaveable { mutableStateOf(WsjtCbProtocol.DEFAULT_LISTEN_PORT.toString()) }
     var connection by rememberSaveable { mutableStateOf("VOX telefono") }
@@ -65,26 +93,48 @@ fun EightCbApp() {
                 Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
                 Text("FT8 • 11 metri • Android", color = MaterialTheme.colorScheme.primary)
                 Panel("Anteprima di sviluppo") {
-                    Text("Scheletro 0.1.0: le impostazioni sono dimostrative. RX, TX e connessioni saranno implementati nelle prossime fasi.")
+                    Text("Nominativo e locator si possono salvare sul telefono. Gli altri controlli sono dimostrativi; RX, TX e connessioni saranno implementati nelle prossime fasi.")
                 }
                 when (section) {
                     0 -> {
                         Text("La tua stazione", style = MaterialTheme.typography.titleLarge)
                         OutlinedTextField(
-                            value = callsign,
-                            onValueChange = { callsign = CbCallsign.normalize(it) },
+                            value = station.draft.callsign,
+                            onValueChange = onCallsignChange,
                             label = { Text("Nominativo CB") },
                             placeholder = { Text("1AT106") },
                             singleLine = true,
-                            isError = callsign.isNotEmpty() && !CbCallsign.isValid(callsign),
-                            supportingText = { Text("Grammatica compatibile con WSJT-CB") },
+                            enabled = station.canEdit,
+                            isError = station.draft.callsign.isNotEmpty() && !CbCallsign.isValid(station.draft.callsign),
+                            supportingText = { Text("Nominativo CB completo, per esempio 1AT106") },
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
-                            value = grid, onValueChange = { grid = it.uppercase() },
+                            value = station.draft.grid, onValueChange = onGridChange,
                             label = { Text("Locator Maidenhead") }, placeholder = { Text("JN45") },
                             singleLine = true, modifier = Modifier.fillMaxWidth(),
+                            enabled = station.canEdit,
+                            isError = station.draft.grid.isNotEmpty() && !MaidenheadLocator.isValid(station.draft.grid),
+                            supportingText = { Text("4 o 6 caratteri, per esempio JN45 o JN45AB") },
                         )
+                        Button(
+                            onClick = onSaveStation,
+                            enabled = station.canSave,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(if (station.isSaving) "Salvataggio…" else "Salva impostazioni")
+                        }
+                        when {
+                            station.isLoading -> Text("Caricamento impostazioni…")
+                            station.failure == SettingsFailure.READ -> {
+                                Text("Impossibile leggere le impostazioni salvate.", color = MaterialTheme.colorScheme.error)
+                                OutlinedButton(onClick = onRetryLoad) { Text("Riprova caricamento") }
+                            }
+                            station.failure == SettingsFailure.SAVE ->
+                                Text("Salvataggio non riuscito. Riprova con Salva impostazioni.", color = MaterialTheme.colorScheme.error)
+                            station.isSaved -> Text("Impostazioni salvate sul telefono.")
+                            station.hasChanges -> Text("Modifiche non salvate.")
+                        }
                         Panel("Profilo FT8 / WSJT-CB") {
                             Text("27.265 MHz • alternativa 27.045 MHz")
                             Text("Slot 15 s • DSP 12 kHz • 79 simboli")
@@ -162,4 +212,6 @@ private fun Panel(title: String, content: @Composable ColumnScope.() -> Unit) {
 
 @Preview(showBackground = true)
 @Composable
-private fun AppPreview() { EightCbApp() }
+private fun AppPreview() {
+    EightCbApp(StationSettingsUiState(saved = StationIdentity(), isLoading = false))
+}
