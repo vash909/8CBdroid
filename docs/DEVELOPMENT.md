@@ -1,4 +1,4 @@
-# Ambiente di sviluppo
+# Development environment
 
 ## Linux x86_64
 
@@ -8,83 +8,85 @@ source scripts/env.sh
 bash scripts/check.sh
 ```
 
-Il bootstrap usa i metadati ufficiali Adoptium per l’ultima patch JDK 17 e
-quelli Google per i command-line tools SDK; verifica i checksum pubblicati.
-Le versioni effettivamente scaricate sono registrate in `.tooling/*-source.json`.
-Piattaforma Android 36 e build-tools 35.0.0 sono fissati esplicitamente.
-Per aggiornare JDK/CLI, rinominare le rispettive directory locali e rieseguire
-il bootstrap. Le directory presenti vengono riutilizzate.
+Bootstrap uses official Adoptium JDK 17 and Google command-line tools metadata,
+checks published checksums, and records downloaded versions in `.tooling/*-source.json`.
+Android Platform 36 and Build Tools 35.0.0 are explicitly selected. Existing local
+tool directories are reused. To refresh JDK/CLI, rename the relevant directory and
+rerun bootstrap.
 
-`source scripts/env.sh` seleziona gli strumenti del progetto senza modificare
-la configurazione globale della shell. Ripeterlo in ogni nuovo terminale.
+Source `scripts/env.sh` in each new terminal. It selects project-local tools without
+changing global shell configuration. Android Studio, emulator images and NDK are
+not installed by bootstrap. The current build needs no NDK. Android Studio can be
+installed separately from the [official site](https://developer.android.com/studio).
 
-Il bootstrap non installa Android Studio, emulatori, immagini di sistema o
-NDK. Per sviluppare la UI si possono usare le preview Compose di Android
-Studio e un telefono con debug USB. L’IDE può essere installato separatamente
-dal [sito ufficiale](https://developer.android.com/studio).
+## Android Studio and other systems
 
-## Android Studio / altri sistemi
-
-Installare JDK 17 e Android SDK tramite Android Studio o command-line tools.
-Selezionare SDK Platform 36, Build-Tools 35.0.0 e Platform-Tools. Impostare
-`JAVA_HOME`, `ANDROID_HOME` e creare un `local.properties` non versionato:
+Install JDK 17 and Android SDK through Android Studio or command-line tools. Select
+Platform 36, Build Tools 35.0.0 and Platform Tools. Set JAVA_HOME/ANDROID_HOME and
+create an untracked `local.properties`:
 
 ```properties
-sdk.dir=/percorso/assoluto/Android/Sdk
+sdk.dir=/absolute/path/to/Android/Sdk
 ```
 
-Aprire la radice del repository, attendere il Gradle sync e lanciare `app`.
-Windows: usare `gradlew.bat`. Il wrapper è incluso, non serve Gradle globale.
+Open the repository root, select Gradle JDK 17, wait for sync and run `app`.
+Windows users can run `gradlew.bat`. A global Gradle installation is unnecessary.
 
-## Comandi utili
+## Build and install
 
 ```bash
-./gradlew :core:test :protocol:wsjtcb:test :app:testDebugUnitTest
-./gradlew :app:lintDebug
-./gradlew :app:assembleDebug
+source scripts/env.sh
+bash scripts/check.sh
 adb devices
 ./gradlew :app:installDebug
 adb shell am start -n net.vash.ft8cbdroid/.MainActivity
 ```
 
-I test JVM verificano grammatica CB, locator Maidenhead, formato header/heartbeat
-UDP, ViewModel e persistenza DataStore su file dopo chiusura e riapertura.
-Non verificano radio, audio, LAN reale o interoperabilità DSP. Per questi
-serviranno test su hardware e fixture upstream nella fase successiva.
+The check script runs domain/protocol/app JVM tests, lint and debug packaging.
+The APK is `app/build/outputs/apk/debug/app-debug.apk`. Authorize USB debugging
+on the connected phone before installation.
 
-## GitHub
+Tests cover CB callsigns, Maidenhead locators, wire parsing, real loopback UDP,
+LAN ViewModel lifecycle ordering and DataStore reopening. They do not establish
+real-phone/WSJT-CB interoperability or radio/audio/DSP functionality.
 
-Il workflow Android compila, esegue test e lint sui push a `main` e sulle PR e conserva
-l’APK debug come artifact per 14 giorni. Non firma release e non pubblica su
-Play Store. I workflow hanno permessi di sola lettura sul repository.
+## Phone checks
 
-Prima di un commit eseguire `bash scripts/check.sh`. Non versionare SDK,
-cache, `local.properties`, credenziali, chiavi di firma o registrazioni audio.
-La versione del wrapper è verificata con lo SHA-256 della distribuzione.
+For station settings:
 
-Lavorare su branch piccoli e aprire una PR per ogni comportamento verificabile.
-Scrivere titoli e descrizioni brevi e chiari. Dopo PR e build, attendere l’OK
-esplicito del proprietario prima del merge; non abilitare auto-merge.
-
-## Prova delle impostazioni sul telefono
-
-1. Installare la build della PR e aprire la sezione Stazione.
-2. Inserire `1at106` e `jn45ab`: i campi diventano maiuscoli.
-3. Premere **Salva impostazioni** e attendere la conferma sullo schermo.
-4. Ruotare il telefono, cambiare sezione e tornare: i valori restano presenti.
-5. Arrestare il processo e riaprire l’app:
+1. Open **Station**, enter `1at106` / `jn45ab`, then tap **Save settings**.
+2. Wait for confirmation. Rotate the phone and switch sections; values should remain.
+3. Force-stop and reopen the process:
 
 ```bash
 adb shell am force-stop net.vash.ft8cbdroid
 adb shell am start -n net.vash.ft8cbdroid/.MainActivity
 ```
 
-6. Verificare che nominativo e locator salvati siano ripristinati.
-7. Provare `1AT` oppure `SS99`: il campo segnala l’errore e Salva resta disabilitato.
-8. Correggere i valori e salvare una seconda coppia; ripetere la riapertura.
+4. Check the saved values are restored. Try `1AT` or `SS99`: Save should be disabled.
+5. Save another valid pair and repeat. Unsaved edits must not replace stored values.
 
-Sono persistenti solo nominativo e locator. Le modifiche non salvate non
-sostituiscono i dati su disco. Gli altri controlli sono ancora dimostrativi.
+For the second feature PR, follow [LAN setup and verification](WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test).
+A PC-side simulator is included:
 
-Riferimento per la toolchain scelta:
-[AGP 8.13](https://developer.android.com/build/releases/agp-8-13-0-release-notes).
+```bash
+python3 scripts/wsjtcb_lan_probe.py --host PHONE_WIFI_IPV4
+```
+
+Also test against real WSJT-CB, port conflicts, Stop/Start, rotation, backgrounding,
+Close and peer timeout. Stay on the same LAN; the PC sends to the phone's address,
+not the reverse. Radio/audio controls remain disabled.
+
+## Pull requests and CI
+
+Use focused feature branches and short, clear English PR titles/descriptions.
+After creating the PR and checking its build, wait for the owner's explicit OK
+before merging. Do not enable auto-merge.
+
+GitHub Actions runs on main pushes and PRs, executing tests, lint and debug build.
+The debug APK and validation reports are kept as artifacts for 14 days. CI does
+not sign releases or publish to Play Store. Run `bash scripts/check.sh` before a
+code commit; do not commit tooling, caches, local.properties, credentials, signing
+keys or recordings. Gradle Wrapper verifies the distribution SHA-256.
+
+Toolchain reference: [AGP 8.13](https://developer.android.com/build/releases/agp-8-13-0-release-notes).

@@ -1,20 +1,20 @@
 # Roadmap
 
-- [x] Progetto Android Kotlin/Compose con wrapper e versioni fissate.
-- [x] Moduli JVM separati, modello stazione e validazione nominativi CB.
-- [x] Interfaccia demo Stazione / Radio / Audio / LAN.
-- [x] Contratti per backend CAT, audio, FT8 e collegamento desktop.
-- [x] Codec offline di intestazione e generazione heartbeat WSJT-CB.
-- [x] Bootstrap locale, test, lint e workflow GitHub con APK debug.
-- [x] Nominativo e locator condivisi tramite ViewModel e salvati con DataStore.
-- [ ] Estendere stato condiviso e persistenza alle future impostazioni operative.
-- [ ] Listener UDP con lifecycle, gestione peer e negoziazione schema.
-- [ ] Parsing Status / Decode / LoggedADIF e gestione Replay / Close.
-- [ ] Comandi LAN supportati, con verifica sul desktop WSJT-CB.
-- [ ] Primo modello radio e cavo OTG: permessi, seriale, frequenza e PTT.
-- [ ] Scelta documentata fra Hamlib/JNI e driver CAT Android.
-- [ ] Pipeline microfono/altoparlante, USB audio e ricampionamento.
-- [ ] Motore FT8 compatibile WSJT-CB, fixture CB/type 4/hash e test audio.
-- [ ] Scheduling UTC, RX/TX, livelli VOX, rilascio PTT e gestione errori.
-- [ ] Prove su telefoni e radio reali; documentare la matrice supportata.
-- [ ] Firma release, distribuzione e istruzioni utente operative.
+- [x] Android Kotlin/Compose project with pinned toolchain and Gradle Wrapper.
+- [x] JVM domain/protocol modules, CB callsign validation and FT8 profile.
+- [x] Station / Radio / Audio / LAN interface, with English UI text.
+- [x] Contracts for radio control, audio and a future FT8 engine.
+- [x] Persistent station callsign and locator using ViewModel and DataStore.
+- [x] IPv4 UDP listener, optional source filter, heartbeat negotiation and peer lifetime.
+- [x] Desktop Status display and foreground lifecycle management.
+- [x] Local bootstrap, tests, lint and GitHub debug APK workflow.
+- [ ] Extend persistence to future operational settings.
+- [ ] LAN Decode / LoggedADIF parsing and Replay handling.
+- [ ] Supported desktop commands, verified against WSJT-CB.
+- [ ] First documented radio and OTG cable: permissions, serial transport, frequency and PTT.
+- [ ] Select Hamlib/JNI or Android CAT drivers for the first supported hardware.
+- [ ] Phone microphone/speaker and USB audio pipelines with resampling.
+- [ ] WSJT-CB-compatible FT8 engine and CB/type 4/hash/audio fixtures.
+- [ ] UTC slot scheduling, RX/TX, VOX calibration and PTT error handling.
+- [ ] Real-phone and real-radio support matrix.
+- [ ] Signed releases, distribution and operational user documentation.

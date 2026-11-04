@@ -1,81 +1,82 @@
-# Architettura iniziale
+# Architecture
 
-La UI Android dipende da `core` e `protocol:wsjtcb`. I due moduli JVM sono
-testabili senza emulatore. Non sono presenti singleton hardware, servizi in
-background o operazioni radio all’avvio.
+The Android UI depends on `core` and `protocol:wsjtcb`. JVM modules can be tested
+without an emulator. Hardware and network work stay outside Compose. No radio
+operation or listener starts automatically.
 
 ```text
-app (Compose + adattatori Android)
- ├── core (stazione, radio, audio, contratto DSP)
- └── protocol:wsjtcb (codec UDP offline, contratto bridge)
+app (Compose, settings/LAN ViewModels, Android lifecycle)
+ ├── core (station identity, radio/audio/DSP contracts)
+ └── protocol:wsjtcb (wire codec, UDP listener, connection state)
       └── core
 
-native (CMake opzionale, fuori dalla build Gradle attuale)
+native (optional CMake target, outside the current Gradle build)
 ```
 
-## Radio: Hamlib oppure CAT Android
+## Station settings
 
-`RadioController` definisce connessione, frequenza e PTT. L’adattatore attuale
-restituisce `BackendResult.Unavailable` e dichiara capacità disabilitate.
+`StationSettingsViewModel` exposes editable and saved identity through StateFlow.
+The UI collects it with lifecycle awareness. Preferences DataStore writes the
+callsign and locator together on an explicit save request and reports completion
+only after the write succeeds. Editing stays disabled until the initial read
+succeeds, preventing accidental replacement of unread settings. The application
+context delegate provides one DataStore instance per process.
 
-Due implementazioni future possono convivere dietro lo stesso contratto:
+## LAN monitoring
 
-1. Hamlib compilata con Android NDK e collegata tramite JNI. Il trasporto USB
-   va adattato ai file descriptor autorizzati da `UsbManager`: Android non
-   garantisce accesso diretto a `/dev/ttyUSB*` e non basta compilare Hamlib.
-2. Driver CAT Kotlin/Java per un primo insieme esplicito di modelli, usando
-   una libreria seriale Android e i comandi documentati dai produttori.
+`LanViewModel` owns a `WsjtCbBridge`, validates the IPv4/port inputs and serializes
+Start/Stop requests. `UdpWsjtCbBridge` binds on an IO dispatcher and receives
+unicast UDP on a socket-owning worker thread. Its StateFlow exposes listener
+phase, selected desktop and latest Status. Socket close releases blocking receive;
+session guards prevent old workers from publishing after a restart.
 
-Prima di scegliere una dipendenza, fissare versione, licenza e primo modello
-di radio/cavo da verificare. Una candidata per il solo trasporto è
-[usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android), che
-non fornisce da sola i protocolli CAT. Hamlib non è ancora inclusa.
+Only a valid heartbeat establishes a peer. IP, ephemeral source port and instance
+ID remain pinned until Close or timeout. The only outbound message is heartbeat:
+there are no radio-control commands. Status parsing reads the stable prefix and
+ignores later extensions. Decodes and log payloads remain future work.
 
-Serviranno gestione attach/detach, richiesta del permesso per singolo
-dispositivo, VID/PID, baud rate, timeout, capacità radio e rilascio PTT su
-errore/disconnessione. Nessuna lista universale di radio compatibili è
-dichiarata in questo scheletro.
+The activity stops LAN listening when it leaves the foreground, except during
+configuration changes such as rotation. Clearing the ViewModel closes the socket.
+There is no background service. Port/filter inputs survive rotation but not process
+termination. See [the wire contract and phone test](WSJT_CB_INTEGRATION.md).
 
-## Audio e VOX
+## Radio control: future Hamlib or Android CAT
 
-`AudioEngine` distingue microfono/altoparlante e USB audio. Implementare con
-`AudioRecord`/`AudioTrack` o Oboe, selezione dispositivi, gestione audio focus e
-permesso runtime `RECORD_AUDIO`. Il manifest dichiara il permesso ma la demo
-non lo richiede, perché non registra.
+`RadioController` defines connection, frequency and PTT operations. Its placeholder
+returns Unavailable and advertises no capabilities. Future implementations can use:
 
-Il PCM del decoder è a 12 kHz; l’hardware Android può lavorare a 48 kHz e
-richiede ricampionamento. Definire in seguito buffer, timestamp, canali e
-formato PCM. Nel percorso acustico è la radio a gestire il VOX; nell’app
-saranno necessari livelli, coda audio e margine iniziale/finale.
+1. Hamlib built with Android NDK and JNI. USB access must integrate with file
+   descriptors authorized by `UsbManager`; compiling Hamlib alone does not grant
+   access to `/dev/ttyUSB*` on Android.
+2. Kotlin/Java CAT drivers for explicitly supported radios, using documented
+   manufacturer commands and an Android serial transport such as
+   [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android).
 
-Per una futura operatività in background progettare un foreground service
-microfono, relativo ciclo di vita e permessi secondo il target Android.
-Questa demo resta in primo piano e non avvia servizi.
+Before integration, pin dependency versions, review licenses and choose the first
+radio/cable to test. Attach/detach, device permissions, VID/PID, baud rate, timeouts,
+capabilities and PTT release on failure still need implementation. USB audio is
+separate from CAT. No universal radio compatibility is claimed.
 
-## Motore FT8
+## Future audio and VOX
 
-`Ft8Engine` è soltanto il contratto iniziale per codifica/decodifica. Non
-contiene un motore. Un futuro porting deve verificare i nominativi CB,
-l’apprendimento hash, i messaggi type 4, i report e l’AutoSeq specifici di
-WSJT-CB, oltre a CRC, LDPC, modulazione e sincronizzazione UTC degli slot.
+`AudioEngine` distinguishes phone microphone/speaker and USB audio. Implement
+routing, audio focus, runtime microphone permission and capture/playback through
+Android audio APIs or Oboe. The current manifest declares RECORD_AUDIO but the app
+does not request it because recording is not implemented.
 
-`native/CMakeLists.txt` compila soltanto un simbolo C di stato: non viene
-caricato dall’app. Attivare `externalNativeBuild` e fissare NDK/ABI solo
-quando si introduce un backend reale. Il codice Fortran desktop non è
-direttamente una libreria Android: valutare toolchain e porting senza
-promettere un collegamento automatico.
+The DSP profile uses 12 kHz PCM; Android hardware may require resampling from
+48 kHz. Define buffers, timestamps, channel layout and PCM representation when
+building the real engine. In acoustic operation the radio handles VOX, while the
+app will need level calibration and leading/trailing audio timing. Future
+background microphone operation requires its own service/permission design.
 
-## Collegamento desktop
+## Future FT8 engine
 
-L’app svolgerà il ruolo di server UDP per il `MessageClient` desktop. Il
-bridge sarà separato dal motore FT8 locale e dai driver radio. Il trasporto
-di rete dovrà produrre eventi di dominio per la UI, negoziare lo schema e
-tenere traccia di istanza desktop, endpoint, scadenza heartbeat e stato.
+`Ft8Engine` is only a contract. A port must verify CB callsigns, hash learning,
+type 4 messages, reports and WSJT-CB AutoSeq behavior, as well as CRC, LDPC,
+modulation and UTC slot synchronization.
 
-Nominativo e locator sono gestiti da `StationSettingsViewModel`, esposti come
-`StateFlow` e osservati dalla UI rispettandone il lifecycle. Un repository
-Preferences DataStore salva i due campi insieme soltanto dopo la richiesta
-esplicita dell’utente. La UI attende la lettura iniziale e conferma il salvataggio
-solo dopo il completamento della scrittura; gli errori permettono un nuovo tentativo.
-Il file DataStore ha una sola istanza per processo, tramite il delegate sul
-contesto applicazione. Le altre impostazioni restano nello stato Compose demo.
+`native/CMakeLists.txt` builds only a C status symbol and is not loaded by the app.
+Enable externalNativeBuild and pin NDK/ABIs only when introducing a real engine.
+Desktop Fortran source is not directly an Android library; toolchain and porting
+work remain to be evaluated.
