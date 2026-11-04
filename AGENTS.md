@@ -9,6 +9,14 @@
 - Run `bash scripts/check.sh` after code changes. Environment: `source scripts/env.sh`.
 - Never commit `.tooling/`, `local.properties`, signing keys or credentials.
 - Update the English README and relevant docs when behavior or setup changes.
+- Use English for all project content, including documentation, UI text, code
+  comments, commit messages and bodies, PR titles and descriptions, and review
+  comments. Apply this rule to all new or modified content.
+- The entire application's user-facing language must be English, including
+  screens, navigation, labels, buttons, placeholders, validation and error
+  messages, dialogs, notifications, and accessibility descriptions. Treat
+  existing non-English UI text as pending translation, not as a convention
+  to preserve.
 - Keep the repository private unless the user explicitly requests a visibility change.
 - Preserve GPL-3.0-only and `docs/COMMERCIAL_DISTRIBUTION.md`: selling is allowed,
   but attribution alone does not satisfy GPL source and recipient-rights obligations.

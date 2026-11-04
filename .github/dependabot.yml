@@ -3,9 +3,26 @@ updates:
   - package-ecosystem: gradle
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      gradle-maintenance:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    # Major toolchain migrations are reviewed separately.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      actions-maintenance:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    # Major action migrations are reviewed separately.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
