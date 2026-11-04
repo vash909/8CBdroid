@@ -7,8 +7,10 @@ junit = "4.13.2"
 datastore = "1.1.7"
 lifecycle = "2.9.4"
 coroutines = "1.9.0"
+usb-serial = "3.11.0"
 
 [libraries]
+usb-serial = { module = "com.github.mik3y:usb-serial-for-android", version.ref = "usb-serial" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }

@@ -1,7 +1,7 @@
 # Third-party notices
 
 8CBdroid is an Android development skeleton. It does not yet include the
-desktop DSP engine, Hamlib or a USB serial library.
+desktop DSP engine or Hamlib.
 
 - [WSJT-CB](https://github.com/vash909/WSJT-CB), derived from WSJT-X by Joe
   Taylor K1JT and contributors, modified by Vash / 1AT106 / 1XZ001, with
@@ -12,6 +12,10 @@ desktop DSP engine, Hamlib or a USB serial library.
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
 - JUnit 4: EPL-1.0.
+- [usb-serial-for-android 3.11.0](https://github.com/mik3y/usb-serial-for-android/tree/3.11.0):
+  MIT, copyright 2011–2013 Google Inc. and 2013 Mike Wakerly.
+  [Full license](app/src/main/assets/licenses/usb-serial-for-android.txt) is packaged
+  in APK assets. Used for USB serial discovery; radio CAT remains pending.
 - JDK/SDK packages downloaded for development retain their respective
   licenses and are not included in the repository or APK.
 
