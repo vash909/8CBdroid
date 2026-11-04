@@ -30,13 +30,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Test, lint and debug APK
         run: ./gradlew --no-daemon :core:test :protocol:wsjtcb:test :app:lintDebug :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: 8CBdroid-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: validation-reports
