@@ -1,0 +1,15 @@
+name: Funzionalità o integrazione
+description: Pianifica lo sviluppo di 8CBdroid
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Comportamento desiderato
+      description: Descrivi il caso d’uso e il risultato verificabile.
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware e ambiente
+      description: Se pertinente, telefono/Android, radio, cavo e versione WSJT-CB.
