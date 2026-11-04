@@ -43,17 +43,29 @@ object WsjtCbProtocol {
     }
 
     /** A server reply uses the desktop instance ID discovered in its incoming datagram. */
-    fun heartbeat(instanceId: String, schema: Int = INITIAL_SCHEMA): ByteArray {
+    fun heartbeat(instanceId: String, schema: Int = INITIAL_SCHEMA): ByteArray =
+        message(instanceId, schema, Type.HEARTBEAT) {
+            writeInt(MAX_SCHEMA)
+            writeUtf8("8CBdroid 0.1.0-dev")
+            writeUtf8("lan-decodes")
+        }
+
+    fun replay(instanceId: String, schema: Int): ByteArray = message(instanceId, schema, Type.REPLAY)
+
+    private fun message(
+        instanceId: String,
+        schema: Int,
+        type: Type,
+        payload: DataOutputStream.() -> Unit = {},
+    ): ByteArray {
         require(schema in INITIAL_SCHEMA..MAX_SCHEMA)
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { output ->
             output.writeInt(MAGIC)
             output.writeInt(schema)
-            output.writeInt(Type.HEARTBEAT.wireValue)
+            output.writeInt(type.wireValue)
             output.writeUtf8(instanceId)
-            output.writeInt(MAX_SCHEMA)
-            output.writeUtf8("8CBdroid 0.1.0-dev")
-            output.writeUtf8("udp-listener")
+            output.payload()
         }
         return bytes.toByteArray()
     }
@@ -73,6 +85,8 @@ object WsjtCbProtocol {
             val revision: String,
         ) : Message
         data class Status(override val header: Header, val status: DesktopStatus) : Message
+        data class Decode(override val header: Header, val decode: LanDecode) : Message
+        data class Clear(override val header: Header) : Message
         data class Close(override val header: Header) : Message
         data class Unsupported(override val header: Header) : Message
     }
@@ -99,6 +113,18 @@ object WsjtCbProtocol {
                 transmitting = input.boolean(),
                 decoding = input.boolean(),
             ))
+            Type.DECODE -> Message.Decode(header, LanDecode(
+                isNew = input.boolean(),
+                utcMillisOfDay = input.time(),
+                snr = input.int32(),
+                deltaTimeSeconds = input.double(),
+                deltaFrequencyHz = input.uint32(),
+                mode = input.string().orEmpty(),
+                message = input.string().orEmpty(),
+                lowConfidence = input.optionalBoolean(),
+                offAir = input.optionalBoolean(),
+            ))
+            Type.CLEAR -> Message.Clear(header)
             Type.CLOSE -> Message.Close(header)
             else -> Message.Unsupported(header)
         }
@@ -113,6 +139,20 @@ object WsjtCbProtocol {
         fun frequency(): Long {
             require(remaining >= 8) { "Truncated frequency" }
             return input.long.also { require(it >= 0) { "Frequency exceeds supported range" } }
+        }
+        fun int32(): Int {
+            require(remaining >= 4) { "Truncated signed integer" }
+            return input.int
+        }
+        fun double(): Double {
+            require(remaining >= 8) { "Truncated floating-point value" }
+            return input.double.also { require(it.isFinite()) { "Non-finite delta time" } }
+        }
+        fun time(): Long? {
+            val value = uint32()
+            if (value == 0xffffffffL) return null // Invalid QTime sentinel, distinct from midnight.
+            require(value < 86_400_000L) { "Invalid UTC time of day" }
+            return value
         }
         fun boolean(): Boolean {
             require(remaining >= 1) { "Truncated boolean" }
@@ -129,6 +169,7 @@ object WsjtCbProtocol {
             return ByteArray(length.toInt()).also(input::get).toString(Charsets.UTF_8)
         }
         fun optionalString(): String = if (remaining == 0) "" else string().orEmpty()
+        fun optionalBoolean(): Boolean = if (remaining == 0) false else boolean()
     }
 }
 
@@ -155,4 +196,6 @@ interface WsjtCbBridge : java.io.Closeable {
     val state: kotlinx.coroutines.flow.StateFlow<LanState>
     suspend fun listen(settings: LanSettings): net.vash.ft8cbdroid.core.BackendResult
     suspend fun stop()
+    suspend fun requestReplay(): net.vash.ft8cbdroid.core.BackendResult
+    fun clearDecodes()
 }

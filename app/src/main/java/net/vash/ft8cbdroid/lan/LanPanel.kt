@@ -15,6 +15,8 @@ fun LanPanel(
     onAddressChange: (String) -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onReplay: () -> Unit,
+    onClear: () -> Unit,
 ) {
     Text("WSJT-CB on your local network", style = MaterialTheme.typography.titleLarge)
     OutlinedTextField(
@@ -59,5 +61,6 @@ fun LanPanel(
     }
     Text("In WSJT-CB, set the UDP server to this phone's Wi-Fi IP address and the port above. Both devices must be on the same LAN.")
     Text("Keep the app in the foreground. Listening stops when it goes into the background. One desktop is tracked at a time; an inactive peer is released after 45 seconds.")
-    Text("This connection displays heartbeat and status only. Decodes, logging, audio and radio commands are not available yet.")
+    DecodesPanel(state.connection.decodes, state.canReplay, onReplay, onClear)
+    Text("This connection displays desktop status and decodes. Logging, audio and radio control are not available yet.")
 }

@@ -5,9 +5,10 @@ compatibility with [WSJT-CB](https://github.com/vash909/WSJT-CB).
 
 **Status: early development.** A debug APK can be built.
 Station callsign and locator can be saved and restored after reopening the app.
-The LAN tab can listen for WSJT-CB heartbeat/status, show the selected desktop
-and display frequency, mode and activity flags. Local FT8, USB radio control,
-audio, decodes and logging are not implemented yet.
+The LAN tab shows WSJT-CB status and live/replayed decodes, with explicit replay
+and local clear controls. Decode history holds up to 200 messages and is cleared
+when the peer disconnects or listening stops. Local FT8, USB radio control, audio
+and logging are not implemented yet. The entire client uses English.
 
 In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
 locator, then tap **Save settings**. Wait for confirmation before closing.
@@ -62,7 +63,7 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 | --- | --- |
 | `app/` | English Compose UI, station/LAN ViewModels, DataStore and hardware placeholders |
 | `core/` | Station models, CB callsigns, FT8 profile and radio/audio/DSP contracts |
-| `protocol/wsjtcb/` | Wire codec, unicast UDP listener, heartbeat/status and peer lifetime |
+| `protocol/wsjtcb/` | Wire codec, UDP status/decodes, explicit replay and peer lifetime |
 | `native/` | Optional CMake/C++ starting point for future native engines |
 | `scripts/` | Local environment setup and checks |
 | `.github/workflows/` | Build, JVM tests, lint and debug APK on GitHub Actions |

@@ -25,15 +25,19 @@ context delegate provides one DataStore instance per process.
 ## LAN monitoring
 
 `LanViewModel` owns a `WsjtCbBridge`, validates the IPv4/port inputs and serializes
-Start/Stop requests. `UdpWsjtCbBridge` binds on an IO dispatcher and receives
+Start/Stop/Replay requests. `UdpWsjtCbBridge` binds on an IO dispatcher and receives
 unicast UDP on a socket-owning worker thread. Its StateFlow exposes listener
-phase, selected desktop and latest Status. Socket close releases blocking receive;
-session guards prevent old workers from publishing after a restart.
+phase, selected desktop, latest Status and bounded decode history. Socket close
+releases blocking receive without joining on the UI thread. A new bind waits on
+IO for the previous receiver to exit; session guards prevent stale publication.
 
 Only a valid heartbeat establishes a peer. IP, ephemeral source port and instance
-ID remain pinned until Close or timeout. The only outbound message is heartbeat:
-there are no radio-control commands. Status parsing reads the stable prefix and
-ignores later extensions. Decodes and log payloads remain future work.
+ID remain pinned until Close or timeout. Outbound messages are heartbeat and
+explicit Replay; neither starts radio transmission. Status and Decode parsing
+ignore appended extensions. Decode history retains the latest 200 distinct
+payloads, ignoring the Live/Replay flag for deduplication; a live decode upgrades
+an existing replay. Clear from the desktop, peer loss and Stop clear history.
+The local Clear list button changes only phone state. Log parsing remains pending.
 
 The activity stops LAN listening when it leaves the foreground, except during
 configuration changes such as rotation. Clearing the ViewModel closes the socket.

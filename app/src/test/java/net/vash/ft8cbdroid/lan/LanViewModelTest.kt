@@ -95,6 +95,59 @@ class LanViewModelTest {
         assertEquals(1, bridge.closes)
     }
 
+    @Test fun replayIsExplicitRequiresConnectionAndReportsFailure() = runTest {
+        val bridge = FakeBridge()
+        val viewModel = create(bridge)
+        viewModel.requestReplay()
+        advanceUntilIdle()
+        assertEquals(0, bridge.replays)
+        bridge.connect()
+        advanceUntilIdle()
+        assertEquals(0, bridge.replays)
+        assertTrue(viewModel.uiState.value.canReplay)
+        bridge.failReplay = true
+        viewModel.requestReplay()
+        advanceUntilIdle()
+        assertEquals("Replay unavailable", viewModel.uiState.value.error)
+        assertTrue(viewModel.uiState.value.canReplay)
+        bridge.failReplay = false
+        viewModel.requestReplay()
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.error)
+        assertEquals(2, bridge.replays)
+    }
+
+    @Test fun replayInFlightBlocksDuplicatesAndSerializesBackgroundStop() = runTest {
+        val bridge = FakeBridge().apply { replayGate = CompletableDeferred(); connect() }
+        val viewModel = create(bridge)
+        viewModel.requestReplay()
+        viewModel.requestReplay()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.canReplay)
+        viewModel.stop()
+        advanceUntilIdle()
+        assertEquals(0, bridge.stops)
+        bridge.replayGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(1, bridge.replays)
+        assertEquals(1, bridge.stops)
+        assertEquals(LanPhase.STOPPED, viewModel.uiState.value.connection.phase)
+    }
+
+    @Test fun exposesHistoryAndClearsItWithoutDisconnecting() = runTest {
+        val bridge = FakeBridge().apply { connect() }
+        val viewModel = create(bridge)
+        val decode = LanDecode(true, 0, -17, 0.25, 1000, "~", "CQ 1AT106 JN45")
+        bridge.state.value = bridge.state.value.copy(decodes = listOf(decode))
+        advanceUntilIdle()
+        assertEquals(listOf(decode), viewModel.uiState.value.connection.decodes)
+        viewModel.clearDecodes()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.connection.decodes.isEmpty())
+        assertEquals(LanPhase.CONNECTED, viewModel.uiState.value.connection.phase)
+        assertEquals(0, bridge.replays)
+    }
+
     private fun create(bridge: FakeBridge): LanViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer { LanViewModel(bridge) } })[LanViewModel::class.java]
@@ -105,9 +158,16 @@ class LanViewModelTest {
         var starts = 0
         var stops = 0
         var closes = 0
+        var replays = 0
+        var failReplay = false
         var fail = false
         var settings: LanSettings? = null
         var bindGate: CompletableDeferred<Unit>? = null
+        var replayGate: CompletableDeferred<Unit>? = null
+        fun connect() {
+            state.value = LanState(LanPhase.CONNECTED, 2237,
+                DesktopPeer("127.0.0.1", 40000, "WSJT-CB", 3, "1.4.1", "test"))
+        }
         override suspend fun listen(settings: LanSettings): BackendResult {
             starts++
             this.settings = settings
@@ -117,6 +177,12 @@ class LanViewModelTest {
             return BackendResult.Success
         }
         override suspend fun stop() { stops++; state.value = LanState() }
+        override suspend fun requestReplay(): BackendResult {
+            replays++
+            replayGate?.await()
+            return if (failReplay) BackendResult.Unavailable("Replay unavailable") else BackendResult.Success
+        }
+        override fun clearDecodes() { state.value = state.value.copy(decodes = emptyList()) }
         override fun close() { closes++; state.value = LanState() }
     }
 }

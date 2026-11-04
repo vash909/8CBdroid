@@ -20,6 +20,7 @@ import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
 import net.vash.ft8cbdroid.core.StationIdentity
 import net.vash.ft8cbdroid.lan.LanPanel
+import net.vash.ft8cbdroid.lan.DecodesPanel
 import net.vash.ft8cbdroid.lan.LanUiState
 import net.vash.ft8cbdroid.lan.LanViewModel
 import net.vash.ft8cbdroid.settings.DataStoreStationPreferencesRepository
@@ -50,6 +51,8 @@ class MainActivity : ComponentActivity() {
                 onLanAddressChange = lanViewModel::changeAddress,
                 onStartLan = lanViewModel::start,
                 onStopLan = lanViewModel::stop,
+                onReplayLan = lanViewModel::requestReplay,
+                onClearLan = lanViewModel::clearDecodes,
                 onCallsignChange = stationViewModel::changeCallsign,
                 onGridChange = stationViewModel::changeGrid,
                 onSaveStation = stationViewModel::save,
@@ -79,6 +82,8 @@ fun EightCbApp(
     onLanAddressChange: (String) -> Unit = {},
     onStartLan: () -> Unit = {},
     onStopLan: () -> Unit = {},
+    onReplayLan: () -> Unit = {},
+    onClearLan: () -> Unit = {},
     onCallsignChange: (String) -> Unit = {},
     onGridChange: (String) -> Unit = {},
     onSaveStation: () -> Unit = {},
@@ -111,7 +116,7 @@ fun EightCbApp(
                 Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
                 Text("FT8 • 11 metres • Android", color = MaterialTheme.colorScheme.primary)
                 Panel("Development preview") {
-                    Text("Station settings can be saved and desktop heartbeat/status can be monitored over LAN. Local FT8, radio control and audio are not implemented yet.")
+                    Text("Station settings can be saved and desktop status/decodes can be monitored over LAN. Local FT8, radio control and audio are not implemented yet.")
                 }
                 when (section) {
                     0 -> {
@@ -158,9 +163,7 @@ fun EightCbApp(
                             Text("15 s slots • 12 kHz DSP • 79 symbols")
                             Text("Selected connection: $connection")
                         }
-                        Panel("Band activity") {
-                            Text("No decodes. The FT8 engine is not integrated yet.")
-                        }
+                        DecodesPanel(lan.connection.decodes, lan.canReplay, onReplayLan, onClearLan)
                         Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
                             Text("Start RX — not implemented")
                         }
@@ -192,7 +195,7 @@ fun EightCbApp(
                         OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
                     }
                     3 -> {
-                        LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan)
+                        LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan, onReplayLan, onClearLan)
                     }
                 }
             }

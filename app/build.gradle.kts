@@ -14,6 +14,7 @@ android {
         versionCode = 1
         versionName = "0.1.0-dev"
     }
+    androidResources { localeFilters += "en" }
     buildFeatures { compose = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

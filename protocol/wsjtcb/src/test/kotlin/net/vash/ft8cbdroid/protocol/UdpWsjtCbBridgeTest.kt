@@ -5,6 +5,7 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.util.concurrent.atomic.AtomicLong
+import java.nio.ByteBuffer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -101,12 +102,15 @@ class UdpWsjtCbBridgeTest {
                 sender.reply()
                 sender.send(port, DesktopFixtures.status)
                 awaitState(bridge) { it.status != null }
+                sender.send(port, DesktopFixtures.decode)
+                awaitState(bridge) { it.decodes.isNotEmpty() }
                 clock.set(1_500)
                 assertEquals(WsjtCbProtocol.Type.HEARTBEAT, sender.reply().let { WsjtCbProtocol.readHeader(it.data.copyOf(it.length)).type })
                 clock.set(4_000)
                 val expired = awaitState(bridge) { it.phase == LanPhase.LISTENING }
                 assertNull(expired.peer)
                 assertNull(expired.status)
+                assertTrue(expired.decodes.isEmpty())
             }
         }
     }
@@ -125,15 +129,118 @@ class UdpWsjtCbBridgeTest {
     @Test fun stopReleasesSocketAndAllowsRestartOnSamePort() = runBlocking<Unit> {
         val port = unusedPort()
         UdpWsjtCbBridge().use { bridge ->
-            assertEquals(BackendResult.Success, bridge.listen(LanSettings(port)))
-            assertTrue(bridge.listen(LanSettings(port)) is BackendResult.Unavailable)
-            bridge.stop()
-            assertEquals(LanPhase.STOPPED, bridge.state.value.phase)
-            assertEquals(BackendResult.Success, bridge.listen(LanSettings(port)))
+            repeat(40) { cycle ->
+                assertEquals("Restart cycle $cycle", BackendResult.Success, bridge.listen(LanSettings(port)))
+                assertTrue(bridge.listen(LanSettings(port)) is BackendResult.Unavailable)
+                desktop().use { sender ->
+                    sender.send(port, DesktopFixtures.heartbeat)
+                    sender.reply()
+                    awaitState(bridge) { it.peer != null }
+                }
+                bridge.stop()
+                assertEquals(LanPhase.STOPPED, bridge.state.value.phase)
+            }
+        }
+    }
+
+    @Test fun receivesDecodesOnlyAfterHeartbeatAndDeduplicatesReplay() = runBlocking<Unit> {
+        withListener { bridge, port ->
             desktop().use { sender ->
+                sender.send(port, DesktopFixtures.decode)
                 sender.send(port, DesktopFixtures.heartbeat)
                 sender.reply()
                 awaitState(bridge) { it.peer != null }
+                assertTrue(bridge.state.value.decodes.isEmpty())
+                sender.send(port, DesktopFixtures.decode.copyOf(66))
+                sender.send(port, DesktopFixtures.decode)
+                val decoded = awaitState(bridge) { it.decodes.size == 1 }.decodes.single()
+                assertEquals("CQ 1AT106 JN45", decoded.message)
+                sender.send(port, DesktopFixtures.decode.copyOf().also { it[23] = 0 })
+                sender.send(port, DesktopFixtures.status)
+                val afterReplay = awaitState(bridge) { it.status != null }
+                assertEquals(1, afterReplay.decodes.size)
+                assertTrue(afterReplay.decodes.single().isNew)
+            }
+        }
+    }
+
+    @Test fun requestsReplayOnSelectedSourcePortAndHandlesBothClearActions() = runBlocking<Unit> {
+        withListener { bridge, port ->
+            assertTrue(bridge.requestReplay() is BackendResult.Unavailable)
+            desktop().use { sender ->
+                sender.send(port, DesktopFixtures.heartbeat)
+                sender.reply()
+                sender.send(port, DesktopFixtures.decode)
+                awaitState(bridge) { it.decodes.isNotEmpty() }
+                bridge.clearDecodes()
+                assertTrue(bridge.state.value.decodes.isEmpty())
+                sender.soTimeout = 150
+                assertThrows(SocketTimeoutException::class.java) { sender.reply() }
+                sender.soTimeout = 2_000
+                assertEquals(BackendResult.Success, bridge.requestReplay())
+                val request = sender.reply()
+                assertEquals(port, request.port)
+                val header = WsjtCbProtocol.readHeader(request.data.copyOf(request.length))
+                assertEquals(WsjtCbProtocol.Type.REPLAY, header.type)
+                assertEquals("WSJT-CB", header.instanceId)
+                assertEquals(3, header.schema)
+                sender.send(port, DesktopFixtures.decode.copyOf().also { it[23] = 0 })
+                assertFalse(awaitState(bridge) { it.decodes.isNotEmpty() }.decodes.single().isNew)
+                sender.send(port, DesktopFixtures.clear)
+                sender.send(port, DesktopFixtures.status)
+                assertTrue(awaitState(bridge) { it.status != null }.decodes.isEmpty())
+                assertEquals(LanPhase.CONNECTED, bridge.state.value.phase)
+            }
+        }
+    }
+
+    @Test fun ignoresForeignDecodeAndClearPackets() = runBlocking<Unit> {
+        withListener { bridge, port ->
+            desktop().use { sender -> desktop().use { foreign ->
+                sender.send(port, DesktopFixtures.heartbeat)
+                sender.reply()
+                sender.send(port, DesktopFixtures.decode)
+                awaitState(bridge) { it.decodes.isNotEmpty() }
+                foreign.send(port, DesktopFixtures.clear)
+                foreign.send(port, DesktopFixtures.decode.copyOf().also { ByteBuffer.wrap(it).putInt(28, -18) })
+                sender.send(port, DesktopFixtures.clear.copyOf().also { it[16] = 'X'.code.toByte() })
+                sender.send(port, DesktopFixtures.status)
+                val state = awaitState(bridge) { it.status != null }
+                assertEquals(-17, state.decodes.single().snr)
+            } }
+        }
+    }
+
+    @Test fun boundsHistoryUnderLiveTraffic() = runBlocking<Unit> {
+        withListener { bridge, port ->
+            desktop().use { sender ->
+                sender.send(port, DesktopFixtures.heartbeat)
+                sender.reply()
+                repeat(25) { batch ->
+                    repeat(10) { offset ->
+                        sender.send(port, DesktopFixtures.decode.copyOf().also {
+                            ByteBuffer.wrap(it).putInt(24, batch * 10 + offset)
+                        })
+                    }
+                    awaitState(bridge) { it.decodes.lastOrNull()?.utcMillisOfDay == (batch * 10 + 9).toLong() }
+                }
+                assertEquals(200, bridge.state.value.decodes.size)
+                assertEquals(50L, bridge.state.value.decodes.first().utcMillisOfDay)
+                bridge.stop()
+                assertTrue(bridge.state.value.decodes.isEmpty())
+            }
+        }
+    }
+
+    @Test fun desktopCloseDiscardsItsDecodeHistory() = runBlocking<Unit> {
+        withListener { bridge, port ->
+            desktop().use { sender ->
+                sender.send(port, DesktopFixtures.heartbeat)
+                sender.reply()
+                sender.send(port, DesktopFixtures.decode)
+                awaitState(bridge) { it.decodes.isNotEmpty() }
+                sender.send(port, DesktopFixtures.close)
+                assertTrue(awaitState(bridge) { it.phase == LanPhase.LISTENING }.decodes.isEmpty())
             }
         }
     }

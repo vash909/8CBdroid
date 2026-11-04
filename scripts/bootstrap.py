@@ -37,7 +37,7 @@ def download(url, name, checksum, algorithm="sha256"):
 
 def main():
     if platform.system() != "Linux" or platform.machine() not in ("x86_64", "AMD64"):
-        raise SystemExit("Bootstrap automatico: Linux x86_64. Altri sistemi: docs/DEVELOPMENT.md")
+        raise SystemExit("Automatic bootstrap supports Linux x86_64. Other systems: docs/DEVELOPMENT.md")
     CACHE.mkdir(parents=True, exist_ok=True)
     java = TOOLS / "jdk-17"
     if not (java / "bin/java").exists():
@@ -75,11 +75,11 @@ def main():
         (TOOLS / "sdk-source.json").write_text(json.dumps({"url": url, "checksum": checksum.text}) + "\n")
 
     env = dict(os.environ, JAVA_HOME=str(java), ANDROID_HOME=str(sdk))
-    print("Licenze Android: leggere e accettare se richiesto.", flush=True)
+    print("Android SDK licenses: read and accept when prompted.", flush=True)
     subprocess.run([str(manager), f"--sdk_root={sdk}", "--licenses"], env=env, check=True)
     subprocess.run([str(manager), f"--sdk_root={sdk}", "platform-tools", "platforms;android-36", "build-tools;35.0.0"], env=env, check=True)
     (ROOT / "local.properties").write_text(f"sdk.dir={sdk}\n")
-    print("Pronto. Esegui: source scripts/env.sh && ./gradlew assembleDebug", flush=True)
+    print("Ready. Run: source scripts/env.sh && ./gradlew assembleDebug", flush=True)
 
 
 if __name__ == "__main__":
