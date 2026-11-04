@@ -1,91 +1,111 @@
-# Integrazione WSJT-CB
+# WSJT-CB LAN integration
 
-Analisi fissata al commit
+Protocol reference: WSJT-CB commit
 [`94f776d54946fe43db5e0bb9c966b1595c7b7d97`](https://github.com/vash909/WSJT-CB/tree/94f776d54946fe43db5e0bb9c966b1595c7b7d97).
-Rivedere questo documento quando si aggiorna il riferimento.
+Review this contract before updating the reference.
 
-## API di rete effettive
+## Implemented in the second feature PR
 
-L’interfaccia rilevata nei sorgenti è il protocollo UDP binario derivato da
-WSJT-X, non un’API HTTP/REST. I riferimenti sono:
+- IPv4 unicast listener with explicit Start/Stop controls and an optional desktop IPv4 filter.
+- Heartbeat discovery, schema 2/3 negotiation and periodic heartbeat replies every 15 seconds.
+- One desktop at a time, pinned by source IP, source port and instance ID.
+- Display of the desktop's dial frequency, mode, DX callsign/report and TX/decoding flags.
+- Peer release after 45 seconds without a valid heartbeat/status, or on desktop Close.
+- Recovery from malformed datagrams, unknown message types and bind failures.
+- Foreground-only operation: stop when the app goes into the background; retain the listener across rotation.
 
-- [NetworkMessage.hpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.hpp): formati, tipi e negoziazione.
-- [NetworkMessage.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.cpp): serializzazione Qt.
-- [MessageClient.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/MessageClient.cpp): socket, porte, heartbeat e comandi in ingresso.
-- [Configuration.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Configuration.cpp): default `UDPServer=127.0.0.1`, `UDPServerPort=2237`.
+Decodes, ADIF/log parsing, Replay, radio commands, audio streaming, multicast
+and automatic network scanning are not implemented in this PR. LAN options
+are retained across rotation, but are not persisted after process termination.
 
-Il desktop apre un socket con **porta sorgente effimera** e invia al server
-configurato. Il telefono dovrà quindi ascoltare, per esempio su UDP 2237;
-non deve presumere che il PC ascolti su 2237. Le risposte tornano all’IP e
-alla porta sorgente del datagramma desktop, conservando il suo ID istanza.
+## Desktop setup and phone test
 
-## Configurazione prevista per una futura prova LAN
+1. Connect the PC and phone to the same LAN. Find the phone's Wi-Fi IPv4 address
+   in Android's network settings. Client isolation must allow traffic between them.
+2. In the app's **LAN** tab, select the listening port, normally **2237**.
+   Optionally enter the PC's IPv4 address to restrict the accepted sender.
+3. Tap **Start listening**. The app should show that it is waiting for a desktop.
+4. In WSJT-CB's UDP settings, set the UDP server to the **phone's** IPv4 address
+   and the same listening port. The default desktop server `127.0.0.1` addresses
+   the PC itself and cannot reach the phone.
+5. Wait for the next heartbeat (normally within 15 seconds). Check the desktop
+   endpoint, instance ID, version and negotiated schema in the app.
+6. Change a harmless desktop setting, such as the DX call. Check that a new
+   Status packet updates the app. Receiving status does not require sending
+   radio or TX commands from the phone.
+7. Tap **Stop** and start again. Close WSJT-CB to test Close handling. Interrupt
+   its network traffic to test the 45-second inactivity timeout.
+8. Send the app into the background and return: the listener must remain
+   stopped until explicitly started again. Rotation should retain it.
 
-1. Collegare telefono e PC alla stessa LAN con comunicazione fra client
-   consentita. Individuare l’IP Wi-Fi del telefono.
-2. In WSJT-CB, nelle impostazioni UDP, sostituire il server `127.0.0.1` con
-   l’IP del telefono e scegliere la stessa porta di ascolto.
-3. Abilitare l’accettazione delle richieste UDP se si vogliono usare comandi.
-4. Avviare il futuro listener Android, ricevere heartbeat e memorizzare
-   endpoint e ID. Rispondere con heartbeat per negoziare lo schema.
-5. Verificare prima `Status`, `Decode`, `LoggedADIF` e `Replay`; aggiungere i
-   comandi soltanto dopo la verifica bidirezionale.
+For a simulated desktop, run from the PC:
 
-Questa sequenza è documentazione per lo sviluppo: il listener nella demo
-non è implementato. Lo stesso Wi-Fi, da solo, non configura WSJT-CB.
+```bash
+python3 scripts/wsjtcb_lan_probe.py --host PHONE_WIFI_IPV4
+```
 
-## Formato sul filo
+The probe sends only simulated heartbeat/status and a desktop Close. It never
+controls a radio. While it runs, expect FT8 at 27.265000 MHz and DX `26AT101`.
+The app returns to waiting when the probe sends Close. This checks the app's
+LAN path, not interoperability with a real WSJT-CB installation.
 
-Big endian; header `uint32 magic=0xadbccbda`, `uint32 schema`, `uint32 type`,
-ID istanza UTF-8 codificato come `QByteArray` (lunghezza `uint32` seguita dai
-byte). Lunghezza zero e `0xffffffff` distinguono stringa vuota e nulla.
+## Socket direction and ownership
 
-Schema iniziale 2 (`Qt_5_2`), massimo 3 (`Qt_5_4`); schema 1 escluso.
-Heartbeat nominale ogni 15 secondi. Il suo payload moderno contiene massimo
-schema, versione e revisione. Un peer più vecchio può omettere il massimo:
-il ricevitore completo dovrà assumere 2. Il codec attuale genera soltanto
-il formato moderno e legge soltanto l’intestazione.
+The desktop's `MessageClient` binds an **ephemeral source port** and sends to
+its configured UDP server. The phone is that server. Replies go to the
+received desktop endpoint, not to a presumed desktop port 2237, and carry the
+received desktop instance ID. A second endpoint or instance is ignored until
+the selected peer closes or expires.
 
-I campi float Qt sono serializzati come double IEEE 754 a 64 bit. `QTime`
-è espresso in millisecondi dalla mezzanotte; gestire `QDateTime` secondo lo
-schema per i log. Ignorare tipi sconosciuti e campi aggiunti in coda.
+The listener opens a socket only on an explicit Start request. I/O runs off
+the main thread. Socket closure unblocks receive; session identity guards
+prevent an old worker from overwriting a restarted listener's state. Start
+and Stop requests are serialized in the ViewModel, including a background
+transition while binding. Clearing the ViewModel closes its owned socket.
+Stopping never sends a Close command to the desktop: in that direction it
+could request termination of WSJT-CB.
 
-| Tipo | ID | Direzione rispetto al desktop |
-| --- | --- | --- |
-| Heartbeat | 0 | entrambe |
-| Status / Decode | 1 / 2 | desktop → telefono |
-| Clear | 3 | entrambe |
-| Reply | 4 | telefono → desktop |
-| QSOLogged | 5 | desktop → telefono |
-| Close | 6 | entrambe |
-| Replay / HaltTx / FreeText | 7 / 8 / 9 | telefono → desktop |
-| WSPRDecode | 10 | desktop → telefono |
-| Location | 11 | telefono → desktop |
-| LoggedADIF | 12 | desktop → telefono |
-| HighlightCallsign / SwitchConfiguration | 13 / 14 | telefono → desktop |
-| Configure / AnnotationInfo | 15 / 16 | telefono → desktop |
+## Wire format
 
-Non è un protocollo di streaming audio o un sostituto generale di CAT.
-`Configure` non è un comando arbitrario di sintonia della frequenza dial.
-Il controllo diretto radio richiede un backend separato. Per una futura
-versione operativa verificare anche i permessi di accesso alla rete locale
-richiesti dal target Android; le dichiarazioni attuali non costituiscono
-un’implementazione del trasporto.
+Big endian: `uint32 magic=0xadbccbda`, `uint32 schema`, `uint32 type`, followed
+by the instance ID as a Qt `QByteArray`: a `uint32` byte length then UTF-8
+bytes. Length zero and `0xffffffff` represent empty and null strings.
 
-## Cosa è già presente
+The initial schema is 2 (`Qt_5_2`), with maximum 3 (`Qt_5_4`). Schema 1 is
+unsupported. A heartbeat advertises its maximum schema, version and revision;
+legacy header-only heartbeats imply maximum schema 2. The listener replies
+with the highest supported common schema, capped at 3. The pinned desktop
+uses the reply header to upgrade from its initial schema 2.
 
-`WsjtCbProtocol` implementa lettura header, riconoscimento dei tipi e
-generazione heartbeat offline. I test usano fixture binarie indipendenti,
-incluse stringhe Qt nulle/vuote e pacchetti malformati. Non sono ancora
-presenti socket, parsing payload, scoperta peer, negoziazione completa,
-timer o comandi operativi.
+Status parsing reads the stable prefix: unsigned 64-bit dial frequency,
+mode, DX call, report, TX mode, TX enabled, transmitting and decoding flags.
+Later fields are ignored, permitting appended extensions. Malformed required
+fields are rejected without stopping the socket loop. Other message types
+do not establish or refresh a peer. Status requires a preceding heartbeat.
 
-## FT8 via radio
+Future Decode parsing must treat Qt floats as serialized 64-bit IEEE doubles.
+`QTime` is milliseconds since midnight. Log parsing must account for the
+schema-specific `QDateTime` representation. These payloads are outside this PR.
 
-I parametri e la grammatica CB sono verificati in
-[ft8_params.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/ft8_params.f90),
-[cb_callsigns.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/cb_callsigns.f90)
-e nel [README upstream](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/README.md).
-La validazione del nominativo non garantisce che un messaggio sia codificabile.
-Confrontare in futuro packing, hash, type 4 e sequenze CB con vettori di test
-desktop, poi confrontare audio simulato in entrambe le direzioni.
+## Android network access
+
+The current target SDK is 36, using the existing `INTERNET` manifest permission.
+Before raising the target to 37+, implement the local-network runtime permission
+requirements described in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
+No foreground service or background-listening capability is claimed here.
+
+## Verification and upstream sources
+
+JVM tests use independent binary fixtures and real loopback UDP sockets for
+source-port replies, legacy schema fallback, status, malformed packets, peer
+pinning, source filtering, Close, timeout, periodic heartbeat and port reuse.
+ViewModel tests cover input validation, failed binds, foreground stop ordering
+and disposal. Android device/real-desktop interoperability remains a manual check.
+
+- [NetworkMessage.hpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.hpp): wire contract and message types.
+- [NetworkMessage.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.cpp): Qt serialization.
+- [MessageClient.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/MessageClient.cpp): ephemeral socket, schema upgrade and Status sender.
+- [Configuration.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Configuration.cpp): desktop server defaults.
+
+FT8 engine compatibility still requires separate tests of CB callsigns, hashes,
+type 4 packing and CB QSO sequences. The local FT8 engine is not integrated.

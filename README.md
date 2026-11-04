@@ -3,14 +3,20 @@
 Android development skeleton for FT8 on CB / 11 metres, with planned
 compatibility with [WSJT-CB](https://github.com/vash909/WSJT-CB).
 
-**Status: development environment and demo UI.** A debug APK can be built.
+**Status: early development.** A debug APK can be built.
 Station callsign and locator can be saved and restored after reopening the app.
-Decoding, transmission, USB devices and desktop connections are not implemented;
-their operational buttons are disabled.
+The LAN tab can listen for WSJT-CB heartbeat/status, show the selected desktop
+and display frequency, mode and activity flags. Local FT8, USB radio control,
+audio, decodes and logging are not implemented yet.
 
-In **Stazione**, enter a complete CB callsign and a 4- or 6-character Maidenhead
-locator, then tap **Salva impostazioni**. Wait for confirmation before closing.
-Other settings remain demo controls. [Phone verification steps](docs/DEVELOPMENT.md#prova-delle-impostazioni-sul-telefono).
+In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
+locator, then tap **Save settings**. Wait for confirmation before closing.
+[Phone verification steps](docs/DEVELOPMENT.md#phone-checks).
+
+For LAN monitoring, tap **Start listening** and configure WSJT-CB's UDP server
+to this phone's Wi-Fi IPv4 address and selected port (default 2237). Keep the
+app in the foreground. See [LAN setup and testing](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test),
+including the PC-side `scripts/wsjtcb_lan_probe.py` simulator.
 
 ## Planned connection paths
 
@@ -54,15 +60,15 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 
 | Path | Responsibility |
 | --- | --- |
-| `app/` | Android app, Compose, station ViewModel/DataStore and placeholder adapters |
+| `app/` | English Compose UI, station/LAN ViewModels, DataStore and hardware placeholders |
 | `core/` | Station models, CB callsigns, FT8 profile and radio/audio/DSP contracts |
-| `protocol/wsjtcb/` | UDP constants, offline header/heartbeat codec and LAN contract |
+| `protocol/wsjtcb/` | Wire codec, unicast UDP listener, heartbeat/status and peer lifetime |
 | `native/` | Optional CMake/C++ starting point for future native engines |
 | `scripts/` | Local environment setup and checks |
 | `.github/workflows/` | Build, JVM tests, lint and debug APK on GitHub Actions |
 
 Tests include DataStore file persistence across reopening, settings validation,
-loading/saving failures and duplicate-save prevention. Develop on focused
+loading/saving failures, duplicate-save prevention and real loopback UDP sessions. Develop on focused
 branches with short PR descriptions. Merge only after the owner's explicit OK,
 once the PR build has been checked.
 
