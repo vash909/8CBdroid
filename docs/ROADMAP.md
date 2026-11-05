@@ -27,12 +27,12 @@ later estimates; do not promise a complete Android port in one PR.
   payload/hash fixtures. The owner confirmed the build and approved merge.
 - [PR #18](https://github.com/vash909/8CBdroid/pull/18) is merged: R03c parser,
   message generation and AutoSeq reference traces, after owner approval.
-- R04 adds an experimental offline channel backend and a separate phone probe;
-  see [the engine evidence](FT8_ENGINE.md). Four independent WSJT-CB WAVs
-  passed on a Samsung A51 / Android 13 / ARM64; PR review and owner merge approval
-  remain pending.
+- [PR #19](https://github.com/vash909/8CBdroid/pull/19) is merged: R04 adds an
+  experimental offline channel backend and a separate phone probe. Four independent
+  WSJT-CB WAVs passed on a Samsung A51 / Android 13 / ARM64; CI passed and the owner
+  approved the build and merge on 2026-11-05. See [the engine evidence](FT8_ENGINE.md).
 - Local operating sessions, microphone capture, playback, CAT/PTT and QSO logging are pending.
-  Existing validators and FT8 constants are not an encoder or decoder.
+  The offline engine accepts raw payloads; CB text packing and hash resolution are pending.
 
 ## Reference strategy: reuse the CB work
 
@@ -104,9 +104,10 @@ scenarios, including hash collisions and lossy encodings. See
 [the packing guide](../reference/wsjtcb/PACKING.md). R03c adds 129 native scenarios,
 72 generated-message payloads and a two-station text exchange. See
 [the QSO trace guide](../reference/wsjtcb/QSO.md) for adapter boundaries and known
-desktop edge cases. R04 now evaluates a source-built channel engine against
-this message-level reference suite; CB text policy remains outside its DSP layer. RF/audio and the full TX lifecycle
-remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
+desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
+the offline host and ARM64 phone checks. R05 is the next available software milestone,
+implementing CB text packing while hash resolution follows in R06. RF/audio and the
+full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.
 
@@ -115,7 +116,7 @@ configuration is known.
 | R01 — Connect the first USB CAT radio | Select one radio/cable/phone, choose Hamlib/JNI or an Android CAT driver, and implement permission, connect, identity/frequency read and detach behind `RadioController`. Document VID/PID, protocol, baud rate and supported operations. | Transport fixtures plus physical connect/read/unplug tests. No transmission. A spike must resolve dependency/NDK feasibility before claiming support. |
 | R02 — Save operating profiles | Persist chosen connection, radio settings, dial frequency, audio-route preference and LAN endpoint settings, with validation and migration. Restore configuration with sessions stopped and TX disarmed. | Persistence/reopening/failure tests; reconnect remains explicit. Depends on R01's configuration shape. |
 | R03 — Capture WSJT-CB compatibility fixtures | Add the WSJT-CB versus WSJT-X inventory above and a reproducible desktop fixture generator/runner. Extend the current grammar tests from desktop cases. | Pinned sources and independently generated expected results. Include packing, hash, parser and AutoSeq cases; the desktop AutoSeq harness covers decisions, not the entire TX state machine. |
-| R04 — Run a candidate FT8 engine on Android | Select and pin a reusable engine after testing CB extensibility, Android toolchain, licenses, memory and ARM performance. Replace string-only DSP results with typed messages, timing and decode metadata. | One real offline encode/decode smoke on an ARM64 phone and reproducible CI build. Record NDK/ABI and transitive dependencies. Depends on R03; engine choice remains open until evidence exists. |
+| R04 — Run a candidate FT8 engine on Android | Select and pin a reusable engine after testing CB extensibility, Android toolchain, licenses, memory and ARM performance. Replace string-only DSP results with typed messages, timing and decode metadata. | Completed in PR #19: pinned ft8_lib channel backend, typed payload/PCM contracts, 116 desktop channel vectors, four independent WAV decodes on ARM64 and green CI. NDK/ABI, licenses and measurements are recorded in the engine guide. CB text packing remains R05. |
 
 A lightweight C/C++ engine and a port of relevant WSJT-CB routines are candidates,
 not interchangeable guarantees. Reject a candidate that cannot reproduce the CB

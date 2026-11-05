@@ -48,6 +48,12 @@ on other systems run `bash scripts/check.sh` directly.
 The APK is `app/build/outputs/apk/debug/app-debug.apk`. Authorize USB debugging
 on the connected phone before installation.
 
+CI artifacts from different runs can have different debug signing certificates.
+An ADB update requires the same signing identity as the installed app. If they
+differ, preserve the installed app and its data and report deployment as pending;
+never uninstall or clear data without approval. Seamless updates need a stable
+debug signing identity configured outside Git, separately from release signing.
+
 Tests cover CB callsigns, Maidenhead locators, wire parsing, real loopback UDP,
 LAN ViewModel lifecycle ordering, Decode/Replay fixtures, history limits and
 DataStore reopening. They do not establish
