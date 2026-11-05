@@ -86,17 +86,20 @@ The empty-device path can be checked without an OTG adapter; real USB tests need
 ## Desktop compatibility fixtures
 
 The regular JVM suite reads committed desktop-generated fixtures and needs no
-Fortran compiler. To reproduce them on the host, install GNU Fortran or set `FC`,
-then run:
+native compiler. To reproduce all host references, install GNU Fortran, a C++17
+compiler, pkg-config and Qt 5 Core/Network development packages. Then run:
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check
+python3 scripts/wsjtcb_packing.py --check
+python3 scripts/wsjtcb_qso.py --check
 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 See [reference setup and source audit](../reference/wsjtcb/README.md) and the
-[CB difference inventory](WSJT_CB_COMPATIBILITY.md). A separate CI job compiles
-the pinned test-only module and rejects stale fixtures. This does not enable a
+[CB difference inventory](WSJT_CB_COMPATIBILITY.md). The [QSO trace guide](../reference/wsjtcb/QSO.md)
+also describes the extracted local toolchain on this PC. A separate CI job compiles
+the pinned test-only routines and rejects stale fixtures at O0/O2. This does not enable a
 local FT8 engine in the APK or require the Android NDK.
 
 ## Pull requests and CI

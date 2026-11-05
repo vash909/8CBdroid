@@ -90,9 +90,10 @@ messages and CB sequences need interoperability tests against the desktop engine
 
 The inspected reference is WSJT-CB `94f776d54946fe43db5e0bb9c966b1595c7b7d97`.
 The desktop engine is not downloaded or compiled as an app dependency.
-Host-only reference tests now cover CB predicates, 77-bit message payloads and
-hash learning/collisions using pinned, unmodified desktop routines. See the
-[packing/hash fixtures](reference/wsjtcb/PACKING.md) for reproduction and limits.
+Host-only reference tests cover CB predicates, 77-bit payloads, hash learning,
+message parsing/generation and AutoSeq decisions using pinned desktop routines.
+See the [packing/hash fixtures](reference/wsjtcb/PACKING.md) and
+[QSO traces](reference/wsjtcb/QSO.md) for reproduction and limits.
 
 - [Architecture and Hamlib/USB/audio integration](docs/ARCHITECTURE.md)
 - [LAN contract verified against upstream sources](docs/WSJT_CB_INTEGRATION.md)

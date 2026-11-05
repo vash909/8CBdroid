@@ -22,12 +22,14 @@ jobs:
       - name: Install reference compiler
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y gfortran
+          sudo apt-get install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev
       - name: Check pinned desktop compatibility fixtures
         run: |
           python3 scripts/wsjtcb_reference.py --check
           python3 scripts/wsjtcb_packing.py --check
           python3 scripts/wsjtcb_packing.py --check --optimization O2
+          python3 scripts/wsjtcb_qso.py --check
+          python3 scripts/wsjtcb_qso.py --check --optimization O2
           python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
   build:
     runs-on: ubuntu-latest

@@ -83,7 +83,7 @@ results for this corpus, which the native integration tests also verify.
   loses the locator. A successful unpack is not proof that the original text
   survived; compare the actual result before allowing a future transmission.
 - Destination-only `26AT101 R-10` and `26AT101 RR73` survive their free-text
-  encodings. Which messages the real desktop generates for a QSO remains R03c.
+  encodings. R03c's [QSO traces](QSO.md) verify the messages the desktop generates.
 - The packer can emit a payload whose type 4 unpack fails (for example
   `CQ 53HDFKJEASD`). Grammar, packing, unpacking and QSO admission are separate.
 

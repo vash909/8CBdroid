@@ -1,2 +1,2 @@
 # Preserve the exact upstream bytes used by the host reference checksums.
-reference/wsjtcb/source/* -text
+reference/wsjtcb/source/** -text

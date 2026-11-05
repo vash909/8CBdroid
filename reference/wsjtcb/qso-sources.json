@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "repository": "vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "files": [
+    {
+      "path": "Radio.cpp",
+      "local": "source/qso/Radio.cpp",
+      "sha256": "a71ec111fc186c19b580d0692fd2e41d5ea34f4ac291f2aa376880a52279996a"
+    },
+    {
+      "path": "Radio.hpp",
+      "local": "source/qso/Radio.hpp",
+      "sha256": "ccddc50d46585b971b3ed18667a79d7fa3fe5c8becc507433a90ff2061524386"
+    },
+    {
+      "path": "Decoder/decodedtext.cpp",
+      "local": "source/qso/Decoder/decodedtext.cpp",
+      "sha256": "42af9052f643cf35045afdd3e1e7a2ef7dc3de022596f2172189deb9e8c3b435"
+    },
+    {
+      "path": "Decoder/decodedtext.h",
+      "local": "source/qso/Decoder/decodedtext.h",
+      "sha256": "f415233d4c47f42e27a9842f203fa25686a095bf944fca922768ddbf05e8d1f2"
+    },
+    {
+      "path": "qt_helpers.hpp",
+      "local": "source/qso/qt_helpers.hpp",
+      "sha256": "d975096519054433e99106834f677a3c1f8bfd5893ff49f41324a03d188667df"
+    },
+    {
+      "path": "widgets/mainwindow.cpp",
+      "local": "source/qso/widgets/mainwindow.cpp",
+      "sha256": "ef007e875036c72913c8f13e1d8f02ca6ec2ab5327e3f263514eff9a8e3d2207"
+    },
+    {
+      "path": "lib/stdmsg.f90",
+      "local": "source/qso/lib/stdmsg.f90",
+      "sha256": "c421fde242aea701daf1cf42e7c203b8b6114c2dcd0e62630eb63fc127b51804"
+    },
+    {
+      "path": "lib/save_dxbase.f90",
+      "local": "source/qso/lib/save_dxbase.f90",
+      "sha256": "275c5cb74f0d8cc8ff585b542ce26b0e313ea13e1043cb81f2bee041c166c82a"
+    }
+  ],
+  "methods": [
+    {
+      "anchor": "bool MainWindow::has_complete_cb_peer (",
+      "sha256": "701a4ba203e02a5dcf1ffcda7197b222c8ceb494fa8b6ada0e351d933d7d3eae"
+    },
+    {
+      "anchor": "void MainWindow::auto_sequence (",
+      "sha256": "8a29f3f0b6151a882e675f42cacacc96f8f4776bcd0b71031387e67b44d70cd7"
+    },
+    {
+      "anchor": "void MainWindow::processMessage (",
+      "sha256": "1f06ba9b7676223b39b742452da10c195244943af40852909cdad170c470cfa1"
+    },
+    {
+      "anchor": "void MainWindow::setTxMsg(",
+      "sha256": "a5598b8092462ed8f59d98fb382ad3d1e7c3b1dafdec23258192c8774944d6bd"
+    },
+    {
+      "anchor": "void MainWindow::genCQMsg ()",
+      "sha256": "f18de94f2d6d438afa2ae6d51cfd22c0c76b2b6649874d3e6bf56bd3d3c9b6c9"
+    },
+    {
+      "anchor": "bool MainWindow::stdCall(",
+      "sha256": "b3ed948f741559edfc180199f0e8fda0d2d6c11696f32930b5cefde18d643bc0"
+    },
+    {
+      "anchor": "bool MainWindow::is77BitMode ()",
+      "sha256": "3b9afc6113e7f85a65b4964cce5b5381085716df1e648a65ac82402edc771de9"
+    },
+    {
+      "anchor": "void MainWindow::genStdMsgs(",
+      "sha256": "a2af827fb2f183975c1e020cc24244b38573cca77e1a7fd53596e4ed43bf7507"
+    },
+    {
+      "anchor": "bool MainWindow::shortList(",
+      "sha256": "f72c37a3aee4449280f32acebd1e5e8a6df44139c99dfecf9c29b7942dc2372b"
+    },
+    {
+      "anchor": "void MainWindow::on_dxCallEntry_textChanged (",
+      "sha256": "55c1906a79e05487c2c07bdb3d4a95be773a6ca8cf1271b926f8f7916871b681"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb1_toggled (",
+      "sha256": "e6f7ffb6f585777fff5fddc11020cbed8a2c7538bd4ea0cac3b34fbcdf9678cb"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb2_toggled (",
+      "sha256": "405fb5224a6319403dfbcebcc42ff290dd22713c7ce496dee569de0a6172dec0"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb3_toggled(",
+      "sha256": "ce94b8b724b2e29cea84512eb4c4cc05c3ff7d080ec9b2d0f787afb216171032"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb4_toggled (",
+      "sha256": "4a174ae0f03edfd6ab7957a254a53323229ba4b9a354dade51c290c77c3bed3a"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb5_toggled (",
+      "sha256": "d560117dba82105a32867c5471d4d3c36d750bf3aafbfb487977195408900430"
+    },
+    {
+      "anchor": "void MainWindow::on_txrb6_toggled(",
+      "sha256": "5f8fbfb9b3d68cacbdea9a6b03dfc57961fa6457c8bb8e5da4fff6767c9595ed"
+    }
+  ],
+  "grid_regexp_sha256": "7f2e90c4a261851897c45ee370fbe4b2d19aa7e7d26b6ce20737613be6bb0d56"
+}

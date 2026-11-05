@@ -3,12 +3,14 @@
 ## Scope and revisions
 
 R03a establishes a real desktop predicate reference and documents the relevant
-CB differences. R03b adds production payload and hash-state fixtures. These add
+CB differences. R03b adds production payload and hash-state fixtures; R03c adds
+the real parser, generated messages and receive-side AutoSeq traces. These add
 no local decoder, encoder, hash cache or AutoSeq behavior to the app.
 The inventory is based on inspected code, not only release notes. Every listed
 source file is pinned with a checksum in
 [`sources.json`](../reference/wsjtcb/sources.json) and the host packing sources in
-[`packing-sources.json`](../reference/wsjtcb/packing-sources.json).
+[`packing-sources.json`](../reference/wsjtcb/packing-sources.json) /
+[`qso-sources.json`](../reference/wsjtcb/qso-sources.json).
 
 | Label | Repository / revision | Role |
 | --- | --- | --- |
@@ -74,10 +76,10 @@ status column distinguishes today's test coverage from future runtime work.
 | Type 4 unpack checks: [packjt77var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/packjt77var.f90#L688) | CB permits valid numeric-prefix calls through relevant amateur plausibility checks and handles the trailing-hash orientation with the CB predicate. | R03b: real pack77/pack77var payloads and unpack77var RX results in both orientations, including successful packing followed by failed unpacking. |
 | Hash learning: [fillhashvar.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/fillhashvar.f90) | Received complete calls are queued per worker before merging into RX hash tables. Local identity has orientation-specific lookup behavior; collisions can replace an identity. | R03b: 10/12/22-bit vectors, cold/pending/committed state, CQ learning and real collisions. A resolved hash is not proof of a unique QSO peer. No Android hash cache exists yet. |
 | False-decode filtering: [chkfalse8var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/chkfalse8var.f90#L1) | After line-ending normalization, the inspected file differs from both comparison versions by the CB module import and an early return for qualifying type 4 messages. This return does not clear a pre-existing failure flag. | Preserve integrity checks before this stage. The predicate fixture cannot establish CRC correctness; upstream regression tests exercise that guard, with Android engine checks still pending. |
-| AutoSeq admission: [has_complete_cb_peer](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7479) | The CB fork adds peer extraction/fallback and requires a complete CB peer when answering CQ. That helper is absent from the inspected upstream main windows. | An unresolved or partial peer cannot start a QSO. Admission traces from the real Qt harness remain R03c; no app AutoSeq exists. |
-| AutoSeq progression: [auto_sequence](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7511) | CB adds addressed non-standard messages and report/final recognition using local identity plus selected-partner context. Existing state, frequency tolerances and stop decisions still matter. | Compare accepted, ignored and stop decisions for specific states; preserve context for one-call reports. Predicate acceptance alone is insufficient. |
-| Parsed message recovery: [processMessage](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L9004) | CB adds free-text/addressed-message fallbacks, selected-peer recovery and guarded report parsing. | Capture malformed, ambiguous, wrong-peer and one-call cases in R03c before porting parser/QSO behavior. |
-| TX message generation: [genStdMsgs](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L9778) | Two non-standard CB calls use a dedicated exchange branch; reports and finals can carry only the destination call. | Compare actual generated messages and encodings, including report sign/zero padding and length limits. A valid callsign does not guarantee that an arbitrary concatenated message fits FT8. |
+| AutoSeq admission: [has_complete_cb_peer](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7479) | The CB fork adds peer extraction/fallback and requires a complete CB peer when answering CQ. That helper is absent from the inspected upstream main windows. | R03c executes the original methods: complete CB CQ answers progress; unknown/partial/amateur peers do not start a CB QSO. No app AutoSeq exists. |
+| AutoSeq progression: [auto_sequence](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7511) | CB adds addressed non-standard messages and report/final recognition using local identity plus selected-partner context. Existing state, frequency tolerances and stop decisions still matter. | R03c records accepted/ignored/stop outcomes, all six progress states, duplicate/out-of-order events, completed context and frequency boundaries. Known unrelated-final behavior requires explicit Android policy. |
+| Parsed message recovery: [processMessage](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L9004) | CB adds free-text/addressed-message fallbacks, selected-peer recovery and report parsing. | R03c runs the actual processMessage and DecodedText implementations. It records selected-peer recovery and differences between malformed-report manual selection and AutoSeq admission. |
+| TX message generation: [genStdMsgs](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L9778) | Two non-standard CB calls use a dedicated exchange branch; reports and finals can carry only the destination call. | R03c records the original six generated messages and 72 unique production payloads, including report sign/zero padding, numeric/slash calls and mixed-call controls. |
 | Decoder concurrency | The fork records upstream multithread-decoder fixes separately from CB acceptance changes. | Use the per-fix commits in [the upstream test notes](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/tests/ft8/README.md); benchmark whichever Android engine is chosen. These are not new CB callsign rules. |
 
 ## Concrete cases to retain
@@ -97,7 +99,7 @@ rejection there does not mean the same text cannot use another FT8 message type.
 For the two-non-standard-CB-call branch, the inspected desktop generates an
 initial hashed/full-call exchange, then destination-only signed reports,
 roger-reports and finals. R03b records these messages' payloads and actual decoded
-text; R03c must verify the generated exchange and QSO decisions. Do not apply a
+text; R03c verifies generated exchanges and receive-side QSO decisions. Do not apply a
 generic template to every message or mode. The current app only
 validates station identity and displays remote decodes unchanged.
 
@@ -113,22 +115,28 @@ Run the commands in [the reference README](../reference/wsjtcb/README.md#reprodu
 R03a regenerates 315 results by compiling the original Fortran module and checks
 the committed data in CI. The normal JVM suite compares 240 call results with the
 production Kotlin validator. R03b adds 67 payload pairs, 15 hash vectors and 79 RX
-scenarios. Twenty-one Python tests cover native behavior, source/result integrity,
+scenarios. R03c adds 129 parser/generation/AutoSeq scenarios and 72 generated-message
+payloads. Thirty-eight Python tests cover native behavior, source/result integrity,
 compiler diagnostics, archive checksum rejection, duplicate paths and byte versus
-text comparison. CI regenerates packing/hash results at both O0 and O2.
+text comparison. CI regenerates packing/hash and QSO results at both O0 and O2.
 
-The source audit checks all 22 distinct files from both manifests at immutable
-revisions. Separate host jobs compile predicates and packing dependencies; they
-do not compile Qt or the complete decoder. The upstream
+The source audit checks all 28 distinct files from three manifests at immutable
+revisions. The host job compiles predicates, packing dependencies and selected
+desktop QSO methods with Qt Core/Network, without the GUI or full decoder. The upstream
 [test_cb_autoseq harness](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/tests/ft8/test_cb_autoseq.cpp)
-uses real admission/AutoSeq methods with substitute controls and `processMessage`;
-even running it would not establish full TX-state-machine or radio behavior.
+uses real admission/AutoSeq methods with substitute controls and `processMessage`.
+R03c goes further by executing the actual processMessage/generation methods and
+relevant control handlers, with documented substitutes for presentation and
+external effects. See [the QSO trace guide](../reference/wsjtcb/QSO.md).
 
-R03 remains open work: R03c must capture parser/generation/AutoSeq decisions and
-exchange traces, including cases beyond that partial desktop harness. Audio and
-actual device interoperability follow the engine milestones. Keep R04's CB
-compatibility gate pending until the required reference fixtures exist.
+R03c completes the documented message-level reference corpus, including a
+two-station generated-text exchange. After review/merge, R04 can evaluate an
+Android engine against it. Audio, corrupt-frame rejection, actual device
+interoperability and the full TX lifecycle remain later acceptance gates.
+Recorded desktop outcomes include unrelated finals advancing a QSO, malformed
+manual reports and out-of-order regressions; R21/R22 must qualify those cases and
+document deliberate Android differences before enabling automation.
 
-No application behavior changes in R03a/R03b. A phone smoke test may confirm that
+No application behavior changes in R03a/R03b/R03c. A phone smoke test may confirm that
 saved settings, LAN and USB discovery remain available, but cannot validate these
 reference algorithms or claim local FT8 support.
