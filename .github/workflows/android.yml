@@ -26,7 +26,7 @@ jobs:
       - name: Check pinned desktop predicate fixtures
         run: |
           python3 scripts/wsjtcb_reference.py --check
-          python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_reference.py'
+          python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25

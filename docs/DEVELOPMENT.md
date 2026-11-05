@@ -91,7 +91,7 @@ then run:
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check
-python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_reference.py'
+python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 See [reference setup and source audit](../reference/wsjtcb/README.md) and the

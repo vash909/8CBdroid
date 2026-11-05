@@ -93,6 +93,11 @@
     "repository": "WSJTX/wsjtx",
     "version": "3.0.0-rc1",
     "revision": null,
-    "provenance": "Identified by the WSJT-CB project owner on 2026-11-05; exact upstream commit mapping is pending."
+    "provenance": "Verified against the official SourceForge RC1 archive and the initial WSJT-CB import; the upstream Git commit is not recorded in that import.",
+    "archive_sha256": "faeaf3c1146ae4e5a68502823d4b080d41d221d8ab19e1d1c374e2f7749bfe96",
+    "source_member_sha256": "0391b58d66940511150fe5ce9f87695985a0d399733a8377b3b22634a6b77b83",
+    "cb_initial_revision": "51b01eec2b0fde38c36c27fb5d3a341c4771082a",
+    "cb_v1_revision": "615d079949f5d4c50df9db05fbdc12ccb5c9df99",
+    "evidence": "reference/wsjtcb/initial-snapshot.json"
   }
 }

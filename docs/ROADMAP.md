@@ -42,10 +42,11 @@ reference revisions, expected Android behavior and executable fixtures:
 | QSO progression | CQ, reports, acknowledgements and completion | Match CB message generation, parsing fallbacks, selected-peer context and AutoSeq decisions. |
 | Presentation and logs | UTC, frequency, locator and reports | Use CB numeric-prefix country lookup and preserve 27 MHz frequency/callsign data. |
 
-The initial WSJT-CB snapshot is WSJT-X 3.0.0-rc1, as confirmed by the project
-owner. Resolve its exact upstream commit and the relevant revision for each later
-subsystem update. The pinned fork includes later decoder backports, so a diff
-against current WSJT-X master alone cannot identify CB changes. Separate CB adaptations, upstream fixes
+The initial WSJT-CB snapshot is WSJT-X 3.0.0-rc1, verified against the official
+release archive and the first CB import. Use its recorded archive/source SHA-256
+pins where the import lacks an upstream Git commit; see the compatibility
+inventory. Keep separate revisions for later subsystem updates and decoder
+backports. A diff against current WSJT-X master alone cannot identify CB changes. Separate CB adaptations, upstream fixes
 and desktop-only branding/build changes. Reuse unchanged algorithms where
 practical; port only the Android-facing integration and the necessary CB changes.
 

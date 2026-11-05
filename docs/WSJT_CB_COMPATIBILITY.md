@@ -14,17 +14,43 @@ source file is pinned with a checksum in
 | `x3` | WSJT-X v3.0.0, `ab976b1b4b72a96aaa3259591f68ad772af7d7f9` | Fixed comparison release for Radio and desktop QSO handling. |
 | `x32` | WSJT-X v3.2.0-rc1, `567ad29ce6abf3d4a44f181cdbc7ceba0d73e5f4` | Fixed comparison release for the later decoder backport. |
 
-The initial WSJT-CB source snapshot is **WSJT-X 3.0.0-rc1**, identified by the
-WSJT-CB project owner on 2026-11-05. The initial CMake version is consistent with
-that release. The exact upstream commit corresponding to the imported snapshot
-has not yet been mapped; this narrower task remains pending.
+The initial WSJT-CB source snapshot is **WSJT-X 3.0.0-rc1**. This is now verified
+against the official source release, in addition to the owner's identification.
+The release named **WSJT-CB V1.0** uses tag `WSJT-CB`, commit
+[`615d079949f5d4c50df9db05fbdc12ccb5c9df99`](https://github.com/vash909/WSJT-CB/commit/615d079949f5d4c50df9db05fbdc12ccb5c9df99).
+The first import is the parentless commit
+[`51b01eec2b0fde38c36c27fb5d3a341c4771082a`](https://github.com/vash909/WSJT-CB/commit/51b01eec2b0fde38c36c27fb5d3a341c4771082a).
 
-The comparison tags above were resolved to commits. `x3` is the later v3.0.0
-release, not the original rc1 snapshot; `x32` describes later decoder provenance.
-Neither comparison tag is substituted for the known initial version. A textual
-diff against one release is evidence for inspected differences, not proof that
-every changed line is CB-specific. Future routine-level comparisons must resolve
-the rc1 source revision and retain separate provenance for later backports.
+## Exact initial source pin
+
+The official [RC1 source release](https://sourceforge.net/projects/wsjt/files/wsjtx-3.0.0-rc1/wsjtx-3.0.0-rc1.tgz/download)
+contains the real source inside `wsjtx-3.0.0-rc1/src/wsjtx.tgz`:
+
+- Download archive SHA-256: `faeaf3c1146ae4e5a68502823d4b080d41d221d8ab19e1d1c374e2f7749bfe96`.
+- Nested source SHA-256: `0391b58d66940511150fe5ce9f87695985a0d399733a8377b3b22634a6b77b83`.
+
+The [comparison report](../reference/wsjtcb/initial-snapshot.json) records 1,874
+byte-identical files out of 1,891 common files at the initial CB import. The 17
+different common files consist of eight source/build files and nine binary
+resources; these differences are retained in the report, not automatically
+classified as CB changes. The V1.0 release has 1,863 byte-identical files out of
+1,892 common files. Added/removed paths are also reported. CRLF normalization does
+not change either match count. The comparison checks regular-file contents, not
+Git modes, symlink targets or an entire commit identity.
+
+The initial import and V1.0 retain RC1's CMake version and the `250915` source
+identifier. That identifier is a date, not a Git SHA. The imported tree has no
+upstream Git parent; its qmake revision headers are placeholders, and the release
+archive has no Git commit in its archive metadata. No unique upstream Git commit
+has been established by this investigation. Use the verified archive hashes as
+the exact RC1 source pin rather than substituting a nearby release-preparation
+commit. [Reproduce the archive/import comparison](../reference/wsjtcb/README.md#verify-the-original-rc1-snapshot).
+
+The GitHub comparison tags above were resolved to commits. `x3` is the later
+v3.0.0 release, not the original rc1 snapshot; `x32` describes later decoder
+provenance. They remain useful comparisons, but neither replaces the verified
+RC1 archive. A textual diff against one release is evidence for inspected
+differences, not proof that every changed line is CB-specific.
 
 Use [the reproducible source audit](../reference/wsjtcb/README.md#audit-the-comparison-sources)
 to verify hashes and obtain text diffs without CRLF noise. The manifest also pins
@@ -75,8 +101,8 @@ validates station identity and displays remote decodes unchanged.
 Run the commands in [the reference README](../reference/wsjtcb/README.md#reproduce).
 R03a regenerates 315 results by compiling the original Fortran module and checks
 the committed data in CI. The normal JVM suite compares 240 call results with the
-production Kotlin validator. Four integration tests reject modified source,
-stale expected results, changed input cases and a missing compiler.
+production Kotlin validator. Eight integration tests cover source/result integrity, compiler diagnostics,
+archive checksum rejection, duplicate paths, and byte versus text comparison.
 
 The source audit checks all 16 manifest files at immutable revisions. It does not
 compile Qt, packing modules or the complete decoder. The upstream

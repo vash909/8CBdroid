@@ -30,7 +30,7 @@ your development system's package manager or provide an existing compiler using
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check
-python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_reference.py'
+python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 source scripts/env.sh
 bash scripts/check.sh
 ```
@@ -52,9 +52,9 @@ compatibility inventory together and preserve the source notices.
 ## Audit the comparison sources
 
 `sources.json` pins the inspected WSJT-CB and WSJT-X files and their SHA-256
-values. Its `initial_snapshot` entry records WSJT-X 3.0.0-rc1 as the owner-identified
-base, with exact commit mapping pending. The audited v3.0.0 comparison is a later
-release and does not replace that initial snapshot. With explicit network access:
+values. Its `initial_snapshot` entry pins the official WSJT-X 3.0.0-rc1 source
+archive by SHA-256 and records the checked initial CB import/V1.0 commits. The
+audited v3.0.0 comparison is a later release and does not replace that archive. With explicit network access:
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check --audit-sources
@@ -67,6 +67,34 @@ directory. The audit does not fetch moving branches or silently skip mismatches.
 It compares the Radio, false-decode filter and main-window files; it does not
 perform a semantic analysis of the entire repositories. See
 [the difference inventory](../../docs/WSJT_CB_COMPATIBILITY.md).
+
+## Verify the original RC1 snapshot
+
+The official release is a superbuild archive containing `src/wsjtx.tgz`. The
+outer and inner SHA-256 values and early CB comparison results are recorded in
+[`initial-snapshot.json`](initial-snapshot.json). This provides an exact source
+artifact pin even though the CB import does not preserve an upstream Git parent.
+The released V1.0 tag is `WSJT-CB`, not `WSJT-CB-1.0.0`.
+
+With a local WSJT-CB Git repository containing the first import and V1.0 commits:
+
+```bash
+curl -fL --connect-timeout 15 --max-time 600 \
+  -o .tooling/wsjtx-3.0.0-rc1.tgz \
+  https://downloads.sourceforge.net/project/wsjt/wsjtx-3.0.0-rc1/wsjtx-3.0.0-rc1.tgz
+python3 scripts/wsjtcb_snapshot.py \
+  --archive .tooling/wsjtx-3.0.0-rc1.tgz \
+  --repository /path/to/WSJT-CB
+```
+
+The checker reads the local Git repository without changing its checkout. It
+verifies archive checksums before unpacking in memory, compares regular files and
+fails if the recorded results differ. UTF-8 text without NUL bytes is also
+compared with CRLF normalized to LF; binary changes remain visible. There is no
+filesystem extraction and no attempt to infer a Git commit from matching subsets.
+The archive download and full comparison are explicit local audit steps, not
+additional network dependencies of the regular build. CI tests the comparison
+semantics and corrupted-archive rejection with tiny synthetic archives.
 
 ## Limits
 
