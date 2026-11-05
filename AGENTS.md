@@ -40,6 +40,18 @@
 - Keep the initial development sequence focused: persistent station settings,
   LAN heartbeat/status, LAN decodes, then a first documented radio/cable backend.
 
+## Debug phone deployment
+
+- The agent owns deployment via ADB to the connected, authorized debug phone
+  (currently Samsung Galaxy A51 / SM-A515F). After successful PR CI, download
+  that run's debug APK artifact, verify it matches the current PR commit,
+  install/update it, launch the app and report the result. Do not ask the owner
+  to install APKs manually when ADB is available.
+- Use bounded ADB commands and preserve existing app data. Never uninstall the
+  app or clear its data to resolve a signing conflict without explicit approval.
+  If the phone is disconnected or unauthorized, report deployment as pending.
+- Deployment does not replace phone testing or the owner's explicit merge approval.
+
 ## Local resource limits
 
 - On this Linux PC, run builds, reference generation and native checks through
