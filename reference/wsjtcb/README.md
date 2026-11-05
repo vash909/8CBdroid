@@ -16,7 +16,8 @@ stateful scenarios, format and limits. Both references stay outside the APK.
 R03c adds the [parser, generation and AutoSeq traces](QSO.md), using real desktop
 methods beyond the upstream admission-only harness. Its source pins are in
 `qso-sources.json`. These source references stay outside the APK. R04 adds original channel/waveform
-routines, 116 codeword/tone vectors and four desktop-generated WAVs; see
+routines and four desktop-generated WAVs. R05 extends the channel corpus to
+131 codeword/tone vectors and adds test-only Kotlin codec adapters; see
 [the offline engine guide](../../docs/FT8_ENGINE.md). Only the separate test
 probe packages WAV fixtures; the main app does not.
 

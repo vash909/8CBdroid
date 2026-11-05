@@ -25,6 +25,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
       - name: Check pinned desktop compatibility fixtures
         run: |
+          python3 scripts/wsjtcb_codec.py --check
           python3 scripts/wsjtcb_channel.py --check
           cmake -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build .tooling/native-host --parallel 2

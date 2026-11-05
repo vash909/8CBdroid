@@ -92,6 +92,9 @@ but no operating session starts it. The separate `engineprobe` APK exercises the
 same backend with independent WSJT-CB audio fixtures.
 
 The channel layer has no text codec, hash state, absolute UTC or SNR estimator.
-CB packing/acceptance and AutoSeq remain separate future domain work. See
+`core.message.CbMessageCodec` implements stateless text packing/unpacking outside
+Compose, with typed unresolved hashes. The Messages panel renders its preview and
+loss warnings. Hash learning and AutoSeq remain separate future domain work.
+See [the message-codec contract](CB_MESSAGE_CODEC.md). See
 [engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,
 Android toolchain/ABI choices and current limitations.

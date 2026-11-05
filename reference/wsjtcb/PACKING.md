@@ -8,8 +8,8 @@ are pinned in `packing-sources.json`. Preserve their original bytes, whitespace
 and line endings; `.gitattributes` disables Git text conversion for these files.
 They remain under the upstream GPLv3 terms; see [notices](../../THIRD_PARTY_NOTICES.md).
 
-The input-only `packing-cases.json` contains 66 messages, 15 calls for hash
-vectors and 79 scenarios. It covers short/long, numeric and slash CB calls,
+The input-only `packing-cases.json` contains 82 messages, 15 calls for hash
+vectors and 96 scenarios. It covers short/long, numeric and slash CB calls,
 leading zeros, both type 4 hash orientations, finals, destination-only signed
 reports, standard-call controls, normalization, free-text fallbacks and malformed
 calls. Every packed message has a separate cold RX scenario. Additional scenarios
@@ -63,7 +63,7 @@ input), `learn` (enqueue a full call through `save_hash_callvar`), `commit` (mer
 pending calls through `fillhashvar`, then start a new pending batch), `station`
 (set local identity through `fillhashvar`) and `lookup` (width plus call whose hash
 is queried). `decode` uses the `pack77` payload; both packers produce identical
-results for the 66 defined TX inputs, which the native integration tests verify.
+results for the defined TX inputs, which the native integration tests verify.
 The unresolved-placeholder RX case uses an explicit raw payload.
 
 ## Undefined TX placeholder discovered during R04
@@ -116,3 +116,9 @@ Install the PR's `8CBdroid-debug` APK and open Station, LAN and Radio. Check tha
 saved settings restore, LAN listening/decodes still work with WSJT-CB, and USB
 discovery opens. There are no new screens. These checks cover app regressions;
 the host reference job validates R03b. OTG hardware is not required for this PR.
+
+R05 adds sixteen TX cases and seventeen RX scenarios for portable standard
+messages, CQ modifiers, standard-call suffixes, report boundaries/aliases,
+locator truncation, the free-text alphabet and a rejected hashed rover/grid
+frame. Its Kotlin codec and phone preview are described in
+[the R05 guide](../../docs/CB_MESSAGE_CODEC.md).

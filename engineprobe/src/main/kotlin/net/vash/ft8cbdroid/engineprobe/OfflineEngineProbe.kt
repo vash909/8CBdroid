@@ -7,6 +7,9 @@ import android.os.SystemClock
 import kotlinx.coroutines.runBlocking
 import net.vash.ft8cbdroid.core.Ft8Payload77
 import net.vash.ft8cbdroid.core.Ft8PcmSlot
+import net.vash.ft8cbdroid.core.message.CbMessageCodec
+import net.vash.ft8cbdroid.core.message.PackResult
+import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import org.json.JSONObject
 import java.nio.ByteBuffer
@@ -25,6 +28,22 @@ class OfflineEngineProbe : Instrumentation() {
         val report = Bundle()
         try {
             runBlocking {
+                val rows = context.assets.open("wsjtcb/messages.tsv").bufferedReader().useLines { lines ->
+                    lines.filter { it.isNotEmpty() && !it.startsWith('#') }.toList()
+                }
+                fun ascii(hex: String) = hex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
+                for (row in rows) {
+                    val fields = row.split('\t')
+                    val encodedMessage = CbMessageCodec.pack(ascii(fields[1]))
+                    val decodedMessage = CbMessageCodec.unpack(Ft8Payload77.fromBits(fields[2]))
+                    if (fields[3] == "1") {
+                        check(encodedMessage is PackResult.Encoded && encodedMessage.payload.toBitString() == fields[2]) { "Message pack mismatch: ${fields[0]}" }
+                        check(decodedMessage is UnpackResult.Decoded && decodedMessage.message.text == ascii(fields[4])) { "Message unpack mismatch: ${fields[0]}" }
+                    } else {
+                        check(encodedMessage is PackResult.Unsupported && decodedMessage is UnpackResult.Unsupported)
+                    }
+                }
+                report.putInt("message_vectors", rows.size)
                 val engine = NativeFt8Engine()
                 val corpus = JSONObject(context.assets.open("channel.json").bufferedReader().use { it.readText() })
                 val waves = corpus.getJSONArray("waves")

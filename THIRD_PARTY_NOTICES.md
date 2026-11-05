@@ -15,6 +15,10 @@ desktop DSP engine or Hamlib.
   paths, revision and SHA-256 values are recorded in `sources.json` and
   `packing-sources.json` / `qso-sources.json` / `channel-sources.json` in the reference directory. These sources and generated
   text fixtures are not in the main APK. The offline native backend is described below.
+- Selected WSJT-CB text packing, unpacking and callsign-hash algorithms are
+  ported into `core/.../message/CbMessageCodec.kt` under GPL-3.0-only. These
+  Kotlin routines are packaged in the app; the original Fortran sources remain
+  test-only. See `docs/CB_MESSAGE_CODEC.md` for provenance and limits.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.

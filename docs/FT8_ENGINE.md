@@ -1,8 +1,8 @@
 # Offline FT8 channel engine (R04)
 
 R04 selects a source-built channel backend for offline experiments. It does not
-add local RX/TX controls to the app. CB message packing, hash resolution, text
-acceptance, AutoSeq, live audio and radio operation remain later milestones.
+add local RX/TX controls to the app. The separate [R05 text codec](CB_MESSAGE_CODEC.md) adds offline packing/unpacking.
+Hash learning, AutoSeq, live audio and radio operation remain later milestones.
 
 ## Decision and dependencies
 
@@ -20,12 +20,12 @@ prebuilt DSP libraries under `ft8cn/app/libs/`, without their native source in
 that tree. It remains a useful operating-feature reference. A source-built
 channel layer allows reproducible builds and future CB-specific adaptation.
 
-The unmodified ft8_lib amateur text codec differs from the pinned WSJT-CB
-production packer on **63 of 66** R03b inputs, including rejection and different
+At R04 selection, the unmodified ft8_lib amateur text codec differed from the
+pinned WSJT-CB production packer on **63 of 66** R03b inputs, including rejection and different
 payloads. `codec_probe` reports the exact cases; `message.c` and `text.c` are
 **excluded from Android**. Do not use their callsign/message policy for CB.
-The selected layer accepts raw 77-bit payloads only. R05/R06 must implement the
-WSJT-CB text/hash rules and pass R03 before exposing decoded text or composing TX.
+The selected layer accepts raw 77-bit payloads only. R05 implements the separate text codec; R06 must add learned RX hash behavior
+before the later live-operation milestones.
 
 ## Contracts and bounded work
 
@@ -63,7 +63,7 @@ additional original WSJT-CB files at
 is stubbed. Linker section removal discards unused legacy routines.
 Boost headers implement the original desktop CRC wrapper, host-only.
 
-[`channel.json`](../reference/wsjtcb/channel/channel.json) contains all **116
+[`channel.json`](../reference/wsjtcb/channel/channel.json) now contains **131
 unique payloads** from the R03b/R03c corpora, including binary raw RX test
 cases, with exact 174-bit codewords
 and 79-tone sequences. The native check compares every payload/tone and reverses
