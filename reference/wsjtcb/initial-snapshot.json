@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "source_archive": {
+    "url": "https://downloads.sourceforge.net/project/wsjt/wsjtx-3.0.0-rc1/wsjtx-3.0.0-rc1.tgz",
+    "size_bytes": 37536606,
+    "sha256": "faeaf3c1146ae4e5a68502823d4b080d41d221d8ab19e1d1c374e2f7749bfe96",
+    "source_member": "wsjtx-3.0.0-rc1/src/wsjtx.tgz",
+    "source_sha256": "0391b58d66940511150fe5ce9f87695985a0d399733a8377b3b22634a6b77b83",
+    "source_file_count": 1893
+  },
+  "comparisons": [
+    {
+      "repository": "vash909/WSJT-CB",
+      "revision": "51b01eec2b0fde38c36c27fb5d3a341c4771082a",
+      "common_files": 1891,
+      "byte_identical_files": 1874,
+      "normalized_identical_files": 1874,
+      "different_files": [
+        "CMakeLists.txt",
+        "Radio.cpp",
+        "Radio.hpp",
+        "WSJTXLogging.hpp",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_containers_buttons.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_containers_tabs_displays.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_views_inputs_no_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_widgets_inputs_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_containers_buttons.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_containers_tabs_displays.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_views_inputs_no_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_widgets_inputs_fields.png",
+        "main.cpp",
+        "map65/resources/qthid/QtGui4.dll",
+        "models/Bands.cpp",
+        "models/FrequencyList.cpp",
+        "widgets/mainwindow.cpp"
+      ],
+      "upstream_only": [
+        ".gitattributes",
+        ".gitignore"
+      ],
+      "cb_only": [
+        "README.md"
+      ]
+    },
+    {
+      "repository": "vash909/WSJT-CB",
+      "revision": "615d079949f5d4c50df9db05fbdc12ccb5c9df99",
+      "common_files": 1892,
+      "byte_identical_files": 1863,
+      "normalized_identical_files": 1863,
+      "different_files": [
+        ".gitignore",
+        "AppVersion/AppVersion.cpp",
+        "CMakeLists.txt",
+        "Configuration.cpp",
+        "Radio.cpp",
+        "Radio.hpp",
+        "WSJTXLogging.hpp",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_containers_buttons.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_containers_tabs_displays.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_views_inputs_no_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/no_dark_widgets_inputs_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_containers_buttons.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_containers_tabs_displays.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_views_inputs_no_fields.png",
+        "contrib/QDarkStyleSheet/screenshots/qdarkstyle_widgets_inputs_fields.png",
+        "logbook/AD1CCty.cpp",
+        "main.cpp",
+        "map65/resources/qthid/QtGui4.dll",
+        "models/Bands.cpp",
+        "models/FrequencyList.cpp",
+        "models/FrequencyList.hpp",
+        "revision_utils.cpp",
+        "revision_utils.hpp",
+        "widgets/QSYMessage.ui",
+        "widgets/SplashScreen.cpp",
+        "widgets/about.cpp",
+        "widgets/mainwindow.cpp",
+        "widgets/mainwindow.h",
+        "widgets/mainwindow.ui"
+      ],
+      "upstream_only": [
+        ".gitattributes"
+      ],
+      "cb_only": [
+        "README.md"
+      ]
+    }
+  ]
+}

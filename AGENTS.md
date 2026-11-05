@@ -18,7 +18,8 @@
   messages, dialogs, notifications, and accessibility descriptions. Treat
   existing non-English UI text as pending translation, not as a convention
   to preserve.
-- Keep the repository private unless the user explicitly requests a visibility change.
+- Keep the repository public, as requested by the owner on 2026-11-05, unless
+  the user explicitly requests another visibility change.
 - Preserve GPL-3.0-only and `docs/COMMERCIAL_DISTRIBUTION.md`: selling is allowed,
   but attribution alone does not satisfy GPL source and recipient-rights obligations.
 

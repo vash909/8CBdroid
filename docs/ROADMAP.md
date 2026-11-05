@@ -17,6 +17,9 @@ later estimates; do not promise a complete Android port in one PR.
 - [PR #14](https://github.com/vash909/8CBdroid/pull/14) is merged: LAN Decode/Clear,
   explicit Replay, bounded history and English-only resources. CI passed and the
   owner confirmed successful app testing and approved the merge on 2026-11-04.
+- [PR #15](https://github.com/vash909/8CBdroid/pull/15) is merged: USB discovery
+  and explicit access requests (R01a). The owner confirmed app testing and approved
+  merge on 2026-11-05. Physical OTG/CAT interoperability remains unverified.
 - Local DSP, microphone capture, playback, CAT/PTT and QSO logging are pending.
   Existing validators and FT8 constants are not an encoder or decoder.
 
@@ -39,9 +42,11 @@ reference revisions, expected Android behavior and executable fixtures:
 | QSO progression | CQ, reports, acknowledgements and completion | Match CB message generation, parsing fallbacks, selected-peer context and AutoSeq decisions. |
 | Presentation and logs | UTC, frequency, locator and reports | Use CB numeric-prefix country lookup and preserve 27 MHz frequency/callsign data. |
 
-Find the WSJT-X ancestor or relevant upstream revision for each subsystem. The
-pinned fork includes later decoder backports, so a diff against current WSJT-X
-master alone cannot identify CB changes. Separate CB adaptations, upstream fixes
+The initial WSJT-CB snapshot is WSJT-X 3.0.0-rc1, verified against the official
+release archive and the first CB import. Use its recorded archive/source SHA-256
+pins where the import lacks an upstream Git commit; see the compatibility
+inventory. Keep separate revisions for later subsystem updates and decoder
+backports. A diff against current WSJT-X master alone cannot identify CB changes. Separate CB adaptations, upstream fixes
 and desktop-only branding/build changes. Reuse unchanged algorithms where
 practical; port only the Android-facing integration and the necessary CB changes.
 
@@ -72,12 +77,18 @@ LAN improvements must not replace the standalone Android engine.
 
 ## A. Establish hardware and interoperability references
 
-R01 is split into R01a (USB discovery/permission, current implementation PR) and
+R01 is split into R01a (USB discovery/permission, merged as PR #15) and
 R01b (the first documented read-only CAT connection). Following the owner's
 request, use FT8CN's Java USB serial approach. An OTG adapter and the exact
 radio/cable/phone are not available yet, so R01 remains incomplete. See
 [the USB CAT guide](USB_CAT.md) for scope and verification. R02 follows the real
 radio configuration from R01b; independent R03 reference work can proceed meanwhile.
+
+R03 is split into R03a (current PR: difference inventory and generated desktop
+predicate fixtures), R03b (production packing/hash fixtures), and R03c (message
+parser/generation and AutoSeq traces). See [the compatibility inventory](WSJT_CB_COMPATIBILITY.md).
+R03a covers text predicates only, so R03 and R04's compatibility prerequisites
+remain incomplete. R01b/R02 resume when the real radio configuration is known.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

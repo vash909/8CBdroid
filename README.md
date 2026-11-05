@@ -94,6 +94,7 @@ The desktop engine is not downloaded or compiled as an app dependency.
 - [Architecture and Hamlib/USB/audio integration](docs/ARCHITECTURE.md)
 - [LAN contract verified against upstream sources](docs/WSJT_CB_INTEGRATION.md)
 - [Environment, build and debugging](docs/DEVELOPMENT.md)
+- [CB difference inventory and desktop reference fixtures](docs/WSJT_CB_COMPATIBILITY.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## License and commercial use

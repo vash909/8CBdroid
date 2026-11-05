@@ -2,7 +2,9 @@
 
 Protocol reference: WSJT-CB commit
 [`94f776d54946fe43db5e0bb9c966b1595c7b7d97`](https://github.com/vash909/WSJT-CB/tree/94f776d54946fe43db5e0bb9c966b1595c7b7d97).
-Review this contract before updating the reference.
+Review this contract before updating the reference. Host-side CB predicate fixtures
+and the WSJT-X comparison inventory are documented in
+[WSJT-CB compatibility](WSJT_CB_COMPATIBILITY.md); they do not add local decoding.
 
 ## Implemented LAN behavior
 
