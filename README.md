@@ -7,7 +7,7 @@ compatibility with [WSJT-CB](https://github.com/vash909/WSJT-CB).
 Station callsign and locator can be saved and restored after reopening the app.
 The LAN tab shows WSJT-CB status and live/replayed decodes, with explicit replay
 and local clear controls. Decode history holds up to 200 messages and is cleared
-when the peer disconnects or listening stops. Local FT8, USB radio control, audio
+when the peer disconnects or listening stops. Live local FT8, USB radio control, audio
 and logging are not implemented yet. The entire client uses English.
 The Radio tab can discover USB interfaces and request access; radio connection
 and CAT/PTT commands remain unimplemented.

@@ -82,7 +82,9 @@ def main():
     inputs = [REF/'packing.json', REF/'qso.json']
     p, q = [json.loads(path.read_text()) for path in inputs]
     bits = sorted({row['pack77']['payload77'] for row in p['packing']}
-                  | {row['payload77'] for row in q['message_payloads']})
+                  | {row['payload77'] for row in q['message_payloads']}
+                  | {step['payload77'] for scenario in p['scenarios'] for step in scenario['steps']
+                     if step['op']=='raw' and set(step['payload77']) <= {'0','1'}})
     with tempfile.TemporaryDirectory(prefix='wsjtcb-channel-') as directory:
         executable, base = compile_reference(directory)
         result = subprocess.run([str(executable)], input='\n'.join(bits)+'\n', text=True,

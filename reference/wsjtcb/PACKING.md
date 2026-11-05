@@ -8,7 +8,7 @@ are pinned in `packing-sources.json`. Preserve their original bytes, whitespace
 and line endings; `.gitattributes` disables Git text conversion for these files.
 They remain under the upstream GPLv3 terms; see [notices](../../THIRD_PARTY_NOTICES.md).
 
-The input-only `packing-cases.json` contains 67 messages, 15 calls for hash
+The input-only `packing-cases.json` contains 66 messages, 15 calls for hash
 vectors and 79 scenarios. It covers short/long, numeric and slash CB calls,
 leading zeros, both type 4 hash orientations, finals, destination-only signed
 reports, standard-call controls, normalization, free-text fallbacks and malformed
@@ -63,7 +63,25 @@ input), `learn` (enqueue a full call through `save_hash_callvar`), `commit` (mer
 pending calls through `fillhashvar`, then start a new pending batch), `station`
 (set local identity through `fillhashvar`) and `lookup` (width plus call whose hash
 is queried). `decode` uses the `pack77` payload; both packers produce identical
-results for this corpus, which the native integration tests also verify.
+results for the 66 defined TX inputs, which the native integration tests verify.
+The unresolved-placeholder RX case uses an explicit raw payload.
+
+## Undefined TX placeholder discovered during R04
+
+`<...> 26AT101` is an RX presentation example, not a defined TX encoder input.
+In the pinned `packjt77.f90` and `packjt77var.f90`, the type-4 packers pass
+`n12` to `save_hash_call` / `save_hash_txcallvar`. Those helpers return early
+for `<...>` without assigning the output, leaving the 12-bit field undefined.
+Different process layouts produced different bits in CI at O0, despite earlier
+successful runs. Zero bits observed previously were not a specified hash value.
+
+R04 removes this one case from deterministic TX comparisons (67 becomes 66).
+`cold-unresolved-input` remains an explicit raw RX case with the original
+zero-prefix payload; its expected decode is still `<...> 26AT101`. The generator
+rejects unresolved placeholders in TX inputs before compilation. This preserves
+RX coverage without assigning a portable meaning to uninitialized TX data.
+R05 must report unresolved TX identities as unsupported, not transmit a guessed
+hash. Original production routines remain byte-for-byte unchanged.
 
 ## Results that constrain the Android implementation
 

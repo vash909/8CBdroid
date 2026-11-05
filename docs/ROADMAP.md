@@ -99,7 +99,7 @@ R03 is split into R03a (merged: difference inventory and generated desktop
 predicate fixtures), R03b (merged: production packing/hash fixtures), and
 R03c (merged as PR #18: message parser/generation and AutoSeq traces). See
 [the compatibility inventory](WSJT_CB_COMPATIBILITY.md).
-R03b adds 67 production payload pairs, 15 hash vectors and 79 cold/stateful RX
+R03b adds 66 defined production payload pairs, 15 hash vectors and 79 cold/stateful RX
 scenarios, including hash collisions and lossy encodings. See
 [the packing guide](../reference/wsjtcb/PACKING.md). R03c adds 129 native scenarios,
 72 generated-message payloads and a two-station text exchange. See

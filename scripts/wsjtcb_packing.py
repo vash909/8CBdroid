@@ -52,6 +52,8 @@ def load_inputs():
         raise ValueError('Empty packing cases or duplicate IDs')
     if any(not ascii_text(case['input'], 37) for case in packing):
         raise ValueError('Packing inputs must be printable ASCII, at most 37 characters')
+    if any('<...>' in case['input'] for case in packing):
+        raise ValueError('Unresolved hash placeholders have no defined TX payload; use a raw RX scenario')
     calls = cases['hash_calls']
     if not calls or len(calls) != len(set(calls)) or any(not ascii_text(c, 11) or not c for c in calls):
         raise ValueError('Invalid or duplicate hash calls')

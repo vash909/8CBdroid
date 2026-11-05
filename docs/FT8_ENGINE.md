@@ -21,7 +21,7 @@ that tree. It remains a useful operating-feature reference. A source-built
 channel layer allows reproducible builds and future CB-specific adaptation.
 
 The unmodified ft8_lib amateur text codec differs from the pinned WSJT-CB
-production packer on **64 of 67** R03b inputs, including rejection and different
+production packer on **63 of 66** R03b inputs, including rejection and different
 payloads. `codec_probe` reports the exact cases; `message.c` and `text.c` are
 **excluded from Android**. Do not use their callsign/message policy for CB.
 The selected layer accepts raw 77-bit payloads only. R05/R06 must implement the
@@ -63,8 +63,9 @@ additional original WSJT-CB files at
 is stubbed. Linker section removal discards unused legacy routines.
 Boost headers implement the original desktop CRC wrapper, host-only.
 
-[`channel.json`](../reference/wsjtcb/channel/channel.json) contains all **114
-unique payloads** from the R03b/R03c message corpora, with exact 174-bit codewords
+[`channel.json`](../reference/wsjtcb/channel/channel.json) contains all **116
+unique payloads** from the R03b/R03c corpora, including binary raw RX test
+cases, with exact 174-bit codewords
 and 79-tone sequences. The native check compares every payload/tone and reverses
 Gray coding to verify every codeword. Four committed clean WAVs are generated
 independently by the desktop routines: CQ, both type-4 hash orientations and a
@@ -122,14 +123,14 @@ using the debug probe APK, disconnected from radio/audio hardware:
 | Check | Result |
 | --- | --- |
 | Independent desktop WAVs | 4/4 exact payloads; time/frequency tolerances passed |
-| Per-WAV decode | 153, 154, 188, 176 ms |
-| Own encoder | 61 ms; emitted PCM decoded to the original payload |
+| Per-WAV decode | 151, 147, 180, 172 ms |
+| Own encoder | 37 ms; emitted PCM decoded to the original payload |
 | Silence / invalid frequency | No frames / rejected |
-| Post-test process PSS | 46,568 KiB (about 45.5 MiB), not a peak |
-| Post-test allocated native heap | 7,761,680 bytes (about 7.4 MiB), not a peak |
+| Post-test process PSS | 45,135 KiB (about 44.1 MiB), not a peak |
+| Post-test allocated native heap | 7,705,296 bytes (about 7.3 MiB), not a peak |
 
 The runner force-stops only its own probe package on exit, including timeout.
 The main app and its station settings were left intact. This is R04's offline
 ARM64 smoke gate, not a live RX, calibrated SNR or radio interoperability result.
 
-Tested debug probe APK SHA-256: `82b2b9621dfdfaeb846bb92c6ed73178a5dcb1fe29f602d660dfd5d430deacd8`.
+Tested debug probe APK SHA-256: `46c3d9603cee4fb4ad1cb9ef6f441912377ee58d279591913954b71b89a426ce`.

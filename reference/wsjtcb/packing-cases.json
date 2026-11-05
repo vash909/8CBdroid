@@ -218,10 +218,6 @@
       "input": "HELLO WORLD 123456789"
     },
     {
-      "id": "unresolved-input",
-      "input": "<...> 26AT101"
-    },
-    {
       "id": "invalid-incomplete",
       "input": "CQ 1AT"
     },
@@ -778,8 +774,8 @@
       "id": "cold-unresolved-input",
       "steps": [
         {
-          "op": "decode",
-          "case": "unresolved-input"
+          "op": "raw",
+          "payload77": "00000000000000000000000000000000000010001111001110110000011010110100000000100"
         }
       ]
     },
