@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -21,9 +23,16 @@ import net.vash.ft8cbdroid.core.message.EncodingMode
 import net.vash.ft8cbdroid.core.message.MessageFormat
 import net.vash.ft8cbdroid.core.message.MessagePart
 import net.vash.ft8cbdroid.core.message.PackResult
+import net.vash.ft8cbdroid.core.message.UnresolvedReason
+import net.vash.ft8cbdroid.core.Ft8Payload77
 
 @Composable
-fun MessagePreviewPanel() {
+fun MessagePreviewPanel(
+    session: HashSessionUiState,
+    onReceive: (Ft8Payload77) -> Unit,
+    onCommit: () -> Unit,
+    onReset: () -> Unit,
+) {
     var text by rememberSaveable { mutableStateOf("CQ 1AT106") }
     var freeText by rememberSaveable { mutableStateOf(false) }
     val result = remember(text, freeText) {
@@ -66,6 +75,31 @@ fun MessagePreviewPanel() {
                     Text("A station without the matching callsign hash would read:")
                     Text(result.message.text)
                 }
+            }
+        }
+        Text("Offline receive session", style = MaterialTheme.typography.titleLarge)
+        Text("Simulate reception of the encoded payload. Editing or previewing a message does not teach this receiver.")
+        Text("Local station: ${session.stationCall ?: "Not set"}")
+        Text("Learned calls: ${session.learnedCount}/1000 • Pending: ${session.pendingCount}/200")
+        Button(onClick = { (result as? PackResult.Encoded)?.let { onReceive(it.payload) } },
+            enabled = result is PackResult.Encoded) { Text("Simulate receive") }
+        OutlinedButton(onClick = onCommit, enabled = session.pendingCount > 0) { Text("Commit learned calls") }
+        OutlinedButton(onClick = onReset) { Text("Reset learned calls") }
+        Text("Commit makes pending calls available for the next receive. Reset keeps only your saved station. This session survives rotation, but is not saved after the app process closes.")
+        if (session.capacityReached) Text("Call storage is full. Hash resolution is disabled until Reset learned calls.",
+            color = MaterialTheme.colorScheme.error)
+        session.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        session.message?.let { message ->
+            Text("Last simulated receive", style = MaterialTheme.typography.titleMedium)
+            Text(message.text)
+            for (part in message.parts.filterIsInstance<MessagePart.HashedCall>()) {
+                Text(when (part) {
+                    is MessagePart.UnresolvedCall -> if (part.reason == UnresolvedReason.CAPACITY_REACHED)
+                        "Resolution unavailable: call storage is full (${part.hash.width}-bit hash ${part.hash.value})."
+                        else "Unknown identity (${part.hash.width}-bit hash ${part.hash.value})."
+                    is MessagePart.ResolvedCall -> "Known hash candidate: ${part.callsign} (${part.hash.width}-bit). This is not proof of identity."
+                    is MessagePart.AmbiguousCall -> "Ambiguous identity (${part.hash.width}-bit): ${part.candidates.joinToString(", ")}. No callsign selected."
+                })
             }
         }
     }

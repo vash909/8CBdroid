@@ -122,3 +122,9 @@ messages, CQ modifiers, standard-call suffixes, report boundaries/aliases,
 locator truncation, the free-text alphabet and a rejected hashed rover/grid
 frame. Its Kotlin codec and phone preview are described in
 [the R05 guide](../../docs/CB_MESSAGE_CODEC.md).
+
+R06 exports all 96 RX scenarios into `hash-sessions.tsv` for JVM and offline
+phone checks. The runtime session preserves staged learning and local-call
+orientation while deliberately retaining known collisions as ambiguous instead
+of choosing the desktop's last writer. Original sources and JSON are unchanged.
+See [the session guide](../../docs/CB_HASH_SESSIONS.md) for scope and differences.

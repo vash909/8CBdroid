@@ -93,8 +93,13 @@ same backend with independent WSJT-CB audio fixtures.
 
 The channel layer has no text codec, hash state, absolute UTC or SNR estimator.
 `core.message.CbMessageCodec` implements stateless text packing/unpacking outside
-Compose, with typed unresolved hashes. The Messages panel renders its preview and
-loss warnings. Hash learning and AutoSeq remain separate future domain work.
-See [the message-codec contract](CB_MESSAGE_CODEC.md). See
+Compose, with typed unresolved hashes. `CbMessageSession` owns bounded pending and
+committed full calls, typed hash resolution and reset semantics. `HashSessionViewModel`
+owns the Messages tab's explicit offline receive simulation and survives rotation;
+the cache is never persisted. Saved station changes reset the session; unsaved
+drafts do not. This session is separate from stateless TX preview, DSP and LAN.
+AutoSeq remains future domain work.
+See [the message-codec contract](CB_MESSAGE_CODEC.md) and
+[hash-session behavior and desktop differences](CB_HASH_SESSIONS.md). See
 [engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,
 Android toolchain/ABI choices and current limitations.

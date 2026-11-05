@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
+import net.vash.ft8cbdroid.message.HashSessionViewModel
+import net.vash.ft8cbdroid.message.HashSessionUiState
+import net.vash.ft8cbdroid.core.Ft8Payload77
 import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
 import net.vash.ft8cbdroid.core.StationIdentity
@@ -46,10 +49,13 @@ class MainActivity : ComponentActivity() {
         )[StationSettingsViewModel::class.java]
         lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
+        val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
+            val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(station.saved?.callsign) { hashViewModel.changeStation(station.saved?.callsign) }
             EightCbApp(
                 station = station,
                 usb = usb,
@@ -66,6 +72,10 @@ class MainActivity : ComponentActivity() {
                 onGridChange = stationViewModel::changeGrid,
                 onSaveStation = stationViewModel::save,
                 onRetryLoad = stationViewModel::retryLoad,
+                hashes = hashes,
+                onSimulateReceive = hashViewModel::receive,
+                onCommitHashes = hashViewModel::commit,
+                onResetHashes = hashViewModel::reset,
             )
         }
     }
@@ -100,6 +110,10 @@ fun EightCbApp(
     onGridChange: (String) -> Unit = {},
     onSaveStation: () -> Unit = {},
     onRetryLoad: () -> Unit = {},
+    hashes: HashSessionUiState = HashSessionUiState(),
+    onSimulateReceive: (Ft8Payload77) -> Unit = {},
+    onCommitHashes: () -> Unit = {},
+    onResetHashes: () -> Unit = {},
 ) {
     var section by rememberSaveable { mutableIntStateOf(0) }
     var connection by rememberSaveable { mutableStateOf("Phone VOX") }
@@ -201,7 +215,7 @@ fun EightCbApp(
                         }
                         OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
                     }
-                    4 -> MessagePreviewPanel()
+                    4 -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes)
                     3 -> {
                         LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan, onReplayLan, onClearLan)
                     }

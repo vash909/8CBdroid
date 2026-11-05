@@ -18,7 +18,10 @@ desktop DSP engine or Hamlib.
 - Selected WSJT-CB text packing, unpacking and callsign-hash algorithms are
   ported into `core/.../message/CbMessageCodec.kt` under GPL-3.0-only. These
   Kotlin routines are packaged in the app; the original Fortran sources remain
-  test-only. See `docs/CB_MESSAGE_CODEC.md` for provenance and limits.
+  test-only. The session learning/local-call behavior in `CbMessageSession.kt`
+  follows the pinned `packjt77var.f90` / `fillhashvar.f90`, with explicit collision
+  and capacity differences. See `docs/CB_MESSAGE_CODEC.md` and
+  `docs/CB_HASH_SESSIONS.md` for provenance and limits.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.

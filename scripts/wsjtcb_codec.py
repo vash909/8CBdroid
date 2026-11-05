@@ -37,6 +37,24 @@ def main():
     args = parser.parse_args()
     result = generate()
     packing = json.loads((REF / 'packing.json').read_text())
+    payloads = {case['id']: case['pack77']['payload77'] for case in packing['packing']}
+    session_lines = ['# WSJT-CB ' + packing['revision'],
+                     '# packing.json sha256: ' + hashlib.sha256((REF / 'packing.json').read_bytes()).hexdigest(),
+                     '# scenario\tstep\top\targument-ASCII-hex\twidth\tsuccess\tdesktop-text-ASCII-hex']
+    for scenario in packing['scenarios']:
+        for i, step in enumerate(scenario['steps']):
+            op = step['op']
+            argument = payloads[step['case']] if op == 'decode' else step.get('payload77', step.get('call', ''))
+            session_lines.append('\t'.join([scenario['id'], str(i), op, argument.encode('ascii').hex(),
+                                 str(step.get('width', 0)), str(int(step.get('success', True))),
+                                 step.get('decoded', step.get('resolved', '')).encode('ascii').hex()]))
+    session_target = TARGET.with_name('hash-sessions.tsv')
+    session_result = '\n'.join(session_lines) + '\n'
+    if args.check:
+        if not session_target.exists() or session_target.read_text() != session_result:
+            raise SystemExit('JVM hash-session fixture differs')
+    else:
+        session_target.write_text(session_result)
     raw_lines = ['# Cold single-step binary RX cases from packing.json',
                  '# sha256: ' + hashlib.sha256((REF / 'packing.json').read_bytes()).hexdigest()]
     for scenario in packing['scenarios']:
@@ -59,6 +77,7 @@ def main():
     else:
         TARGET.write_text(result)
     print('JVM codec fixture verified:', len(result.splitlines()) - 4, 'desktop messages')
+    print('Hash-session fixture verified:', len(packing['scenarios']), 'desktop scenarios')
 
 
 if __name__ == '__main__':
