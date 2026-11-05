@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate/check payload and hash fixtures with unmodified WSJT-CB routines."""
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -173,6 +174,10 @@ def main():
     generated = generate(manifest, cases, args.optimization)
     if args.check:
         if not FIXTURE.exists() or FIXTURE.read_text() != generated:
+            expected = FIXTURE.read_text() if FIXTURE.exists() else ''
+            difference = list(difflib.unified_diff(expected.splitlines(), generated.splitlines(),
+                              fromfile='committed packing fixture', tofile='generated packing fixture'))
+            print('\n'.join(difference[:120]), file=sys.stderr)
             raise ValueError('Packing fixture differs; inspect changes and regenerate without --check')
         print(f'Packing fixture verified: {len(cases["packing"])} payloads, '
               f'{len(cases["hash_calls"])} hashes, {len(cases["scenarios"])} scenarios ({args.optimization})')
