@@ -73,6 +73,16 @@ def generate(manifest, source, cases):
 def audit_sources(manifest):
     """Network access is explicit; comparison releases are not asserted to be ancestors."""
     destination = ROOT / '.tooling/wsjt-reference-audit'
+    packing = json.loads((REFERENCE / 'packing-sources.json').read_text())
+    cb = manifest['references']['cb']
+    if packing['revision'] != cb['revision'] or packing['repository'] != cb['repository']:
+        raise ValueError('Inconsistent packing source audit revision')
+    files = {file['path']: file for file in cb['files']}
+    for file in packing['files']:
+        if file['path'] in files and files[file['path']]['sha256'] != file['sha256']:
+            raise ValueError('Conflicting packing source checksum')
+        files[file['path']] = {'path': file['path'], 'sha256': file['sha256']}
+    cb['files'] = list(files.values())
     for name, ref in manifest['references'].items():
         for file in ref['files']:
             path = Path(file['path'])

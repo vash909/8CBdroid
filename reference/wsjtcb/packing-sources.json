@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "repository": "vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "files": [
+    {
+      "path": "lib/packjt.f90",
+      "local": "source/packjt.f90",
+      "sha256": "c74091e502f1eea482dfa6d520f5f4228cddf800e3867d7d8172fbf0e6ce60d4"
+    },
+    {
+      "path": "lib/ft8var/cb_callsigns.f90",
+      "local": "source/cb_callsigns.f90",
+      "sha256": "2d632a85f0ab9fe7e636b371083d7c50f0866bb97aec7836974f467a207dc866"
+    },
+    {
+      "path": "lib/ft8var/packjt77var.f90",
+      "local": "source/packjt77var.f90",
+      "sha256": "1b3f039401fc08b28f915e3e622e9cd511e34acaef493dd97b954e7c4e9697af"
+    },
+    {
+      "path": "lib/77bit/packjt77.f90",
+      "local": "source/packjt77.f90",
+      "sha256": "98a7a7832f4ab8ee806da79de161fcf3ca8eb80f156eda246c65dd7ae8409817"
+    },
+    {
+      "path": "lib/ft8var/ft8_mod1.f90",
+      "local": "source/ft8_mod1.f90",
+      "sha256": "209a3735e1700879573f2fa929cda65c003e86450bc8c196c4a7993038c6226f"
+    },
+    {
+      "path": "lib/ft8var/fillhashvar.f90",
+      "local": "source/fillhashvar.f90",
+      "sha256": "ea8db136a047d7fdd99f3ce9bf6efb3abd54730250cf353b3ef9bb9dd1ce0a54"
+    },
+    {
+      "path": "lib/chkcall.f90",
+      "local": "source/chkcall.f90",
+      "sha256": "863e68d6b489d847b85dde99c048fb1ff2358ab4fd141d528a4fa58a6dad5b41"
+    },
+    {
+      "path": "lib/fmtmsg.f90",
+      "local": "source/fmtmsg.f90",
+      "sha256": "ffe972e8ce4bbd082fcf59b9615c8cd7ebd6175e6d5ecddc1ac6bbc79a8db646"
+    },
+    {
+      "path": "lib/pfx.f90",
+      "local": "source/pfx.f90",
+      "sha256": "d1c7fa2cfa526cec18d6f88cbda670a153f19f41e713c9a7ae16f0e9a4524c08"
+    }
+  ]
+}
