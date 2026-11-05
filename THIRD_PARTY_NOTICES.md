@@ -9,15 +9,19 @@ desktop DSP engine or Hamlib.
   grammar serve as references at the commit pinned in the documentation.
   Upstream is distributed under GPLv3. This skeleton uses GPL-3.0-only.
   Unmodified CB predicates, FT8 message packing/unpacking and hash routines,
-  together with required legacy packing/include and module dependencies, are
+  desktop Radio/DecodedText code and main-window QSO methods, together with
+  required legacy packing/include and module dependencies, are
   vendored under `reference/wsjtcb/source/` for host-side tests only. Upstream
   paths, revision and SHA-256 values are recorded in `sources.json` and
-  `packing-sources.json` in the reference directory. These sources and generated
+  `packing-sources.json` / `qso-sources.json` in the reference directory. These sources and generated
   fixtures are not in the APK; no local Android DSP engine is implemented.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
 - JUnit 4: EPL-1.0.
+- Qt 5 Core and Network: host reference-test dependencies only, supplied by the
+  developer/CI system under their upstream licenses (including LGPLv3/GPLv3 or
+  commercial terms). No Qt library is vendored or packaged in the Android APK.
 - [usb-serial-for-android 3.11.0](https://github.com/mik3y/usb-serial-for-android/tree/3.11.0):
   MIT, copyright 2011–2013 Google Inc. and 2013 Mike Wakerly.
   [Full license](app/src/main/assets/licenses/usb-serial-for-android.txt) is packaged
