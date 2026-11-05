@@ -14,6 +14,7 @@ android {
     }
     // Committed desktop reference audio is test data, excluded from the main app.
     sourceSets["main"].assets.srcDir("../reference/wsjtcb/channel")
+    sourceSets["main"].assets.srcDir("../core/src/test/resources")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

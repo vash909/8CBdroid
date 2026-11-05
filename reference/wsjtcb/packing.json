@@ -3,7 +3,7 @@
   "repository": "vash909/WSJT-CB",
   "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
   "sources_sha256": "d96a6e40e24547672a783f8dbfeff879cd769009e55090a0e7da574d45343eee",
-  "cases_sha256": "5b65fbb0141a7d2b6fce0512740c7edd37f4e3aafc7d9eb970957672140d1d54",
+  "cases_sha256": "6ff4883a5c3507e991676b1eb56b581b447440e0ff39d95ec3e8fac78ede70dc",
   "harness_sha256": "da286afcadabfad3bc074fdc1c4b47c27c202a54b86179a821b5bc20dde5da31",
   "packing": [
     {
@@ -928,6 +928,230 @@
         "i3": 1,
         "n3": 0,
         "payload77": "00000100011000000000111110100000010011011110111100011010100111111010101001001"
+      }
+    },
+    {
+      "id": "standard-no-final",
+      "input": "K1ABC W9XYZ",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111010010001001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111010010001001"
+      }
+    },
+    {
+      "id": "standard-portable",
+      "input": "K1ABC/P W9XYZ/P R FN42",
+      "pack77": {
+        "i3": 2,
+        "n3": 0,
+        "payload77": "00001001101111011110001101011000011000010100100111011100011010100001100110010"
+      },
+      "pack77var": {
+        "i3": 2,
+        "n3": 0,
+        "payload77": "00001001101111011110001101011000011000010100100111011100011010100001100110010"
+      }
+    },
+    {
+      "id": "standard-roger-grid",
+      "input": "K1ABC W9XYZ R FN42",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100001010100001100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100001010100001100110001"
+      }
+    },
+    {
+      "id": "standard-cq-dx",
+      "input": "CQ DX K1ABC FN42",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000100011011110000010011011110111100011010100010100001100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000100011011110000010011011110111100011010100010100001100110001"
+      }
+    },
+    {
+      "id": "standard-cq-numeric",
+      "input": "CQ 123 K1ABC FN42",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000000011111100000010011011110111100011010100010100001100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000000011111100000010011011110111100011010100010100001100110001"
+      }
+    },
+    {
+      "id": "standard-short-suffix",
+      "input": "F4A W9XYZ +00",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001000110111000000010011110000011000010100100111011100000111111010110011001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001000110111000000010011110000011000010100100111011100000111111010110011001"
+      }
+    },
+    {
+      "id": "standard-minus50",
+      "input": "K1ABC W9XYZ -50",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100110001"
+      }
+    },
+    {
+      "id": "standard-minus31",
+      "input": "K1ABC W9XYZ -31",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011111001001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011111001001"
+      }
+    },
+    {
+      "id": "standard-minus30",
+      "input": "K1ABC W9XYZ -30",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111010010101001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111010010101001"
+      }
+    },
+    {
+      "id": "standard-plus49",
+      "input": "K1ABC W9XYZ +49",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100100001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100100001"
+      }
+    },
+    {
+      "id": "text-alphabet",
+      "input": "HELLO +-./?",
+      "pack77": {
+        "i3": 0,
+        "n3": 0,
+        "payload77": "00000000000010001011010101101001100000011011101101001011001010101110101000000"
+      },
+      "pack77var": {
+        "i3": 0,
+        "n3": 0,
+        "payload77": "00000000000010001011010101101001100000011011101101001011001010101110101000000"
+      }
+    },
+    {
+      "id": "standard-plus50",
+      "input": "K1ABC W9XYZ +50",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100101001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100101001"
+      }
+    },
+    {
+      "id": "standard-plus51-alias",
+      "input": "K1ABC W9XYZ +51",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111011100110001"
+      }
+    },
+    {
+      "id": "standard-plus99-alias",
+      "input": "K1ABC W9XYZ +99",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111100010110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00001001101111011110001101010000011000010100100111011100000111111100010110001"
+      }
+    },
+    {
+      "id": "standard-locator6",
+      "input": "CQ K1ABC FN42AB",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000000000000100000010011011110111100011010100010100001100110001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "00000000000000000000000000100000010011011110111100011010100010100001100110001"
+      }
+    },
+    {
+      "id": "standard-cq-prefix-call",
+      "input": "CQ1AA W9XYZ R-10",
+      "pack77": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "01100010101101111001001000110000011000010100100111011100001111111010101001001"
+      },
+      "pack77var": {
+        "i3": 1,
+        "n3": 0,
+        "payload77": "01100010101101111001001000110000011000010100100111011100001111111010101001001"
       }
     }
   ],
@@ -2232,6 +2456,193 @@
           "payload77": "00000000000000000000000000000000000000000000000000000000000000000000000000111",
           "success": false,
           "decoded": ""
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-no-final",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-no-final",
+          "success": true,
+          "decoded": "K1ABC W9XYZ"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-portable",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-portable",
+          "success": true,
+          "decoded": "K1ABC/P W9XYZ/P R FN42"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-roger-grid",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-roger-grid",
+          "success": true,
+          "decoded": "K1ABC W9XYZ R FN42"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-dx",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-dx",
+          "success": true,
+          "decoded": "CQ DX K1ABC FN42"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-numeric",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-numeric",
+          "success": true,
+          "decoded": "CQ 123 K1ABC FN42"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-short-suffix",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-short-suffix",
+          "success": true,
+          "decoded": "F4A W9XYZ +00"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus50",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus50",
+          "success": true,
+          "decoded": "K1ABC W9XYZ -50"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus31",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus31",
+          "success": true,
+          "decoded": "K1ABC W9XYZ -31"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus30",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus30",
+          "success": true,
+          "decoded": "K1ABC W9XYZ -30"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus49",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus49",
+          "success": true,
+          "decoded": "K1ABC W9XYZ +49"
+        }
+      ]
+    },
+    {
+      "id": "cold-text-alphabet",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "text-alphabet",
+          "success": true,
+          "decoded": "HELLO +-./?"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus50",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus50",
+          "success": true,
+          "decoded": "K1ABC W9XYZ +50"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus51-alias",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus51-alias",
+          "success": true,
+          "decoded": "K1ABC W9XYZ -50"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus99-alias",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus99-alias",
+          "success": true,
+          "decoded": "K1ABC W9XYZ -02"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-locator6",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-locator6",
+          "success": true,
+          "decoded": "CQ K1ABC FN42"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-prefix-call",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-prefix-call",
+          "success": true,
+          "decoded": "CQ1AA W9XYZ R-10"
+        }
+      ]
+    },
+    {
+      "id": "raw-hashed-rover-grid",
+      "steps": [
+        {
+          "op": "raw",
+          "payload77": "00000100000101110010110101110000010011011110111100011010110000010011010010001",
+          "success": false,
+          "decoded": "<...> K1ABC/R AM34"
         }
       ]
     }

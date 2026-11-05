@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
 import net.vash.ft8cbdroid.core.StationIdentity
@@ -102,7 +103,7 @@ fun EightCbApp(
 ) {
     var section by rememberSaveable { mutableIntStateOf(0) }
     var connection by rememberSaveable { mutableStateOf("Phone VOX") }
-    val sections = listOf("Station", "Radio", "Audio", "LAN")
+    val sections = listOf("Station", "Radio", "Audio", "LAN", "Messages")
 
     MaterialTheme(colorScheme = palette) {
         Scaffold(
@@ -112,7 +113,7 @@ fun EightCbApp(
                         NavigationBarItem(
                             selected = section == index,
                             onClick = { section = index },
-                            icon = { Text(listOf("FT8", "USB", "VOX", "UDP")[index]) },
+                            icon = { Text(listOf("FT8", "USB", "VOX", "UDP", "TXT")[index]) },
                             label = { Text(label) },
                         )
                     }
@@ -127,7 +128,7 @@ fun EightCbApp(
                 Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
                 Text("FT8 • 11 metres • Android", color = MaterialTheme.colorScheme.primary)
                 Panel("Development preview") {
-                    Text("Station settings can be saved and desktop status/decodes can be monitored over LAN. Local FT8, radio control and audio are not implemented yet.")
+                    Text("Station settings, LAN monitoring and offline message previews are available. Live local RX/TX, radio control and audio are pending.")
                 }
                 when (section) {
                     0 -> {
@@ -200,6 +201,7 @@ fun EightCbApp(
                         }
                         OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
                     }
+                    4 -> MessagePreviewPanel()
                     3 -> {
                         LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan, onReplayLan, onClearLan)
                     }

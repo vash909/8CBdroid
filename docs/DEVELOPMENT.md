@@ -60,6 +60,10 @@ DataStore reopening. They do not establish
 live audio or radio interoperability. Offline DSP has separate
 [host and phone checks](FT8_ENGINE.md).
 
+For the offline **Messages** preview and message-codec phone checks, follow
+[the R05 guide](CB_MESSAGE_CODEC.md). The probe APK checks committed desktop text
+vectors as well as independent DSP audio fixtures.
+
 ## Phone checks
 
 For station settings:

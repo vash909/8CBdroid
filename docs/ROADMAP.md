@@ -32,7 +32,8 @@ later estimates; do not promise a complete Android port in one PR.
   WSJT-CB WAVs passed on a Samsung A51 / Android 13 / ARM64; CI passed and the owner
   approved the build and merge on 2026-11-05. See [the engine evidence](FT8_ENGINE.md).
 - Local operating sessions, microphone capture, playback, CAT/PTT and QSO logging are pending.
-  The offline engine accepts raw payloads; CB text packing and hash resolution are pending.
+  The offline engine accepts raw payloads. R05 in this PR adds a stateless CB message
+  codec and an English Messages preview; learned hash resolution remains R06.
 
 ## Reference strategy: reuse the CB work
 
@@ -105,8 +106,8 @@ scenarios, including hash collisions and lossy encodings. See
 72 generated-message payloads and a two-station text exchange. See
 [the QSO trace guide](../reference/wsjtcb/QSO.md) for adapter boundaries and known
 desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
-the offline host and ARM64 phone checks. R05 is the next available software milestone,
-implementing CB text packing while hash resolution follows in R06. RF/audio and the
+the offline host and ARM64 phone checks. R05 is implemented in the current PR: offline packing/unpacking and visible
+message-loss previews. After review and merge, R06 adds learned hash resolution. RF/audio and the
 full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.

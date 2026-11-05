@@ -12,7 +12,9 @@ and logging are not implemented yet. The entire client uses English.
 The Radio tab can discover USB interfaces and request access; radio connection
 and CAT/PTT commands remain unimplemented.
 An experimental source-built offline FT8 channel backend and a separate phone
-probe APK are available; CB text encoding and local operating controls are pending.
+probe APK are available. The **Messages** tab previews CB text encoding offline,
+including loss warnings and unresolved RX hashes. Hash learning and local
+operating controls remain pending. See [message preview and limits](docs/CB_MESSAGE_CODEC.md).
 See [engine scope and verification](docs/FT8_ENGINE.md).
 
 In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
@@ -68,7 +70,7 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 | Path | Responsibility |
 | --- | --- |
 | `app/` | English Compose UI, station/LAN ViewModels, DataStore and hardware placeholders |
-| `core/` | Station models, CB callsigns, FT8 profile and radio/audio/DSP contracts |
+| `core/` | Station models, CB callsigns, offline message codec and radio/audio/DSP contracts |
 | `protocol/wsjtcb/` | Wire codec, UDP status/decodes, explicit replay and peer lifetime |
 | `dsp/ft8/` | Android offline channel backend and JNI adapter |
 | `native/` | Pinned ft8_lib channel sources and host checks |
