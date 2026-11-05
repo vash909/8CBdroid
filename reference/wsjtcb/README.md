@@ -15,7 +15,10 @@ stateful scenarios, format and limits. Both references stay outside the APK.
 
 R03c adds the [parser, generation and AutoSeq traces](QSO.md), using real desktop
 methods beyond the upstream admission-only harness. Its source pins are in
-`qso-sources.json`. All three references stay outside the APK.
+`qso-sources.json`. These source references stay outside the APK. R04 adds original channel/waveform
+routines, 116 codeword/tone vectors and four desktop-generated WAVs; see
+[the offline engine guide](../../docs/FT8_ENGINE.md). Only the separate test
+probe packages WAV fixtures; the main app does not.
 
 `cases.json` contains inputs only: 240 complete-call cases and 75 type 4 predicate
 cases. Boundary combinations exercise prefix/letter/suffix lengths, leading zeros,
@@ -77,8 +80,8 @@ audited v3.0.0 comparison is a later release and does not replace that archive. 
 python3 scripts/wsjtcb_reference.py --check --audit-sources
 ```
 
-This verifies the predicate fixture and downloads all 28 distinct source files
-from the three manifests at immutable revisions,
+This verifies the predicate fixture and downloads all 37 distinct source files
+from the four manifests at immutable revisions,
 checks their hashes and writes LF-normalized textual comparison diffs under
 `.tooling/wsjt-reference-audit/diffs/`. Originals are retained in that ignored
 directory. The audit does not fetch moving branches or silently skip mismatches.
@@ -119,8 +122,10 @@ semantics and corrupted-archive rejection with tiny synthetic archives.
 The R03a predicates describe text admissibility. R03b separately checks real
 packing, unpacking and hash calculation/learning. R03c checks parser, generation
 and receive-side QSO progression within its documented adapter boundaries.
-These references do not perform CRC/LDPC verification or RF decoding.
+The R03 references do not perform CRC/LDPC verification or RF decoding; the R04
+channel corpus separately checks exact codewords/tones and clean WAV decoding.
 An accepted `<...>` type 4 payload is not permission to start AutoSeq. The source
-is test-only and neither it nor the fixtures are packaged in the APK. The full
+is test-only and is not packaged in the APK. The separate R04 probe includes
+only the generated channel/WAV test fixtures. The full
 desktop TX lifecycle and audio/device interoperability follow the engine and
 operating milestones.

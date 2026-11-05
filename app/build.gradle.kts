@@ -28,6 +28,7 @@ kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":dsp:ft8"))
     implementation(libs.usb.serial)
     implementation(project(":protocol:wsjtcb"))
     implementation(platform(libs.compose.bom))

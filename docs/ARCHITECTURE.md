@@ -7,10 +7,13 @@ operation or listener starts automatically.
 ```text
 app (Compose, settings/LAN ViewModels, Android lifecycle)
  ├── core (station identity, radio/audio/DSP contracts)
+ ├── dsp:ft8 (offline JNI channel engine; no UI session)
+ │    └── core
  └── protocol:wsjtcb (wire codec, UDP listener, connection state)
       └── core
 
-native (optional CMake target, outside the current Gradle build)
+native (CMake, pinned ft8_lib channel + JNI, built by dsp:ft8)
+engineprobe (separate offline instrumentation APK, uses dsp:ft8)
 ```
 
 ## Station settings
@@ -80,13 +83,15 @@ building the real engine. In acoustic operation the radio handles VOX, while the
 app will need level calibration and leading/trailing audio timing. Future
 background microphone operation requires its own service/permission design.
 
-## Future FT8 engine
+## Offline FT8 channel engine
 
-`Ft8Engine` is only a contract. A port must verify CB callsigns, hash learning,
-type 4 messages, reports and WSJT-CB AutoSeq behavior, as well as CRC, LDPC,
-modulation and UTC slot synchronization.
+`Ft8Engine` now uses typed 77-bit payloads, immutable PCM slots and frame metadata.
+`NativeFt8Engine` implements offline encode/decode behind this boundary, with JNI
+work outside Compose and one native call at a time. It is packaged with the app
+but no operating session starts it. The separate `engineprobe` APK exercises the
+same backend with independent WSJT-CB audio fixtures.
 
-`native/CMakeLists.txt` builds only a C status symbol and is not loaded by the app.
-Enable externalNativeBuild and pin NDK/ABIs only when introducing a real engine.
-Desktop Fortran source is not directly an Android library; toolchain and porting
-work remain to be evaluated.
+The channel layer has no text codec, hash state, absolute UTC or SNR estimator.
+CB packing/acceptance and AutoSeq remain separate future domain work. See
+[engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,
+Android toolchain/ABI choices and current limitations.

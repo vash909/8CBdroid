@@ -25,7 +25,13 @@ later estimates; do not promise a complete Android port in one PR.
   The owner approved its build and merge on 2026-11-05.
 - [PR #17](https://github.com/vash909/8CBdroid/pull/17) is merged: R03b production
   payload/hash fixtures. The owner confirmed the build and approved merge.
-- Local DSP, microphone capture, playback, CAT/PTT and QSO logging are pending.
+- [PR #18](https://github.com/vash909/8CBdroid/pull/18) is merged: R03c parser,
+  message generation and AutoSeq reference traces, after owner approval.
+- R04 adds an experimental offline channel backend and a separate phone probe;
+  see [the engine evidence](FT8_ENGINE.md). Four independent WSJT-CB WAVs
+  passed on a Samsung A51 / Android 13 / ARM64; PR review and owner merge approval
+  remain pending.
+- Local operating sessions, microphone capture, playback, CAT/PTT and QSO logging are pending.
   Existing validators and FT8 constants are not an encoder or decoder.
 
 ## Reference strategy: reuse the CB work
@@ -91,15 +97,15 @@ radio configuration from R01b; independent R03 reference work can proceed meanwh
 
 R03 is split into R03a (merged: difference inventory and generated desktop
 predicate fixtures), R03b (merged: production packing/hash fixtures), and
-R03c (current PR: message parser/generation and AutoSeq traces). See
+R03c (merged as PR #18: message parser/generation and AutoSeq traces). See
 [the compatibility inventory](WSJT_CB_COMPATIBILITY.md).
-R03b adds 67 production payload pairs, 15 hash vectors and 79 cold/stateful RX
+R03b adds 66 defined production payload pairs, 15 hash vectors and 79 cold/stateful RX
 scenarios, including hash collisions and lossy encodings. See
 [the packing guide](../reference/wsjtcb/PACKING.md). R03c adds 129 native scenarios,
 72 generated-message payloads and a two-station text exchange. See
 [the QSO trace guide](../reference/wsjtcb/QSO.md) for adapter boundaries and known
-desktop edge cases. After R03c review/merge, R04 can evaluate candidate engines
-against this message-level reference suite. RF/audio and the full TX lifecycle
+desktop edge cases. R04 now evaluates a source-built channel engine against
+this message-level reference suite; CB text policy remains outside its DSP layer. RF/audio and the full TX lifecycle
 remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.

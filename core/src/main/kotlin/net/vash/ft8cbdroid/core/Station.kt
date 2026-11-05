@@ -55,8 +55,3 @@ interface AudioEngine {
     suspend fun playTransmit(pcm: ShortArray, sampleRateHz: Int): BackendResult
     suspend fun stop()
 }
-
-interface Ft8Engine {
-    suspend fun decode(pcm12kHz: ShortArray): List<String>
-    suspend fun encode(message: String): ShortArray
-}

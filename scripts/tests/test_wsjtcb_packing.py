@@ -109,6 +109,15 @@ class PackingIntegrityTest(unittest.TestCase):
         (self.root / 'scripts').mkdir()
         shutil.copy2(ROOT / 'scripts/wsjtcb_packing.py', self.root / 'scripts/wsjtcb_packing.py')
 
+    def test_unresolved_tx_placeholder_is_rejected(self):
+        path = self.root / 'reference/wsjtcb/packing-cases.json'
+        cases = json.loads(path.read_text())
+        cases['packing'][0]['input'] = '<...> 26AT101'
+        path.write_text(json.dumps(cases))
+        result = self.check(FC='missing-compiler')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('no defined TX payload', result.stderr)
+
     def check(self, **environment):
         return subprocess.run([sys.executable, str(self.root / 'scripts/wsjtcb_packing.py'), '--check'],
                               env={**os.environ, **environment}, text=True, capture_output=True, timeout=60)

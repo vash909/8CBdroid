@@ -22,9 +22,13 @@ jobs:
       - name: Install reference compiler
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev
+          sudo apt-get install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
       - name: Check pinned desktop compatibility fixtures
         run: |
+          python3 scripts/wsjtcb_channel.py --check
+          cmake -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build .tooling/native-host --parallel 2
+          python3 scripts/check_native.py .tooling/native-host
           python3 scripts/wsjtcb_reference.py --check
           python3 scripts/wsjtcb_packing.py --check
           python3 scripts/wsjtcb_packing.py --check --optimization O2
@@ -45,15 +49,21 @@ jobs:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
       - name: SDK Platform and Build Tools
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - uses: gradle/actions/wrapper-validation@v4
       - uses: gradle/actions/setup-gradle@v4
       - name: Test, lint and debug APK
-        run: ./gradlew --no-daemon :core:test :protocol:wsjtcb:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+        run: bash scripts/check.sh
       - uses: actions/upload-artifact@v4
         with:
           name: 8CBdroid-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 8CBdroid-engine-probe
+          path: engineprobe/build/outputs/apk/debug/engineprobe-debug.apk
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4

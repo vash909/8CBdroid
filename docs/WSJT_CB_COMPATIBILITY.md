@@ -30,7 +30,7 @@ The first import is the parentless commit
 The official [RC1 source release](https://sourceforge.net/projects/wsjt/files/wsjtx-3.0.0-rc1/wsjtx-3.0.0-rc1.tgz/download)
 contains the real source inside `wsjtx-3.0.0-rc1/src/wsjtx.tgz`:
 
-- Download archive SHA-256: `faeaf3c1146ae4e5a68502823d4b080d41d221d8ab19e1d1c374e2f7749bfe96`.
+- Download archive SHA-256: `faeaf3c1166ae4e5a68502823d4b080d41d221d8ab19e1d1c374e2f7749bfe96`.
 - Nested source SHA-256: `0391b58d66940511150fe5ce9f87695985a0d399733a8377b3b22634a6b77b83`.
 
 The [comparison report](../reference/wsjtcb/initial-snapshot.json) records 1,874
@@ -114,13 +114,15 @@ actual unpacked result, rather than relying on pack success or call grammar.
 Run the commands in [the reference README](../reference/wsjtcb/README.md#reproduce).
 R03a regenerates 315 results by compiling the original Fortran module and checks
 the committed data in CI. The normal JVM suite compares 240 call results with the
-production Kotlin validator. R03b adds 67 payload pairs, 15 hash vectors and 79 RX
+production Kotlin validator. R03b adds 66 defined payload pairs, 15 hash vectors and 79 RX
 scenarios. R03c adds 129 parser/generation/AutoSeq scenarios and 72 generated-message
-payloads. Thirty-eight Python tests cover native behavior, source/result integrity,
+payloads. Forty-one Python tests now cover native behavior, source/result integrity,
 compiler diagnostics, archive checksum rejection, duplicate paths and byte versus
-text comparison. CI regenerates packing/hash and QSO results at both O0 and O2.
+text comparison. CI regenerates packing/hash and QSO results at both O0 and O2. R04 moves one
+undefined TX placeholder into an explicit raw RX scenario; see
+[the packing reference correction](../reference/wsjtcb/PACKING.md#undefined-tx-placeholder-discovered-during-r04).
 
-The source audit checks all 28 distinct files from three manifests at immutable
+The source audit checks all 37 distinct files from four manifests at immutable
 revisions. The host job compiles predicates, packing dependencies and selected
 desktop QSO methods with Qt Core/Network, without the GUI or full decoder. The upstream
 [test_cb_autoseq harness](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/tests/ft8/test_cb_autoseq.cpp)
@@ -130,9 +132,10 @@ relevant control handlers, with documented substitutes for presentation and
 external effects. See [the QSO trace guide](../reference/wsjtcb/QSO.md).
 
 R03c completes the documented message-level reference corpus, including a
-two-station generated-text exchange. After review/merge, R04 can evaluate an
-Android engine against it. Audio, corrupt-frame rejection, actual device
-interoperability and the full TX lifecycle remain later acceptance gates.
+two-station generated-text exchange. R03c is merged as PR #18. R04 adds 116
+channel-codeword/tone matches and four independent WAV decodes on ARM64; see
+[the engine decision and evidence](FT8_ENGINE.md). Live audio, corrupt-frame
+qualification, radio interoperability and the full TX lifecycle remain later gates.
 Recorded desktop outcomes include unrelated finals advancing a QSO, malformed
 manual reports and out-of-order regressions; R21/R22 must qualify those cases and
 document deliberate Android differences before enabling automation.

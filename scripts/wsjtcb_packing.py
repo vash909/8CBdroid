@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate/check payload and hash fixtures with unmodified WSJT-CB routines."""
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -51,6 +52,8 @@ def load_inputs():
         raise ValueError('Empty packing cases or duplicate IDs')
     if any(not ascii_text(case['input'], 37) for case in packing):
         raise ValueError('Packing inputs must be printable ASCII, at most 37 characters')
+    if any('<...>' in case['input'] for case in packing):
+        raise ValueError('Unresolved hash placeholders have no defined TX payload; use a raw RX scenario')
     calls = cases['hash_calls']
     if not calls or len(calls) != len(set(calls)) or any(not ascii_text(c, 11) or not c for c in calls):
         raise ValueError('Invalid or duplicate hash calls')
@@ -173,6 +176,10 @@ def main():
     generated = generate(manifest, cases, args.optimization)
     if args.check:
         if not FIXTURE.exists() or FIXTURE.read_text() != generated:
+            expected = FIXTURE.read_text() if FIXTURE.exists() else ''
+            difference = list(difflib.unified_diff(expected.splitlines(), generated.splitlines(),
+                              fromfile='committed packing fixture', tofile='generated packing fixture'))
+            print('\n'.join(difference[:120]), file=sys.stderr)
             raise ValueError('Packing fixture differs; inspect changes and regenerate without --check')
         print(f'Packing fixture verified: {len(cases["packing"])} payloads, '
               f'{len(cases["hash_calls"])} hashes, {len(cases["scenarios"])} scenarios ({args.optimization})')

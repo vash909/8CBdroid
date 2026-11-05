@@ -39,3 +39,24 @@
   saved settings. Use a real phone for USB OTG, audio, VOX and radio interoperability.
 - Keep the initial development sequence focused: persistent station settings,
   LAN heartbeat/status, LAN decodes, then a first documented radio/cable backend.
+
+## Debug phone deployment
+
+- The agent owns deployment via ADB to the connected, authorized debug phone
+  (currently Samsung Galaxy A51 / SM-A515F). After successful PR CI, download
+  that run's debug APK artifact, verify it matches the current PR commit,
+  install/update it, launch the app and report the result. Do not ask the owner
+  to install APKs manually when ADB is available.
+- Use bounded ADB commands and preserve existing app data. Never uninstall the
+  app or clear its data to resolve a signing conflict without explicit approval.
+  If the phone is disconnected or unauthorized, report deployment as pending.
+- Deployment does not replace phone testing or the owner's explicit merge approval.
+
+## Local resource limits
+
+- On this Linux PC, run builds, reference generation and native checks through
+  `bash scripts/controlled.sh SECONDS COMMAND ...`: one job, 2 CPU cores,
+  4 GiB RAM, no swap and a finite deadline. Use `--no-daemon` for Gradle.
+- Do not launch a second heavy job while one is running. Check progress at least
+  once per minute; stop and investigate an expired or stalled job before retrying.
+- Never terminate unrelated editor processes or clear user settings to recover a build.

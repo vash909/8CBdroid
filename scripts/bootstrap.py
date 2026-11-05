@@ -77,7 +77,7 @@ def main():
     env = dict(os.environ, JAVA_HOME=str(java), ANDROID_HOME=str(sdk))
     print("Android SDK licenses: read and accept when prompted.", flush=True)
     subprocess.run([str(manager), f"--sdk_root={sdk}", "--licenses"], env=env, check=True)
-    subprocess.run([str(manager), f"--sdk_root={sdk}", "platform-tools", "platforms;android-36", "build-tools;35.0.0"], env=env, check=True)
+    subprocess.run([str(manager), f"--sdk_root={sdk}", "platform-tools", "platforms;android-36", "build-tools;35.0.0", "ndk;28.2.13676358", "cmake;3.22.1"], env=env, check=True)
     (ROOT / "local.properties").write_text(f"sdk.dir={sdk}\n")
     print("Ready. Run: source scripts/env.sh && ./gradlew assembleDebug", flush=True)
 

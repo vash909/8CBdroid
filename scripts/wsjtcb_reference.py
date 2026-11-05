@@ -75,12 +75,13 @@ def audit_sources(manifest):
     destination = ROOT / '.tooling/wsjt-reference-audit'
     packing = json.loads((REFERENCE / 'packing-sources.json').read_text())
     qso = json.loads((REFERENCE / 'qso-sources.json').read_text())
+    channel = json.loads((REFERENCE / 'channel-sources.json').read_text())
     cb = manifest['references']['cb']
-    for extra in (packing, qso):
+    for extra in (packing, qso, channel):
         if extra['revision'] != cb['revision'] or extra['repository'] != cb['repository']:
             raise ValueError('Inconsistent source audit revision')
     files = {file['path']: file for file in cb['files']}
-    for file in packing['files'] + qso['files']:
+    for file in packing['files'] + qso['files'] + channel['files']:
         if file['path'] in files and files[file['path']]['sha256'] != file['sha256']:
             raise ValueError('Conflicting reference source checksum')
         files[file['path']] = {'path': file['path'], 'sha256': file['sha256']}

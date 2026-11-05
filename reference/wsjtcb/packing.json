@@ -3,7 +3,7 @@
   "repository": "vash909/WSJT-CB",
   "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
   "sources_sha256": "d96a6e40e24547672a783f8dbfeff879cd769009e55090a0e7da574d45343eee",
-  "cases_sha256": "5edc9a6e2a12afd5a13c460b4da9dd35419b1e41347f9d1b6e6396a619d24d6e",
+  "cases_sha256": "5b65fbb0141a7d2b6fce0512740c7edd37f4e3aafc7d9eb970957672140d1d54",
   "harness_sha256": "da286afcadabfad3bc074fdc1c4b47c27c202a54b86179a821b5bc20dde5da31",
   "packing": [
     {
@@ -760,20 +760,6 @@
         "i3": 0,
         "n3": 0,
         "payload77": "00111100000000100000101100000001111000111000100111001100001110000001010000000"
-      }
-    },
-    {
-      "id": "unresolved-input",
-      "input": "<...> 26AT101",
-      "pack77": {
-        "i3": 4,
-        "n3": -1,
-        "payload77": "00000000000000000000000000000000000010001111001110110000011010110100000000100"
-      },
-      "pack77var": {
-        "i3": 4,
-        "n3": -1,
-        "payload77": "00000000000000000000000000000000000010001111001110110000011010110100000000100"
       }
     },
     {
@@ -1621,8 +1607,8 @@
       "id": "cold-unresolved-input",
       "steps": [
         {
-          "op": "decode",
-          "case": "unresolved-input",
+          "op": "raw",
+          "payload77": "00000000000000000000000000000000000010001111001110110000011010110100000000100",
           "success": true,
           "decoded": "<...> 26AT101"
         }

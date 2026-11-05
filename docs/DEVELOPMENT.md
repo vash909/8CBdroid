@@ -5,7 +5,7 @@
 ```bash
 python3 scripts/bootstrap.py
 source scripts/env.sh
-bash scripts/check.sh
+bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
 Bootstrap uses official Adoptium JDK 17 and Google command-line tools metadata,
@@ -15,14 +15,14 @@ tool directories are reused. To refresh JDK/CLI, rename the relevant directory a
 rerun bootstrap.
 
 Source `scripts/env.sh` in each new terminal. It selects project-local tools without
-changing global shell configuration. Android Studio, emulator images and NDK are
-not installed by bootstrap. The current build needs no NDK. Android Studio can be
+changing global shell configuration. Bootstrap also selects NDK 28.2.13676358 and CMake 3.22.1 for the offline
+channel backend. Android Studio and emulator images are not installed. Android Studio can be
 installed separately from the [official site](https://developer.android.com/studio).
 
 ## Android Studio and other systems
 
 Install JDK 17 and Android SDK through Android Studio or command-line tools. Select
-Platform 36, Build Tools 35.0.0 and Platform Tools. Set JAVA_HOME/ANDROID_HOME and
+Platform 36, Build Tools 35.0.0, Platform Tools, NDK 28.2.13676358 and CMake 3.22.1. Set JAVA_HOME/ANDROID_HOME and
 create an untracked `local.properties`:
 
 ```properties
@@ -36,20 +36,23 @@ Windows users can run `gradlew.bat`. A global Gradle installation is unnecessary
 
 ```bash
 source scripts/env.sh
-bash scripts/check.sh
+bash scripts/controlled.sh 600 bash scripts/check.sh
 adb devices
 ./gradlew :app:installDebug
 adb shell am start -n net.vash.ft8cbdroid/.MainActivity
 ```
 
-The check script runs domain/protocol/app JVM tests, lint and debug packaging.
+The check script runs domain/protocol/app JVM tests, app/library/probe lint and
+both debug APK builds. The Linux wrapper applies process-tree resource limits;
+on other systems run `bash scripts/check.sh` directly.
 The APK is `app/build/outputs/apk/debug/app-debug.apk`. Authorize USB debugging
 on the connected phone before installation.
 
 Tests cover CB callsigns, Maidenhead locators, wire parsing, real loopback UDP,
 LAN ViewModel lifecycle ordering, Decode/Replay fixtures, history limits and
 DataStore reopening. They do not establish
-real-phone/WSJT-CB interoperability or radio/audio/DSP functionality.
+live audio or radio interoperability. Offline DSP has separate
+[host and phone checks](FT8_ENGINE.md).
 
 ## Phone checks
 
@@ -100,7 +103,8 @@ See [reference setup and source audit](../reference/wsjtcb/README.md) and the
 [CB difference inventory](WSJT_CB_COMPATIBILITY.md). The [QSO trace guide](../reference/wsjtcb/QSO.md)
 also describes the extracted local toolchain on this PC. A separate CI job compiles
 the pinned test-only routines and rejects stale fixtures at O0/O2. This does not enable a
-local FT8 engine in the APK or require the Android NDK.
+the CB text codec or AutoSeq in the app. The separate R04 channel backend
+does require the pinned Android NDK. See [offline engine checks](FT8_ENGINE.md).
 
 ## Pull requests and CI
 
@@ -110,8 +114,26 @@ before merging. Do not enable auto-merge.
 
 GitHub Actions runs on main pushes and PRs, executing tests, lint and debug build.
 The debug APK and validation reports are kept as artifacts for 14 days. CI does
-not sign releases or publish to Play Store. Run `bash scripts/check.sh` before a
+not sign releases or publish to Play Store. Run `bash scripts/controlled.sh 600 bash scripts/check.sh` before a
 code commit; do not commit tooling, caches, local.properties, credentials, signing
 keys or recordings. Gradle Wrapper verifies the distribution SHA-256.
 
 Toolchain reference: [AGP 8.13](https://developer.android.com/build/releases/agp-8-13-0-release-notes).
+
+## Controlled jobs on this PC
+
+Run one heavy job at a time using `bash scripts/controlled.sh SECONDS COMMAND ...`.
+It requires Linux cgroup v2, a systemd user session and `flock`. The wrapper fails
+if limits cannot be applied: CPU quota 200% (two cores total), memory high 3 GiB,
+hard memory maximum 4 GiB, no swap, and a TERM/KILL deadline for all descendants.
+It caps CMake/OpenMP/BLAS parallelism and Java's visible processor count at two.
+Gradle also has parallel projects disabled and a maximum of two workers.
+An exclusive project lock rejects concurrent controlled jobs. Completed or
+expired scopes are stopped so build daemons cannot remain in the background.
+A timeout returns 124; investigate before rerunning a stalled job.
+
+If VS Code becomes unresponsive, inspect its extension-host log separately from
+build processes. Exclude `.tooling`, `.gradle` and `build` trees from editor file
+watchers and search in local workspace settings. Avoid restarting unrelated
+processes or deleting station settings. Resource saturation alone does not
+identify the responsible extension or build task.
