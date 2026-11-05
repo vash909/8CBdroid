@@ -88,5 +88,11 @@
     "reference": "cb",
     "path": "lib/ft8var/cb_callsigns.f90",
     "local": "reference/wsjtcb/source/cb_callsigns.f90"
+  },
+  "initial_snapshot": {
+    "repository": "WSJTX/wsjtx",
+    "version": "3.0.0-rc1",
+    "revision": null,
+    "provenance": "Identified by the WSJT-CB project owner on 2026-11-05; exact upstream commit mapping is pending."
   }
 }

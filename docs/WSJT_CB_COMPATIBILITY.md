@@ -14,13 +14,17 @@ source file is pinned with a checksum in
 | `x3` | WSJT-X v3.0.0, `ab976b1b4b72a96aaa3259591f68ad772af7d7f9` | Fixed comparison release for Radio and desktop QSO handling. |
 | `x32` | WSJT-X v3.2.0-rc1, `567ad29ce6abf3d4a44f181cdbc7ceba0d73e5f4` | Fixed comparison release for the later decoder backport. |
 
-The comparison tags were resolved to commits. Neither tag is claimed to be the
-exact ancestor of the whole CB tree. The local fork history starts from an
-imported source snapshot, whose initial CMake version declares 3.0.0 RC1; that
-alone does not establish the upstream commit. Later decoder changes have their
-own upstream provenance. Exact initial-snapshot ancestry remains unresolved.
-A textual diff against one release is evidence for inspected differences, not
-proof that every changed line is CB-specific.
+The initial WSJT-CB source snapshot is **WSJT-X 3.0.0-rc1**, identified by the
+WSJT-CB project owner on 2026-11-05. The initial CMake version is consistent with
+that release. The exact upstream commit corresponding to the imported snapshot
+has not yet been mapped; this narrower task remains pending.
+
+The comparison tags above were resolved to commits. `x3` is the later v3.0.0
+release, not the original rc1 snapshot; `x32` describes later decoder provenance.
+Neither comparison tag is substituted for the known initial version. A textual
+diff against one release is evidence for inspected differences, not proof that
+every changed line is CB-specific. Future routine-level comparisons must resolve
+the rc1 source revision and retain separate provenance for later backports.
 
 Use [the reproducible source audit](../reference/wsjtcb/README.md#audit-the-comparison-sources)
 to verify hashes and obtain text diffs without CRLF noise. The manifest also pins

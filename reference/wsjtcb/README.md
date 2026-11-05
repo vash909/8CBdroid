@@ -52,7 +52,9 @@ compatibility inventory together and preserve the source notices.
 ## Audit the comparison sources
 
 `sources.json` pins the inspected WSJT-CB and WSJT-X files and their SHA-256
-values. With explicit network access:
+values. Its `initial_snapshot` entry records WSJT-X 3.0.0-rc1 as the owner-identified
+base, with exact commit mapping pending. The audited v3.0.0 comparison is a later
+release and does not replace that initial snapshot. With explicit network access:
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check --audit-sources
