@@ -83,6 +83,22 @@ not the reverse. Radio/audio controls remain disabled.
 For USB discovery and permission tests, follow [the USB CAT guide](USB_CAT.md#phone-verification).
 The empty-device path can be checked without an OTG adapter; real USB tests need hardware.
 
+## Desktop compatibility fixtures
+
+The regular JVM suite reads committed desktop-generated fixtures and needs no
+Fortran compiler. To reproduce them on the host, install GNU Fortran or set `FC`,
+then run:
+
+```bash
+python3 scripts/wsjtcb_reference.py --check
+python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_reference.py'
+```
+
+See [reference setup and source audit](../reference/wsjtcb/README.md) and the
+[CB difference inventory](WSJT_CB_COMPATIBILITY.md). A separate CI job compiles
+the pinned test-only module and rejects stale fixtures. This does not enable a
+local FT8 engine in the APK or require the Android NDK.
+
 ## Pull requests and CI
 
 Use focused feature branches and short, clear English PR titles/descriptions.

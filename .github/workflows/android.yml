@@ -14,6 +14,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install reference compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y gfortran
+      - name: Check pinned desktop predicate fixtures
+        run: |
+          python3 scripts/wsjtcb_reference.py --check
+          python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_reference.py'
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25

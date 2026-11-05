@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "references": {
+    "cb": {
+      "repository": "vash909/WSJT-CB",
+      "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+      "files": [
+        {
+          "path": "Radio.cpp",
+          "sha256": "a71ec111fc186c19b580d0692fd2e41d5ea34f4ac291f2aa376880a52279996a"
+        },
+        {
+          "path": "lib/77bit/packjt77.f90",
+          "sha256": "98a7a7832f4ab8ee806da79de161fcf3ca8eb80f156eda246c65dd7ae8409817"
+        },
+        {
+          "path": "lib/ft8var/cb_callsigns.f90",
+          "sha256": "2d632a85f0ab9fe7e636b371083d7c50f0866bb97aec7836974f467a207dc866"
+        },
+        {
+          "path": "lib/ft8var/chkfalse8var.f90",
+          "sha256": "0aff4418be711d7b9fcbff790b409d11f456178622572dafd278fea689e0aba5"
+        },
+        {
+          "path": "lib/ft8var/packjt77var.f90",
+          "sha256": "1b3f039401fc08b28f915e3e622e9cd511e34acaef493dd97b954e7c4e9697af"
+        },
+        {
+          "path": "tests/ft8/README.md",
+          "sha256": "35a103f078c9cf70ed8478a0526e6c861bbe89df3eabd529e3720dd9e313a4e1"
+        },
+        {
+          "path": "tests/ft8/test_cb_autoseq.cpp",
+          "sha256": "fdcfcffd75fda7bd3ea167cb8c4351ad72b5a9c831bb6ae0f363d9afe208f3b0"
+        },
+        {
+          "path": "widgets/mainwindow.cpp",
+          "sha256": "ef007e875036c72913c8f13e1d8f02ca6ec2ab5327e3f263514eff9a8e3d2207"
+        }
+      ]
+    },
+    "x3": {
+      "repository": "WSJTX/wsjtx",
+      "revision": "ab976b1b4b72a96aaa3259591f68ad772af7d7f9",
+      "files": [
+        {
+          "path": "Radio.cpp",
+          "sha256": "bb5dcc29b563f29f72eb8d5e8ba1b163fb59d9d0c0ef85aae1a03d729bb849d9"
+        },
+        {
+          "path": "lib/77bit/packjt77.f90",
+          "sha256": "71b7323bb62d339eb8e5e83d5a700ef776b9d2663898019a668deeab194058fd"
+        },
+        {
+          "path": "lib/ft8var/chkfalse8var.f90",
+          "sha256": "7cfbc859f47ab7961fa31121583a1d0a59731c7f34c3434c3360cf9ce03f9a9e"
+        },
+        {
+          "path": "widgets/mainwindow.cpp",
+          "sha256": "5df2bd97161b9c5405dcc30d49cbaa5c939db21a906bd96e8a67ab684618c7ae"
+        }
+      ]
+    },
+    "x32": {
+      "repository": "WSJTX/wsjtx",
+      "revision": "567ad29ce6abf3d4a44f181cdbc7ceba0d73e5f4",
+      "files": [
+        {
+          "path": "Radio.cpp",
+          "sha256": "9f91508896feacd26d61162b7b0f0ff8051f19a45480b56142b3d6eaf1fe094e"
+        },
+        {
+          "path": "lib/77bit/packjt77.f90",
+          "sha256": "6402d7cae4d30ed2e42c9ca8d967041d6b1e2248a986d9c2cab7cd37ffc3cb2b"
+        },
+        {
+          "path": "lib/ft8var/chkfalse8var.f90",
+          "sha256": "7cfbc859f47ab7961fa31121583a1d0a59731c7f34c3434c3360cf9ce03f9a9e"
+        },
+        {
+          "path": "widgets/mainwindow.cpp",
+          "sha256": "58b2ce4dd912b8b6c4b72fbd076a070c600b60b7004bcc13192db60c978df697"
+        }
+      ]
+    }
+  },
+  "vendored": {
+    "reference": "cb",
+    "path": "lib/ft8var/cb_callsigns.f90",
+    "local": "reference/wsjtcb/source/cb_callsigns.f90"
+  }
+}

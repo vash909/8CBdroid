@@ -8,6 +8,9 @@ desktop DSP engine or Hamlib.
   further credits listed upstream. Its UDP protocol, FT8 parameters and CB
   grammar serve as references at the commit pinned in the documentation.
   Upstream is distributed under GPLv3. This skeleton uses GPL-3.0-only.
+  The unmodified `lib/ft8var/cb_callsigns.f90` from the pinned reference is
+  vendored under `reference/wsjtcb/source/` for host-side tests only; its
+  provenance and source checksums are recorded there. It is not in the APK.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
