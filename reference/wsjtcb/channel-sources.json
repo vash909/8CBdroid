@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "repository": "vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "files": [
+    {
+      "path": "lib/crc.f90",
+      "local": "source/channel/lib/crc.f90",
+      "sha256": "5716a53af585e37f12ea48426e7a7190f43c314743a02c89cc8ce94a2fecf948"
+    },
+    {
+      "path": "lib/crc14.cpp",
+      "local": "source/channel/lib/crc14.cpp",
+      "sha256": "e3122cd55b759c7b5f93e78a4b64eb84e4052d4f681add75ead41ae330ec3a28"
+    },
+    {
+      "path": "lib/ft2/gfsk_pulse.f90",
+      "local": "source/channel/lib/ft2/gfsk_pulse.f90",
+      "sha256": "7ad8719c3a2436c7cc4b7f74bc87de20ccc08efb73da6c647639e718bc662eba"
+    },
+    {
+      "path": "lib/ft8/encode174_91.f90",
+      "local": "source/channel/lib/ft8/encode174_91.f90",
+      "sha256": "9b92f013d405f9d722ede2f33da4d27ea0023be527b8f35faf26cb2d0db777bd"
+    },
+    {
+      "path": "lib/ft8/ft8_params.f90",
+      "local": "source/channel/lib/ft8/ft8_params.f90",
+      "sha256": "9579eb3bf6b844d3225238341ff6a30c803f39a331771c50b15575491b14f67b"
+    },
+    {
+      "path": "lib/ft8/gen_ft8wave.f90",
+      "local": "source/channel/lib/ft8/gen_ft8wave.f90",
+      "sha256": "6c2e641563d23bb9efeb2b20fd08c8eaf4a11f58fc3af53245038984fa18b232"
+    },
+    {
+      "path": "lib/ft8/genft8.f90",
+      "local": "source/channel/lib/ft8/genft8.f90",
+      "sha256": "93f758106607b974e5c165825800c628826dbf11d718cc09ee162e541fe0ea9a"
+    },
+    {
+      "path": "lib/ft8/ldpc_174_91_c_generator.f90",
+      "local": "source/channel/lib/ft8/ldpc_174_91_c_generator.f90",
+      "sha256": "3ee138355621df91310cbc86c5c6214bcaa3a6efec77ca2b14851b4d656d026f"
+    },
+    {
+      "path": "lib/timer_module.f90",
+      "local": "source/channel/lib/timer_module.f90",
+      "sha256": "b56ff845395664bde1393ecaab31e916081c05c8fba4b7389cd86b718e5c230b"
+    }
+  ]
+}

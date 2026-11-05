@@ -11,6 +11,9 @@ when the peer disconnects or listening stops. Local FT8, USB radio control, audi
 and logging are not implemented yet. The entire client uses English.
 The Radio tab can discover USB interfaces and request access; radio connection
 and CAT/PTT commands remain unimplemented.
+An experimental source-built offline FT8 channel backend and a separate phone
+probe APK are available; CB text encoding and local operating controls are pending.
+See [engine scope and verification](docs/FT8_ENGINE.md).
 
 In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
 locator, then tap **Save settings**. Wait for confirmation before closing.
@@ -39,8 +42,7 @@ Requirements: Python 3.12+, `curl`, `unzip`, Git and Internet access.
 ```bash
 python3 scripts/bootstrap.py
 source scripts/env.sh
-./gradlew :app:assembleDebug
-bash scripts/check.sh
+bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
 Bootstrap downloads JDK 17 and Android SDK into `.tooling/`, checks the
@@ -68,7 +70,9 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 | `app/` | English Compose UI, station/LAN ViewModels, DataStore and hardware placeholders |
 | `core/` | Station models, CB callsigns, FT8 profile and radio/audio/DSP contracts |
 | `protocol/wsjtcb/` | Wire codec, UDP status/decodes, explicit replay and peer lifetime |
-| `native/` | Optional CMake/C++ starting point for future native engines |
+| `dsp/ft8/` | Android offline channel backend and JNI adapter |
+| `native/` | Pinned ft8_lib channel sources and host checks |
+| `engineprobe/` | Separate no-permission offline phone test APK |
 | `scripts/` | Local environment setup and checks |
 | `.github/workflows/` | Build, JVM tests, lint and debug APK on GitHub Actions |
 
@@ -79,7 +83,9 @@ once the PR build has been checked.
 
 Pinned versions: JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.2.21,
 Compose BOM 2025.10.01, compile/target SDK 36, minimum Android 8.0 / API 26.
-This initial build does not require the NDK.
+Native build: NDK 28.2.13676358, CMake 3.22.1, arm64-v8a/x86_64.
+The Linux controlled wrapper requires a systemd user session; other systems can
+run `bash scripts/check.sh` directly with Gradle limited to two workers.
 
 ## Compatibility work ahead
 

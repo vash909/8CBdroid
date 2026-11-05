@@ -39,3 +39,12 @@
   saved settings. Use a real phone for USB OTG, audio, VOX and radio interoperability.
 - Keep the initial development sequence focused: persistent station settings,
   LAN heartbeat/status, LAN decodes, then a first documented radio/cable backend.
+
+## Local resource limits
+
+- On this Linux PC, run builds, reference generation and native checks through
+  `bash scripts/controlled.sh SECONDS COMMAND ...`: one job, 2 CPU cores,
+  4 GiB RAM, no swap and a finite deadline. Use `--no-daemon` for Gradle.
+- Do not launch a second heavy job while one is running. Check progress at least
+  once per minute; stop and investigate an expired or stalled job before retrying.
+- Never terminate unrelated editor processes or clear user settings to recover a build.

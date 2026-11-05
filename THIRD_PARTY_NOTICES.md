@@ -13,8 +13,8 @@ desktop DSP engine or Hamlib.
   required legacy packing/include and module dependencies, are
   vendored under `reference/wsjtcb/source/` for host-side tests only. Upstream
   paths, revision and SHA-256 values are recorded in `sources.json` and
-  `packing-sources.json` / `qso-sources.json` in the reference directory. These sources and generated
-  fixtures are not in the APK; no local Android DSP engine is implemented.
+  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` in the reference directory. These sources and generated
+  text fixtures are not in the main APK. The offline native backend is described below.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
   from the official `v8.13.0` tag.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
@@ -31,3 +31,26 @@ desktop DSP engine or Hamlib.
 
 Maintain a version and license inventory for future dependencies, including
 native libraries and their transitive dependencies.
+
+## Offline native channel backend (R04)
+
+- [ft8_lib](https://github.com/kgoba/ft8_lib/tree/9fec6ca39886edbf96f4f5e71edc76da5074e871),
+  Karlis Goba YL3JG and contributors: MIT. Vendored source inventory and SHA-256
+  hashes: `native/third_party/ft8_lib/manifest.json`. The channel encoder, CRC,
+  LDPC decoder and spectrum monitor are compiled into `libeightcbdroid_ft8.so`.
+  `message.c`/`text.c` are host-only comparison inputs, excluded from Android.
+  The waveform adapter in `native/engine.cpp` follows its MIT-licensed demo.
+- KISS FFT, copyright 2003–2010 Mark Borgerding: BSD-3-Clause, included through
+  ft8_lib. Full notices are in `native/third_party/ft8_lib/fft/COPYING` and APK
+  assets `licenses/KISSFFT-BSD-3-Clause.txt`; the MIT notice is also packaged.
+  The BSD notice is reproduced from the upstream license text with the copyright
+  identity from the vendored FFT headers.
+- Android NDK 28.2.13676358 toolchain/runtime: the statically linked LLVM libc++
+  runtime is covered by Apache-2.0 WITH LLVM-exception. Its full toolchain notice
+  is copied into APK assets by the library build. NDK tools themselves are not shipped.
+- WSJT-CB's original channel encoder, CRC wrapper, LDPC generator and GFSK waveform
+  routines are vendored under `reference/wsjtcb/source/channel/` for host-only
+  fixture generation. `channel-sources.json` pins nine additional files. Boost
+  headers are a host-only dependency (Boost Software License 1.0); Boost and
+  Fortran/Qt runtimes are not packaged in the app. The separate probe APK includes
+  generated desktop WAVs for tests; the main APK excludes these fixtures.

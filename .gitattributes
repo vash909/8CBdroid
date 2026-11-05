@@ -1,2 +1,4 @@
 # Preserve the exact upstream bytes used by the host reference checksums.
 reference/wsjtcb/source/** -text
+native/third_party/ft8_lib/** -text
+reference/wsjtcb/channel/*.wav binary
