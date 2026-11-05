@@ -10,6 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        exclusiveContent {
+            forRepository { maven("https://jitpack.io") }
+            filter { includeModule("com.github.mik3y", "usb-serial-for-android") }
+        }
     }
 }
 rootProject.name = "8CBdroid"

@@ -44,7 +44,13 @@ configuration changes such as rotation. Clearing the ViewModel closes the socket
 There is no background service. Port/filter inputs survive rotation but not process
 termination. See [the wire contract and phone test](WSJT_CB_INTEGRATION.md).
 
-## Radio control: future Hamlib or Android CAT
+## USB discovery and future radio control
+
+`UsbViewModel` owns an application-context `AndroidUsbInventory`. The inventory
+uses `UsbManager` and pinned Java serial drivers for descriptor discovery and
+explicit permission requests; Compose receives immutable state and callbacks.
+A pure Kotlin session tracks device-specific pending/granted/denied access.
+No USB port is opened. See [USB setup, scope and phone checks](USB_CAT.md).
 
 `RadioController` defines connection, frequency and PTT operations. Its placeholder
 returns Unavailable and advertises no capabilities. Future implementations can use:

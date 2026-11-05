@@ -9,6 +9,8 @@ The LAN tab shows WSJT-CB status and live/replayed decodes, with explicit replay
 and local clear controls. Decode history holds up to 200 messages and is cleared
 when the peer disconnects or listening stops. Local FT8, USB radio control, audio
 and logging are not implemented yet. The entire client uses English.
+The Radio tab can discover USB interfaces and request access; radio connection
+and CAT/PTT commands remain unimplemented.
 
 In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
 locator, then tap **Save settings**. Wait for confirmation before closing.
@@ -18,6 +20,8 @@ For LAN monitoring, tap **Start listening** and configure WSJT-CB's UDP server
 to this phone's Wi-Fi IPv4 address and selected port (default 2237). Keep the
 app in the foreground. See [LAN setup and testing](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test),
 including the PC-side `scripts/wsjtcb_lan_probe.py` simulator.
+
+For USB interface discovery and permission checks, see the [USB CAT guide](docs/USB_CAT.md).
 
 ## Planned connection paths
 

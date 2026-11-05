@@ -80,6 +80,9 @@ and confirm all app screens, controls and messages remain English. English-only
 resources are packaged, including library controls. Stay on the same LAN; the PC sends to the phone's address,
 not the reverse. Radio/audio controls remain disabled.
 
+For USB discovery and permission tests, follow [the USB CAT guide](USB_CAT.md#phone-verification).
+The empty-device path can be checked without an OTG adapter; real USB tests need hardware.
+
 ## Pull requests and CI
 
 Use focused feature branches and short, clear English PR titles/descriptions.

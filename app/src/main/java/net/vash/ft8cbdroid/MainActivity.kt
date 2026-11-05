@@ -19,6 +19,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
 import net.vash.ft8cbdroid.core.StationIdentity
+import net.vash.ft8cbdroid.usb.UsbPanel
+import net.vash.ft8cbdroid.usb.UsbInventoryState
+import net.vash.ft8cbdroid.usb.UsbViewModel
 import net.vash.ft8cbdroid.lan.LanPanel
 import net.vash.ft8cbdroid.lan.DecodesPanel
 import net.vash.ft8cbdroid.lan.LanUiState
@@ -41,11 +44,16 @@ class MainActivity : ComponentActivity() {
             ),
         )[StationSettingsViewModel::class.java]
         lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
+        val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
         setContent {
+            val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
             EightCbApp(
                 station = station,
+                usb = usb,
+                onRefreshUsb = usbViewModel::refresh,
+                onUsbPermission = usbViewModel::requestPermission,
                 lan = lan,
                 onLanPortChange = lanViewModel::changePort,
                 onLanAddressChange = lanViewModel::changeAddress,
@@ -78,6 +86,9 @@ private val palette = darkColorScheme(
 fun EightCbApp(
     station: StationSettingsUiState,
     lan: LanUiState = LanUiState(),
+    usb: UsbInventoryState = UsbInventoryState(),
+    onRefreshUsb: () -> Unit = {},
+    onUsbPermission: (String) -> Unit = {},
     onLanPortChange: (String) -> Unit = {},
     onLanAddressChange: (String) -> Unit = {},
     onStartLan: () -> Unit = {},
@@ -176,12 +187,7 @@ fun EightCbApp(
                         listOf("USB OTG / CAT", "Phone VOX", "WSJT-CB over LAN").forEach { mode ->
                             FilterChip(selected = connection == mode, onClick = { connection = mode }, label = { Text(mode) })
                         }
-                        Panel("USB OTG / CAT") {
-                            Text("Radio control is planned through Hamlib or equivalent Android CAT drivers.")
-                            Text("USB permissions, device detection, serial drivers, radio profiles and PTT are not implemented.")
-                            Text("Support will depend on the radio model, cable and CAT protocol. USB audio uses a separate path.")
-                        }
-                        OutlinedButton(onClick = {}, enabled = false) { Text("Find USB devices") }
+                        UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
                         Text("Audio and VOX", style = MaterialTheme.typography.titleLarge)
