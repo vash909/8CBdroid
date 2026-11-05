@@ -1,0 +1,1289 @@
+{
+  "schema": 1,
+  "packing": [
+    {
+      "id": "cq-1A1",
+      "input": "CQ 1A1"
+    },
+    {
+      "id": "to-1A1",
+      "input": "<1AT106> 1A1"
+    },
+    {
+      "id": "from-1A1",
+      "input": "1A1 <1AT106>"
+    },
+    {
+      "id": "cq-1AT106",
+      "input": "CQ 1AT106"
+    },
+    {
+      "id": "to-1AT106",
+      "input": "<1AT106> 1AT106"
+    },
+    {
+      "id": "from-1AT106",
+      "input": "1AT106 <1AT106>"
+    },
+    {
+      "id": "cq-26AT101",
+      "input": "CQ 26AT101"
+    },
+    {
+      "id": "to-26AT101",
+      "input": "<1AT106> 26AT101"
+    },
+    {
+      "id": "from-26AT101",
+      "input": "26AT101 <1AT106>"
+    },
+    {
+      "id": "cq-161XZ085",
+      "input": "CQ 161XZ085"
+    },
+    {
+      "id": "to-161XZ085",
+      "input": "<1AT106> 161XZ085"
+    },
+    {
+      "id": "from-161XZ085",
+      "input": "161XZ085 <1AT106>"
+    },
+    {
+      "id": "cq-001AB123",
+      "input": "CQ 001AB123"
+    },
+    {
+      "id": "to-001AB123",
+      "input": "<1AT106> 001AB123"
+    },
+    {
+      "id": "from-001AB123",
+      "input": "001AB123 <1AT106>"
+    },
+    {
+      "id": "cq-1AT1000",
+      "input": "CQ 1AT1000"
+    },
+    {
+      "id": "to-1AT1000",
+      "input": "<1AT106> 1AT1000"
+    },
+    {
+      "id": "from-1AT1000",
+      "input": "1AT1000 <1AT106>"
+    },
+    {
+      "id": "cq-999ZZ-ZZ",
+      "input": "CQ 999ZZ/ZZ"
+    },
+    {
+      "id": "to-999ZZ-ZZ",
+      "input": "<1AT106> 999ZZ/ZZ"
+    },
+    {
+      "id": "from-999ZZ-ZZ",
+      "input": "999ZZ/ZZ <1AT106>"
+    },
+    {
+      "id": "to-RRR",
+      "input": "<1AT106> 26AT101 RRR"
+    },
+    {
+      "id": "to-RR73",
+      "input": "<1AT106> 26AT101 RR73"
+    },
+    {
+      "id": "to-73",
+      "input": "<1AT106> 26AT101 73"
+    },
+    {
+      "id": "to-minus10",
+      "input": "<1AT106> 26AT101 -10"
+    },
+    {
+      "id": "to-Rminus10",
+      "input": "<1AT106> 26AT101 R-10"
+    },
+    {
+      "id": "from-RRR",
+      "input": "26AT101 <1AT106> RRR"
+    },
+    {
+      "id": "from-RR73",
+      "input": "26AT101 <1AT106> RR73"
+    },
+    {
+      "id": "from-73",
+      "input": "26AT101 <1AT106> 73"
+    },
+    {
+      "id": "from-minus10",
+      "input": "26AT101 <1AT106> -10"
+    },
+    {
+      "id": "from-Rminus10",
+      "input": "26AT101 <1AT106> R-10"
+    },
+    {
+      "id": "one-26AT101-minus10",
+      "input": "26AT101 -10"
+    },
+    {
+      "id": "one-26AT101-plus05",
+      "input": "26AT101 +05"
+    },
+    {
+      "id": "one-26AT101-Rminus10",
+      "input": "26AT101 R-10"
+    },
+    {
+      "id": "one-26AT101-Rplus05",
+      "input": "26AT101 R+05"
+    },
+    {
+      "id": "one-26AT101-RRR",
+      "input": "26AT101 RRR"
+    },
+    {
+      "id": "one-26AT101-RR73",
+      "input": "26AT101 RR73"
+    },
+    {
+      "id": "one-26AT101-73",
+      "input": "26AT101 73"
+    },
+    {
+      "id": "one-1AT106-minus10",
+      "input": "1AT106 -10"
+    },
+    {
+      "id": "one-1AT106-plus05",
+      "input": "1AT106 +05"
+    },
+    {
+      "id": "one-1AT106-Rminus10",
+      "input": "1AT106 R-10"
+    },
+    {
+      "id": "one-1AT106-Rplus05",
+      "input": "1AT106 R+05"
+    },
+    {
+      "id": "one-1AT106-RRR",
+      "input": "1AT106 RRR"
+    },
+    {
+      "id": "one-1AT106-RR73",
+      "input": "1AT106 RR73"
+    },
+    {
+      "id": "one-1AT106-73",
+      "input": "1AT106 73"
+    },
+    {
+      "id": "normalized-cq",
+      "input": "cq   1at106"
+    },
+    {
+      "id": "cq-locator-loss",
+      "input": "CQ 1AT106 JN45"
+    },
+    {
+      "id": "cq-dx",
+      "input": "CQ DX 1AT106"
+    },
+    {
+      "id": "cq-portable",
+      "input": "CQ 1AT106/P"
+    },
+    {
+      "id": "cq-numeric-slash",
+      "input": "CQ 1AT106/1"
+    },
+    {
+      "id": "long-calls-report-loss",
+      "input": "1AT106 26AT101 -10"
+    },
+    {
+      "id": "type4-report-loss",
+      "input": "<1AT106> 26AT101 -10"
+    },
+    {
+      "id": "free-text",
+      "input": "HELLO WORLD"
+    },
+    {
+      "id": "free-text-overlength",
+      "input": "HELLO WORLD 123456789"
+    },
+    {
+      "id": "unresolved-input",
+      "input": "<...> 26AT101"
+    },
+    {
+      "id": "invalid-incomplete",
+      "input": "CQ 1AT"
+    },
+    {
+      "id": "invalid-long-prefix",
+      "input": "CQ 1234AT1"
+    },
+    {
+      "id": "invalid-long-letters",
+      "input": "CQ 53HDFKJEASD"
+    },
+    {
+      "id": "invalid-long-suffix",
+      "input": "CQ 26AT1000"
+    },
+    {
+      "id": "standard-cq",
+      "input": "CQ K1ABC FN42"
+    },
+    {
+      "id": "standard-report",
+      "input": "K1ABC W9XYZ -10"
+    },
+    {
+      "id": "standard-roger",
+      "input": "K1ABC W9XYZ R-10"
+    },
+    {
+      "id": "standard-final",
+      "input": "K1ABC W9XYZ RR73"
+    },
+    {
+      "id": "hash22-report",
+      "input": "<1AT106> K1ABC -10"
+    },
+    {
+      "id": "hash22-from",
+      "input": "K1ABC <1AT106> -10"
+    },
+    {
+      "id": "collision-type4",
+      "input": "<1AT0002> 26AT101"
+    },
+    {
+      "id": "collision-type1",
+      "input": "<5AT179> K1ABC -10"
+    }
+  ],
+  "hash_calls": [
+    "1A1",
+    "1AT106",
+    "26AT101",
+    "161XZ085",
+    "001AB123",
+    "1AT1000",
+    "999ZZ/ZZ",
+    "1AT106/P",
+    "1AT106/1",
+    "K1ABC",
+    "W9XYZ",
+    "1AT0002",
+    "1AT0050",
+    "5AT179",
+    "10AT107"
+  ],
+  "scenarios": [
+    {
+      "id": "cold-cq-1A1",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-1A1"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-1A1",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-1A1"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-1A1",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-1A1"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-1AT106",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-1AT106"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-1AT106",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-1AT106"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-1AT106",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-1AT106"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-26AT101",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-26AT101"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-26AT101",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-26AT101",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-26AT101"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-161XZ085",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-161XZ085"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-161XZ085",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-161XZ085"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-161XZ085",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-161XZ085"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-001AB123",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-001AB123"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-001AB123",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-001AB123"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-001AB123",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-001AB123"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-1AT1000",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-1AT1000"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-1AT1000",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-1AT1000"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-1AT1000",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-1AT1000"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-999ZZ-ZZ",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-999ZZ-ZZ"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-999ZZ-ZZ",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-999ZZ-ZZ"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-999ZZ-ZZ",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-999ZZ-ZZ"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-RRR",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-RRR"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-RR73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-RR73"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-73"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-minus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-minus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-to-Rminus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-Rminus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-RRR",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-RRR"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-RR73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-RR73"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-73"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-minus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-minus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-from-Rminus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "from-Rminus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-minus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-minus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-plus05",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-plus05"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-Rminus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-Rminus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-Rplus05",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-Rplus05"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-RRR",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-RRR"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-RR73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-RR73"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-26AT101-73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-26AT101-73"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-minus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-minus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-plus05",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-plus05"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-Rminus10",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-Rminus10"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-Rplus05",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-Rplus05"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-RRR",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-RRR"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-RR73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-RR73"
+        }
+      ]
+    },
+    {
+      "id": "cold-one-1AT106-73",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "one-1AT106-73"
+        }
+      ]
+    },
+    {
+      "id": "cold-normalized-cq",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "normalized-cq"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-locator-loss",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-locator-loss"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-dx",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-dx"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-portable",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-portable"
+        }
+      ]
+    },
+    {
+      "id": "cold-cq-numeric-slash",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "cq-numeric-slash"
+        }
+      ]
+    },
+    {
+      "id": "cold-long-calls-report-loss",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "long-calls-report-loss"
+        }
+      ]
+    },
+    {
+      "id": "cold-type4-report-loss",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "type4-report-loss"
+        }
+      ]
+    },
+    {
+      "id": "cold-free-text",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "free-text"
+        }
+      ]
+    },
+    {
+      "id": "cold-free-text-overlength",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "free-text-overlength"
+        }
+      ]
+    },
+    {
+      "id": "cold-unresolved-input",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "unresolved-input"
+        }
+      ]
+    },
+    {
+      "id": "cold-invalid-incomplete",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "invalid-incomplete"
+        }
+      ]
+    },
+    {
+      "id": "cold-invalid-long-prefix",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "invalid-long-prefix"
+        }
+      ]
+    },
+    {
+      "id": "cold-invalid-long-letters",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "invalid-long-letters"
+        }
+      ]
+    },
+    {
+      "id": "cold-invalid-long-suffix",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "invalid-long-suffix"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-report",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-report"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-roger",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-roger"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-final",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-final"
+        }
+      ]
+    },
+    {
+      "id": "cold-hash22-report",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "hash22-report"
+        }
+      ]
+    },
+    {
+      "id": "cold-hash22-from",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "hash22-from"
+        }
+      ]
+    },
+    {
+      "id": "cold-collision-type4",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "collision-type4"
+        }
+      ]
+    },
+    {
+      "id": "cold-collision-type1",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "collision-type1"
+        }
+      ]
+    },
+    {
+      "id": "pending-and-committed-hash",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "learn",
+          "call": "1AT106"
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 10
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 12
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 22
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 10
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 12
+        },
+        {
+          "op": "lookup",
+          "call": "1AT106",
+          "width": 22
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "from-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-report"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-from"
+        }
+      ]
+    },
+    {
+      "id": "learn-from-cq",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "cq-1AT106"
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "from-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-report"
+        }
+      ]
+    },
+    {
+      "id": "learn-full-call-from-directed",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "26AT101",
+          "width": 10
+        },
+        {
+          "op": "lookup",
+          "call": "26AT101",
+          "width": 12
+        },
+        {
+          "op": "lookup",
+          "call": "26AT101",
+          "width": 22
+        }
+      ]
+    },
+    {
+      "id": "station-call-receive-orientations",
+      "steps": [
+        {
+          "op": "station",
+          "call": "1AT106"
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "from-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-report"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-from"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-known-call",
+      "steps": [
+        {
+          "op": "learn",
+          "call": "161XZ085"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "decode",
+          "case": "to-26AT101"
+        },
+        {
+          "op": "decode",
+          "case": "hash22-report"
+        }
+      ]
+    },
+    {
+      "id": "warm-finals-and-lossy-reports",
+      "steps": [
+        {
+          "op": "learn",
+          "call": "1AT106"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "decode",
+          "case": "to-RRR"
+        },
+        {
+          "op": "decode",
+          "case": "to-RR73"
+        },
+        {
+          "op": "decode",
+          "case": "to-73"
+        },
+        {
+          "op": "decode",
+          "case": "to-minus10"
+        },
+        {
+          "op": "decode",
+          "case": "to-Rminus10"
+        },
+        {
+          "op": "decode",
+          "case": "from-RRR"
+        },
+        {
+          "op": "decode",
+          "case": "from-RR73"
+        },
+        {
+          "op": "decode",
+          "case": "from-73"
+        },
+        {
+          "op": "decode",
+          "case": "from-minus10"
+        },
+        {
+          "op": "decode",
+          "case": "from-Rminus10"
+        }
+      ]
+    },
+    {
+      "id": "collision-12-last-learned",
+      "steps": [
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 12
+        },
+        {
+          "op": "learn",
+          "call": "1AT0002"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 12
+        },
+        {
+          "op": "decode",
+          "case": "collision-type4"
+        },
+        {
+          "op": "learn",
+          "call": "1AT0050"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 12
+        },
+        {
+          "op": "decode",
+          "case": "collision-type4"
+        },
+        {
+          "op": "learn",
+          "call": "1AT0002"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 12
+        },
+        {
+          "op": "decode",
+          "case": "collision-type4"
+        }
+      ]
+    },
+    {
+      "id": "collision-22-last-learned",
+      "steps": [
+        {
+          "op": "lookup",
+          "call": "5AT179",
+          "width": 22
+        },
+        {
+          "op": "learn",
+          "call": "5AT179"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "5AT179",
+          "width": 22
+        },
+        {
+          "op": "decode",
+          "case": "collision-type1"
+        },
+        {
+          "op": "learn",
+          "call": "10AT107"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "5AT179",
+          "width": 22
+        },
+        {
+          "op": "decode",
+          "case": "collision-type1"
+        },
+        {
+          "op": "learn",
+          "call": "5AT179"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "5AT179",
+          "width": 22
+        },
+        {
+          "op": "decode",
+          "case": "collision-type1"
+        }
+      ]
+    },
+    {
+      "id": "collision-10-last-learned",
+      "steps": [
+        {
+          "op": "learn",
+          "call": "1AT0002"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 10
+        },
+        {
+          "op": "learn",
+          "call": "1AT0050"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "lookup",
+          "call": "1AT0002",
+          "width": 10
+        }
+      ]
+    },
+    {
+      "id": "invalid-payload-characters",
+      "steps": [
+        {
+          "op": "raw",
+          "payload77": "X0000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "id": "reserved-type-6",
+      "steps": [
+        {
+          "op": "raw",
+          "payload77": "00000000000000000000000000000000000000000000000000000000000000000000000000110"
+        }
+      ]
+    },
+    {
+      "id": "reserved-type-7",
+      "steps": [
+        {
+          "op": "raw",
+          "payload77": "00000000000000000000000000000000000000000000000000000000000000000000000000111"
+        }
+      ]
+    }
+  ]
+}

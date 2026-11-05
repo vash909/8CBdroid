@@ -1,12 +1,17 @@
-# Pinned WSJT-CB predicate reference
+# Pinned WSJT-CB compatibility references
 
-This directory is test infrastructure for roadmap R03a. It does not implement
+This directory is test infrastructure for roadmap R03a/R03b. It does not implement
 an Android FT8 engine. `source/cb_callsigns.f90` is copied byte-for-byte from
 WSJT-CB commit `94f776d54946fe43db5e0bb9c966b1595c7b7d97`, path
 `lib/ft8var/cb_callsigns.f90`, SHA-256
 `2d632a85f0ab9fe7e636b371083d7c50f0866bb97aec7836974f467a207dc866`.
 It remains under the upstream GPLv3 terms; this repository uses GPL-3.0-only.
 See [the project license](../../LICENSE) and [notices](../../THIRD_PARTY_NOTICES.md).
+
+R03b also vendors the unmodified packing modules and their required dependencies.
+[`packing-sources.json`](packing-sources.json) records their upstream paths and
+checksums. The [packing/hash guide](PACKING.md) describes the 77-bit fixtures,
+stateful scenarios, format and limits. Both references stay outside the APK.
 
 `cases.json` contains inputs only: 240 complete-call cases and 75 type 4 predicate
 cases. Boundary combinations exercise prefix/letter/suffix lengths, leading zeros,
@@ -30,14 +35,17 @@ your development system's package manager or provide an existing compiler using
 
 ```bash
 python3 scripts/wsjtcb_reference.py --check
+python3 scripts/wsjtcb_packing.py --check
+python3 scripts/wsjtcb_packing.py --check --optimization O2
 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 source scripts/env.sh
 bash scripts/check.sh
 ```
 
-Run the first two commands from the repository root. To intentionally update
+Run the Python commands from the repository root. To intentionally update
 expected data, run `python3 scripts/wsjtcb_reference.py` without `--check` and
-review the diff. Output is deterministic and has no timestamps or compiler-
+review the diff; use `scripts/wsjtcb_packing.py` for the packing corpus.
+Output is deterministic and has no timestamps or compiler-
 version-dependent metadata. Generation compiles in a temporary directory and
 checks the vendored source hash first. `FC` can be a compiler name or path; use
 absolute paths in `FFLAGS`. A locally extracted compiler may need its own search
@@ -60,7 +68,8 @@ audited v3.0.0 comparison is a later release and does not replace that archive. 
 python3 scripts/wsjtcb_reference.py --check --audit-sources
 ```
 
-This verifies the fixture, downloads all manifest files at immutable revisions,
+This verifies the predicate fixture and downloads all 22 distinct source files
+from both manifests at immutable revisions,
 checks their hashes and writes LF-normalized textual comparison diffs under
 `.tooling/wsjt-reference-audit/diffs/`. Originals are retained in that ignored
 directory. The audit does not fetch moving branches or silently skip mismatches.
@@ -98,8 +107,10 @@ semantics and corrupted-archive rejection with tiny synthetic archives.
 
 ## Limits
 
-These predicates describe text admissibility. They do not perform packing,
-hash calculation/resolution, CRC/LDPC verification, RF decoding, or QSO progression.
+The R03a predicates describe text admissibility. R03b separately checks real
+packing, unpacking and hash calculation/learning. Neither reference performs
+CRC/LDPC verification, RF decoding or QSO progression.
 An accepted `<...>` type 4 payload is not permission to start AutoSeq. The source
-is test-only and neither it nor the fixture is packaged in the APK. Full bit,
-hash, parser, AutoSeq and audio fixtures remain subsequent work in R03.
+is test-only and neither it nor the fixtures are packaged in the APK. Parser,
+message generation and AutoSeq traces remain R03c work; audio interoperability
+follows the engine milestones.

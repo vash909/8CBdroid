@@ -20,6 +20,9 @@ later estimates; do not promise a complete Android port in one PR.
 - [PR #15](https://github.com/vash909/8CBdroid/pull/15) is merged: USB discovery
   and explicit access requests (R01a). The owner confirmed app testing and approved
   merge on 2026-11-05. Physical OTG/CAT interoperability remains unverified.
+- [PR #16](https://github.com/vash909/8CBdroid/pull/16) is merged: R03a difference
+  inventory, original RC1 source verification and desktop predicate fixtures.
+  The owner approved its build and merge on 2026-11-05.
 - Local DSP, microphone capture, playback, CAT/PTT and QSO logging are pending.
   Existing validators and FT8 constants are not an encoder or decoder.
 
@@ -84,11 +87,15 @@ radio/cable/phone are not available yet, so R01 remains incomplete. See
 [the USB CAT guide](USB_CAT.md) for scope and verification. R02 follows the real
 radio configuration from R01b; independent R03 reference work can proceed meanwhile.
 
-R03 is split into R03a (current PR: difference inventory and generated desktop
-predicate fixtures), R03b (production packing/hash fixtures), and R03c (message
-parser/generation and AutoSeq traces). See [the compatibility inventory](WSJT_CB_COMPATIBILITY.md).
-R03a covers text predicates only, so R03 and R04's compatibility prerequisites
-remain incomplete. R01b/R02 resume when the real radio configuration is known.
+R03 is split into R03a (merged: difference inventory and generated desktop
+predicate fixtures), R03b (current PR: production packing/hash fixtures), and
+R03c (message parser/generation and AutoSeq traces). See
+[the compatibility inventory](WSJT_CB_COMPATIBILITY.md).
+R03b adds 67 production payload pairs, 15 hash vectors and 79 cold/stateful RX
+scenarios, including hash collisions and lossy encodings. See
+[the packing guide](../reference/wsjtcb/PACKING.md). R03 and R04's compatibility
+prerequisites remain incomplete until R03c is verified. R01b/R02 resume when the
+real radio configuration is known.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

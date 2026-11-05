@@ -3,10 +3,12 @@
 ## Scope and revisions
 
 R03a establishes a real desktop predicate reference and documents the relevant
-CB differences. It adds no local decoder, encoder or AutoSeq behavior to the app.
+CB differences. R03b adds production payload and hash-state fixtures. These add
+no local decoder, encoder, hash cache or AutoSeq behavior to the app.
 The inventory is based on inspected code, not only release notes. Every listed
 source file is pinned with a checksum in
-[`sources.json`](../reference/wsjtcb/sources.json).
+[`sources.json`](../reference/wsjtcb/sources.json) and the host packing sources in
+[`packing-sources.json`](../reference/wsjtcb/packing-sources.json).
 
 | Label | Repository / revision | Role |
 | --- | --- | --- |
@@ -56,7 +58,8 @@ Use [the reproducible source audit](../reference/wsjtcb/README.md#audit-the-comp
 to verify hashes and obtain text diffs without CRLF noise. The manifest also pins
 both packing files inspected in the CB tree. Their module layout and size differ
 from upstream `lib/77bit/packjt77.f90`; do not attribute that entire diff to a new
-CB wire format. Packing must be compared at routine/bit-result level next.
+CB wire format. R03b now records results from both production packing entry points
+for the same inputs; it does not establish a new CB waveform or channel code.
 
 ## Inspected behavior and Android obligations
 
@@ -68,7 +71,8 @@ status column distinguishes today's test coverage from future runtime work.
 | Complete calls: [Radio.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Radio.cpp#L45) and [cb_callsigns.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/cb_callsigns.f90) | CB adds numeric-prefix forms and a complete-call predicate absent from the inspected upstream Radio files. Preserve complete versus partial identity. | R03a: 240 ASCII desktop results compared with the existing Kotlin validator. Qt/Unicode normalization is not executed by this harness. |
 | Partial calls and prefix lookup: [Radio.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Radio.cpp#L67) | Prefix lookup can accept an incomplete CB stem; `is_cb_callsign` therefore has a broader purpose than `is_complete_cb_callsign`. | Never use the broader predicate as evidence of a complete QSO peer. Kotlin currently validates complete station identity only. Prefix/country behavior remains R24 work. |
 | Type 4 text admission: [cb_callsigns.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/cb_callsigns.f90#L64) | CB-specific recognition covers CQ with a complete CB call, or one full call plus one hashed call in either orientation, with the supported final tokens. | R03a: 75 generated predicate cases. This is neither bit packing nor hash resolution, and no Android type 4 predicate is added yet. |
-| Type 4 unpack checks: [packjt77var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/packjt77var.f90#L688) | CB permits valid numeric-prefix calls through relevant amateur plausibility checks and handles the trailing-hash orientation with the CB predicate. | Packing/unpacking must be tested with the real production routines and both orientations. Source inspection is recorded; generated bit fixtures remain R03b. |
+| Type 4 unpack checks: [packjt77var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/packjt77var.f90#L688) | CB permits valid numeric-prefix calls through relevant amateur plausibility checks and handles the trailing-hash orientation with the CB predicate. | R03b: real pack77/pack77var payloads and unpack77var RX results in both orientations, including successful packing followed by failed unpacking. |
+| Hash learning: [fillhashvar.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/fillhashvar.f90) | Received complete calls are queued per worker before merging into RX hash tables. Local identity has orientation-specific lookup behavior; collisions can replace an identity. | R03b: 10/12/22-bit vectors, cold/pending/committed state, CQ learning and real collisions. A resolved hash is not proof of a unique QSO peer. No Android hash cache exists yet. |
 | False-decode filtering: [chkfalse8var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/chkfalse8var.f90#L1) | After line-ending normalization, the inspected file differs from both comparison versions by the CB module import and an early return for qualifying type 4 messages. This return does not clear a pre-existing failure flag. | Preserve integrity checks before this stage. The predicate fixture cannot establish CRC correctness; upstream regression tests exercise that guard, with Android engine checks still pending. |
 | AutoSeq admission: [has_complete_cb_peer](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7479) | The CB fork adds peer extraction/fallback and requires a complete CB peer when answering CQ. That helper is absent from the inspected upstream main windows. | An unresolved or partial peer cannot start a QSO. Admission traces from the real Qt harness remain R03c; no app AutoSeq exists. |
 | AutoSeq progression: [auto_sequence](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/widgets/mainwindow.cpp#L7511) | CB adds addressed non-standard messages and report/final recognition using local identity plus selected-partner context. Existing state, frequency tolerances and stop decisions still matter. | Compare accepted, ignored and stop decisions for specific states; preserve context for one-call reports. Predicate acceptance alone is insufficient. |
@@ -92,30 +96,39 @@ rejection there does not mean the same text cannot use another FT8 message type.
 
 For the two-non-standard-CB-call branch, the inspected desktop generates an
 initial hashed/full-call exchange, then destination-only signed reports,
-roger-reports and finals. Treat this as a required scenario for R03b/R03c, not as
-a generic template to apply to every message or mode. The current app only
+roger-reports and finals. R03b records these messages' payloads and actual decoded
+text; R03c must verify the generated exchange and QSO decisions. Do not apply a
+generic template to every message or mode. The current app only
 validates station identity and displays remote decodes unchanged.
+
+R03b also records lossy encodings: `1AT106 26AT101 -10` becomes free text
+`1AT106 26AT10`, and `<1AT106> 26AT101 -10` loses its report in type 4.
+The [packing/hash guide](../reference/wsjtcb/PACKING.md) documents the corpus,
+cache operations and collision cases. Future TX validation must compare the
+actual unpacked result, rather than relying on pack success or call grammar.
 
 ## Verification and limits
 
 Run the commands in [the reference README](../reference/wsjtcb/README.md#reproduce).
 R03a regenerates 315 results by compiling the original Fortran module and checks
 the committed data in CI. The normal JVM suite compares 240 call results with the
-production Kotlin validator. Eight integration tests cover source/result integrity, compiler diagnostics,
-archive checksum rejection, duplicate paths, and byte versus text comparison.
+production Kotlin validator. R03b adds 67 payload pairs, 15 hash vectors and 79 RX
+scenarios. Twenty-one Python tests cover native behavior, source/result integrity,
+compiler diagnostics, archive checksum rejection, duplicate paths and byte versus
+text comparison. CI regenerates packing/hash results at both O0 and O2.
 
-The source audit checks all 16 manifest files at immutable revisions. It does not
-compile Qt, packing modules or the complete decoder. The upstream
+The source audit checks all 22 distinct files from both manifests at immutable
+revisions. Separate host jobs compile predicates and packing dependencies; they
+do not compile Qt or the complete decoder. The upstream
 [test_cb_autoseq harness](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/tests/ft8/test_cb_autoseq.cpp)
 uses real admission/AutoSeq methods with substitute controls and `processMessage`;
 even running it would not establish full TX-state-machine or radio behavior.
 
-R03 remains open work: R03b must capture production payload bits, hash state and
-round-trip results; R03c must capture parser/generation/AutoSeq decisions and
+R03 remains open work: R03c must capture parser/generation/AutoSeq decisions and
 exchange traces, including cases beyond that partial desktop harness. Audio and
 actual device interoperability follow the engine milestones. Keep R04's CB
 compatibility gate pending until the required reference fixtures exist.
 
-No application behavior changes in R03a. A phone smoke test may confirm that
+No application behavior changes in R03a/R03b. A phone smoke test may confirm that
 saved settings, LAN and USB discovery remain available, but cannot validate these
 reference algorithms or claim local FT8 support.
