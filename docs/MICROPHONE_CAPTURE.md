@@ -2,8 +2,9 @@
 
 The **Audio → Microphone input** panel captures mono PCM16 through Android
 `AudioRecord`, meters the input and converts it to 12 kHz floating-point PCM.
-It does not assemble UTC slots, call the FT8 decoder, play audio or operate PTT.
-R11–R12 connect timestamped capture to live reception; R14 and R17 cover output
+Optional [R11 UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
+NTP/GPS sync and retains complete slots. Capture does not call the FT8 decoder,
+play audio or operate PTT. R12 connects slots to live reception; R14 and R17 cover output
 and acoustic VOX. A microphone level meter is not yet a local FT8 receiver.
 
 ## Start, stop and permission
@@ -51,8 +52,8 @@ unaffected. The permission and Android privacy indicator belong to the OS.
 - Use a causal 129-tap Hamming-windowed sinc low-pass at 4.5 kHz, then fractional
   interpolation to 12 kHz. History and rational phase survive read boundaries.
   Filter delay is 64 input samples (about 1.33/1.45 ms); startup is zero-filled,
-  no tail is flushed and no UTC timestamp is assigned. R11 must account for this
-  delay and detect missing input; R10 counters do not prove lossless capture.
+  no tail is flushed. R11 subtracts this delay using boot-clock audio timestamps
+  and rejects observable continuity errors; counters alone do not prove lossless capture.
 - Retain at most 60,000 floating-point output samples (240,000 bytes), replacing
   the oldest deliberately. Input/DSP sample counts are cumulative for the run.
   UI metrics are updated roughly every 100 ms, independent of the decoder.

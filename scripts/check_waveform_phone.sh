@@ -15,7 +15,8 @@ cleanup() {
     fi
 }
 trap cleanup EXIT
-timeout 10 adb shell svc power stayon usb
+# USB-C can report AC charging; the EXIT trap restores the original setting.
+timeout 10 adb shell svc power stayon true
 timeout 90 adb shell am instrument --user 0 -w -r \
     net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.WaveformPhoneChecks > .tooling/waveform-phone-output.txt
 cat .tooling/waveform-phone-output.txt

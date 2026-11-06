@@ -15,6 +15,7 @@ implemented behavior, device evidence and checks still pending.
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
 | [Offline WAV generation](OFFLINE_WAVEFORM.md) | Generate/export a fixed FT8 slot with explicit frequency, level and loss consent. |
 | [Microphone capture](MICROPHONE_CAPTURE.md) | Select an input, inspect levels/processing, capture/resample and save recent audio without live FT8 decoding. |
+| [UTC receive slots and time synchronization](UTC_RECEIVE_SLOTS.md) | Regional/custom NTP, offline GPS/GNSS time and complete microphone windows; no live decoding. |
 | [Recorded slots](RECORDED_SLOTS.md) | Import WAVs, supply UTC and interpret DT, estimated SNR and message/hash flags. |
 | [USB discovery and CAT scope](USB_CAT.md) | Enumerate adapters and request access; distinguish this from a real CAT/audio connection. |
 

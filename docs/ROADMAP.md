@@ -50,7 +50,13 @@ later estimates; do not promise a complete Android port in one PR.
   [PR #25](https://github.com/vash909/8CBdroid/pull/25) are merged: recorded slots
   (R08), bounded decoder profiles (R09) and foreground microphone capture (R10).
   A51 evidence and limitations are recorded in [validation](VALIDATION.md).
-- R11 is next, not started. Local operating sessions, playback, CAT/PTT, AutoSeq
+- [PR #27](https://github.com/vash909/8CBdroid/pull/27) completes R11: NTP/GPS
+  synchronization and UTC receive slots. NTP/audio/UI checks passed on the A51;
+  the S25 FE provided real GPS timing, including an offline measurement. The
+  owner accepted the offline path after stopping the repeated UI test. See
+  [evidence and limits](VALIDATION.md#r11-time-synchronization-and-utc-capture).
+  R12, live local decoding, is next.
+  Local operating sessions, playback, CAT/PTT, AutoSeq
   and QSO logging remain pending; microphone capture does not yet feed live FT8.
 
 ## Reference strategy: reuse the CB work
@@ -199,12 +205,14 @@ and USB audio must remain separate capabilities.
   microphone and physical PC/phone tone checks passed. External input detach
   and radio audio remain unverified. See [capture](MICROPHONE_CAPTURE.md).
 
-### Next: R11 UTC receive slots
+### Completed: R11 UTC receive slots
 
-R11 has not started. Include the owner's deferred request for a persistent custom
-NTP server IP/address in the time-correction settings. Measure/apply an app clock
-offset without changing Android's system clock; validate failures and uncertainty
-alongside manual correction. This is queued work, not an existing setting.
+NTP/GPS-only app time correction, regional NTP presets, a persistent custom
+server accepting IP/hostname, and timestamped complete microphone slots are implemented.
+The owner explicitly excluded manual offsets and an unsynchronized fallback.
+See [behavior and qualification boundaries](UTC_RECEIVE_SLOTS.md) and
+[device validation](VALIDATION.md#r11-time-synchronization-and-utc-capture).
+R12 will connect these slots to live local decoding; that work has not started.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |
@@ -214,7 +222,7 @@ alongside manual correction. This is queued work, not an existing setting.
 | R08 — Decode recorded FT8 slots | Decode WAV/PCM fixtures into typed results with UTC context, SNR, delta time, offset and flags, preserving CB acceptance rules. | Clean/noisy CB fixtures and corrupt-frame rejection against the desktop. Depends on R04–R06. |
 | R09 — Bound decoder cost on a phone | Add cancellation, bounded work queues and measured decode profiles suitable for Android. Define a baseline phone and a minimum reception corpus. | Published latency, memory, sensitivity/false-positive and thermal measurements; no claim of desktop decoder parity without benchmarks. Depends on R08. |
 | R10 — Capture phone audio | Implement microphone permission, selected-device capture, levels/clipping, buffering and resampling to DSP PCM. Expose actual route and processing settings. | Recorded signal/reference-tone checks on a phone; permission denial, interruption and route-loss recovery. Does not yet transmit. |
-| R11 — Assemble UTC receive slots | Timestamp audio, assemble complete 15-second windows and handle missing samples, clock changes and drift. Expose measured/manual time correction without changing the Android system clock. | Deterministic clock/buffer tests and recordings across slot boundaries. Discard incomplete windows. Depends on R10. |
+| R11 — Assemble UTC receive slots | Timestamp audio, assemble complete 15-second windows and handle missing samples, clock changes and drift. Use NTP or GPS/GNSS time correction, regional/custom NTP servers and no manual/system-clock fallback; never change Android time. | Deterministic clock/buffer tests and recordings across slot boundaries. Discard incomplete windows. Depends on R10. |
 | R12 — Display live local decodes | Connect capture, slot assembly and decoder; distinguish local reception from LAN data and prevent stale results after Stop/restart. | A phone decodes desktop-generated CB audio and resumes cleanly after interruption. Depends on R08–R11. |
 | R13 — Add spectrum and waterfall controls | Display levels, spectrum and waterfall with decoded-signal markers, bounded history, zoom and RX/TX offset selection. Keep display work separate from DSP. | Frequency-axis checks with reference tones, usable controls and sustained rendering on the baseline phone. Depends on R10/R12. |
 

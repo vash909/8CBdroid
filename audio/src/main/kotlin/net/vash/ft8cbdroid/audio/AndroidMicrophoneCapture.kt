@@ -18,7 +18,7 @@ import net.vash.ft8cbdroid.core.audio.*
 import kotlin.math.pow
 
 /** Foreground-only input. No playback, audio-focus changes, persisted recording or decoder calls. */
-class AndroidMicrophoneCapture(context: Context) : MicrophoneCapture {
+class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture {
     private val app = context.applicationContext
     private val manager = app.getSystemService(AudioManager::class.java)
     private val devices = MutableStateFlow<List<AudioInput>>(emptyList())
@@ -50,7 +50,11 @@ class AndroidMicrophoneCapture(context: Context) : MicrophoneCapture {
             throw CaptureException("Microphone permission is required. Allow it in Android app settings, then retry.")
     }
     @SuppressLint("MissingPermission") // Checked before construction and throughout the read loop.
-    override suspend fun capture(inputId: Int, update: suspend (CaptureMetrics) -> Unit) = withContext(Dispatchers.IO) {
+    override suspend fun capture(inputId: Int, update: suspend (CaptureMetrics) -> Unit) = captureInternal(inputId, update, null)
+    override suspend fun captureTimed(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: (TimedCaptureChunk) -> Unit) =
+        captureInternal(inputId, update, chunk)
+    @SuppressLint("MissingPermission")
+    private suspend fun captureInternal(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: ((TimedCaptureChunk) -> Unit)?) = withContext(Dispatchers.IO) {
         check(mutex.tryLock()) { "Microphone capture is already running." }
         var record: AudioRecord? = null
         val effects = mutableListOf<AudioEffect>()
@@ -92,6 +96,9 @@ class AndroidMicrophoneCapture(context: Context) : MicrophoneCapture {
             effect("Echo cancellation", AcousticEchoCanceler.isAvailable()) { AcousticEchoCanceler.create(recorder.audioSessionId) }
             val resampler = CaptureResampler(recorder.sampleRate)
             val input = ShortArray(recorder.sampleRate / 50)
+            val timeline = CaptureTimestampSettler(recorder.sampleRate, recorder.bufferSizeInFrames)
+            val timestamp = AudioTimestamp()
+            var timestampConfirmed = false
             var inputSamples = 0L; var outputSamples = 0L; var clipped = 0L
             var peak = -120.0; var energy = 0.0; var metered = 0
             var lastData = SystemClock.elapsedRealtime()
@@ -112,6 +119,20 @@ class AndroidMicrophoneCapture(context: Context) : MicrophoneCapture {
                     energy += 10.0.pow(level.rmsDbfs / 10) * count
                     metered += count; clipped += level.clipped; inputSamples += count
                     val pcm = resampler.process(input, count)
+                    if (chunk != null && pcm.isNotEmpty() && now - started >= 500) {
+                        if (recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_BOOTTIME) == AudioRecord.SUCCESS && timestamp.nanoTime > 0) {
+                            val zero = timeline.stamp(CaptureTimestamp(timestamp.framePosition, timestamp.nanoTime), inputSamples,
+                                SystemClock.elapsedRealtimeNanos())
+                            if (zero != null) {
+                                timestampConfirmed = true
+                                chunk(TimedCaptureChunk(outputSamples, zero + outputSamples * 1_000_000_000L / 12000, pcm, timeline.driftPpm))
+                            }
+                        } else if (timestampConfirmed) {
+                            throw CaptureException("Android did not provide audio timestamps. UTC slots were discarded; restart capture.")
+                        } else timeline.reset()
+                        if (!timestampConfirmed && now - started > 3000)
+                            throw CaptureException("Audio timestamps did not stabilize within three seconds. UTC slots were discarded; restart capture.")
+                    }
                     outputSamples += pcm.size; buffer.append(pcm)
                 }
                 if (now - lastData > 2000) throw CaptureException("No microphone samples arrived for two seconds. Check the input and retry.")
@@ -142,7 +163,10 @@ class AndroidMicrophoneCapture(context: Context) : MicrophoneCapture {
             }
             currentCoroutineContext().ensureActive()
         } catch (cancelled: CancellationException) { throw cancelled }
-        catch (error: Exception) { buffer.clear(); throw error }
+        catch (error: Exception) {
+            if (error is CaptureException) error.timingDiagnostic?.let { android.util.Log.w("8CBdroid-Capture", it) }
+            buffer.clear(); throw error
+        }
         finally {
             runCatching { record?.let { if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) it.stop() } }
             effects.forEach { runCatching { it.release() } }

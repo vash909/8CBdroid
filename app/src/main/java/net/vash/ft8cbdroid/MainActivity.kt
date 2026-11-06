@@ -1,5 +1,6 @@
 package net.vash.ft8cbdroid
 
+import net.vash.ft8cbdroid.time.*
 import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
@@ -50,6 +51,13 @@ import net.vash.ft8cbdroid.settings.StationSettingsViewModel
 import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
+    private lateinit var timeViewModel: TimeViewModel
+    private val gpsPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        timeViewModel.gpsPermissionResult(it[Manifest.permission.ACCESS_FINE_LOCATION] == true)
+    }
+    private val utcSlotDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        captureViewModel.export(it?.toString())
+    }
     private lateinit var captureViewModel: CaptureViewModel
     private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         captureViewModel.permissionResult(it)
@@ -80,7 +88,8 @@ class MainActivity : ComponentActivity() {
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
-        captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver))[CaptureViewModel::class.java]
+        timeViewModel = ViewModelProvider(this, TimeViewModel.factory(applicationContext))[TimeViewModel::class.java]
+        captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
@@ -89,6 +98,7 @@ class MainActivity : ComponentActivity() {
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
             val capture by captureViewModel.uiState.collectAsStateWithLifecycle()
+            val time by timeViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(station.saved?.callsign) {
                 hashViewModel.changeStation(station.saved?.callsign)
                 recordedSlotViewModel.changeStation(station.saved?.callsign)
@@ -115,6 +125,20 @@ class MainActivity : ComponentActivity() {
                 onResetHashes = hashViewModel::reset,
                 recording = recording,
                 capture = capture,
+                time = time,
+                timeActions = TimeActions(timeViewModel::selectPreset, timeViewModel::changeCustom,
+                    save = { captureViewModel.stop("Time settings changed. Restart capture explicitly.", clear = true); timeViewModel.save() },
+                    retry = timeViewModel::load, ntp = timeViewModel::measureNtp,
+                    gps = { if (timeViewModel.requestGps(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED))
+                        gpsPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) },
+                    apply = { captureViewModel.stop("Time correction changed. Restart capture explicitly.", clear = true); timeViewModel.applyMeasurement() },
+                    cancel = timeViewModel::cancel),
+                onAssembleUtc = captureViewModel::assembleUtc,
+                onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
+                    val utc = captureViewModel.uiState.value.latestSlotUtcMillis
+                    val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
+                    utcSlotDestination.launch("8CBdroid-UTC-$stamp.wav")
+                } },
                 onSelectInput = captureViewModel::select,
                 onStartCapture = {
                     if (captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
@@ -143,7 +167,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.", clear = true)
+        timeViewModel.cancel()
+        captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.",
+            clear = !captureViewModel.isChoosingDocument)
         if (!isChangingConfigurations) lanViewModel.stop()
         super.onStop()
     }
@@ -179,6 +205,10 @@ fun EightCbApp(
     onResetHashes: () -> Unit = {},
     recording: RecordedSlotUiState = RecordedSlotUiState(),
     capture: CaptureUiState = CaptureUiState(),
+    time: TimeUiState = TimeUiState(),
+    timeActions: TimeActions = TimeActions(),
+    onAssembleUtc: (Boolean) -> Unit = {},
+    onSaveUtcSlot: () -> Unit = {},
     onSelectInput: (Int) -> Unit = {},
     onStartCapture: () -> Unit = {},
     onStopCapture: () -> Unit = {},
@@ -267,6 +297,7 @@ fun EightCbApp(
                             station.isSaved -> Text("Settings saved on this phone.")
                             station.hasChanges -> Text("Unsaved changes.")
                         }
+                        TimePanel(time, timeActions)
                         Panel("FT8 / WSJT-CB profile") {
                             Text("27.265 MHz • alternative 27.045 MHz")
                             Text("15 s slots • 12 kHz DSP • 79 symbols")
@@ -288,7 +319,8 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture)
+                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot)
+                        Text("UTC time: ${time.sourceDescription}")
                         HorizontalDivider()
                         RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
                     }

@@ -26,6 +26,7 @@ import org.json.JSONObject
  * No microphone, playback, radio access, production-file deletion or saved-setting edits.
  */
 class WaveformPhoneChecks : Instrumentation() {
+    private var scenario: String? = null
     private fun <T> main(block: () -> T): T {
         var result: Result<T>? = null
         runOnMainSync { result = runCatching(block) }
@@ -94,8 +95,13 @@ class WaveformPhoneChecks : Instrumentation() {
         show(text)
         check(requireNotNull(button(text)).performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click: $text" }
     }
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); start() }
     override fun onStart() {
+        scenario?.let {
+            require(it == "ntp-audio" || it == "gps") { "Unknown time/capture scenario" }
+            UtcPhoneChecks(this).run(it)
+            return
+        }
         val result = Bundle()
         val report = JSONObject()
         var activity: MainActivity? = null
