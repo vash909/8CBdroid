@@ -2,7 +2,7 @@ package net.vash.ft8cbdroid.core.audio
 
 import kotlinx.coroutines.flow.StateFlow
 
-class CaptureException(message: String) : IllegalStateException(message)
+class CaptureException(message: String, val timingDiagnostic: String? = null) : IllegalStateException(message)
 
 data class AudioInput(val id: Int, val label: String)
 data class CaptureRoute(

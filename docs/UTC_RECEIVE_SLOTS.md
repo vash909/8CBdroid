@@ -114,6 +114,11 @@ pipeline timestamps do not prove that every device-side sample loss is observabl
 
 A complete slot is exactly 180,000 samples of mono 12 kHz PCM. Export is PCM16
 RIFF/WAVE, 360,044 bytes, with filtered overshoot saturated to valid PCM bounds.
+UI observations are conflated and never suspend the audio reader on the main
+thread. A complete slot remains available after Stop even if the UI has not yet
+rendered its completion. Timing-guard failures log only numeric frame/clock
+metadata for diagnosis, without audio or station/location data.
+
 One working slot and the latest complete slot are retained; there is no unbounded
 queue or decoder call. Stop discards the unfinished window and retains the last
 complete one for export. Input/mode changes, ordinary rotation/background or

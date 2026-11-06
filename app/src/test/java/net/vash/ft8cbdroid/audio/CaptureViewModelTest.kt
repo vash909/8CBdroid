@@ -35,6 +35,28 @@ class CaptureViewModelTest {
     }
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After fun tearDown() { Dispatchers.resetMain() }
+    @Test fun hardwarePublicationDoesNotWaitForMainAndStopRetainsTheLastObservation() = runTest(dispatcher) {
+        val start = java.util.concurrent.CountDownLatch(1)
+        val emitted = java.util.concurrent.CountDownLatch(1)
+        val cleaned = java.util.concurrent.CountDownLatch(1)
+        val base = Capture()
+        val capture = object : MicrophoneCapture by base {
+            override suspend fun capture(inputId: Int, update: suspend (CaptureMetrics) -> Unit) = withContext(Dispatchers.Default) {
+                try {
+                    check(start.await(2, java.util.concurrent.TimeUnit.SECONDS))
+                    repeat(100) { update(base.metrics.copy(inputSamples = it + 1L)) }
+                    emitted.countDown(); awaitCancellation()
+                } finally { cleaned.countDown() }
+            }
+        }
+        val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }); runCurrent()
+        vm.requestStart(true); runCurrent(); start.countDown()
+        // Deliberately keep the main test dispatcher busy while the hardware publishes.
+        assertTrue(emitted.await(2, java.util.concurrent.TimeUnit.SECONDS))
+        vm.stop(); assertTrue(cleaned.await(2, java.util.concurrent.TimeUnit.SECONDS)); runCurrent()
+        assertEquals(100L, vm.uiState.value.metrics!!.inputSamples)
+        assertEquals(CapturePhase.IDLE, vm.uiState.value.phase)
+    }
     @Test fun deniedPermissionDoesNotOpenHardwareAndExplicitRetryWorks() = runTest(dispatcher) {
         val capture = Capture(); val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }); runCurrent()
         assertTrue(vm.requestStart(false)); vm.permissionResult(false); runCurrent()

@@ -163,7 +163,10 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture 
             }
             currentCoroutineContext().ensureActive()
         } catch (cancelled: CancellationException) { throw cancelled }
-        catch (error: Exception) { buffer.clear(); throw error }
+        catch (error: Exception) {
+            if (error is CaptureException) error.timingDiagnostic?.let { android.util.Log.w("8CBdroid-Capture", it) }
+            buffer.clear(); throw error
+        }
         finally {
             runCatching { record?.let { if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) it.stop() } }
             effects.forEach { runCatching { it.release() } }

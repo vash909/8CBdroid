@@ -33,7 +33,9 @@ class CaptureTimeline(private val rate: Int, private val bufferFrames: Int) {
         val duration = value.monotonicNanos - first.monotonicNanos
         val expected = (value.framePosition - first.framePosition) * 1_000_000_000.0 / rate
         if (abs(duration - expected) > 3_000_000)
-            throw CaptureException("Audio clock drift exceeded 3 ms. Incomplete UTC audio was discarded; restart capture.")
+            throw CaptureException("Audio clock drift exceeded 3 ms. Incomplete UTC audio was discarded; restart capture.",
+                "rate=$rate readFrames=$readFrames frame=${value.framePosition} anchorFrame=${first.framePosition} " +
+                    "elapsedMs=${duration / 1e6} errorMs=${(duration - expected) / 1e6}")
         if (duration >= 2_000_000_000L) driftPpm = (expected / duration - 1) * 1e6
         previous = value
         return first.monotonicNanos - (first.framePosition + 64) * 1_000_000_000L / rate

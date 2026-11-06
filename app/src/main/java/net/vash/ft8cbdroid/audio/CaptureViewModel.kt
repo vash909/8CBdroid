@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.*
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.vash.ft8cbdroid.core.audio.*
@@ -35,6 +36,9 @@ data class CaptureUiState(
     val canExport get() = canConfigure && (metrics?.retainedSamples ?: 0) > 0
 }
 fun interface CaptureWriter { suspend fun write(document: String, bytes: ByteArray) }
+
+private data class CapturePublication(val metrics: CaptureMetrics, val progress: UtcSlotProgress?,
+    val utcStartMillis: Long?, val source: String?, val uncertaintyMillis: Double?)
 
 /** Each start is explicit. Permission callbacks and late worker updates cannot restart stopped capture. */
 class CaptureViewModel(private val capture: MicrophoneCapture, private val writer: CaptureWriter, private val clock: ReceiveClock? = null) : ViewModel() {
@@ -89,45 +93,56 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         discard = false; capture.clear(); latestSlot = null
         state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null)
         state.value = state.value.copy(phase = CapturePhase.STARTING, metrics = null)
+        val completedSlot = AtomicReference<CompletedUtcSlot?>(null)
+        val updates = MutableStateFlow<CapturePublication?>(null)
+        var assembler: UtcSlotAssembler? = null
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
-            var assembler: UtcSlotAssembler? = null
-            var candidateSlot: CompletedUtcSlot? = null
-            try {
-                if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) { candidateSlot = it }
-                val update: suspend (CaptureMetrics) -> Unit = { metrics ->
-                    withContext(Dispatchers.Main.immediate) {
-                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
-                            latestSlot = candidateSlot
-                            state.value = state.value.copy(phase = CapturePhase.CAPTURING, metrics = metrics,
-                                slots = assembler?.progress(), latestSlotUtcMillis = latestSlot?.utcStartMillis,
-                                slotSource = latestSlot?.source, slotUncertaintyMillis = latestSlot?.uncertaintyMillis)
-                        }
+            val render = launch {
+                updates.collect { publication ->
+                    if (publication != null && ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
+                        state.value = state.value.copy(phase = CapturePhase.CAPTURING, metrics = publication.metrics,
+                            slots = publication.progress, latestSlotUtcMillis = publication.utcStartMillis,
+                            slotSource = publication.source, slotUncertaintyMillis = publication.uncertaintyMillis)
                     }
                 }
-                if (assembler != null) {
+            }
+            try {
+                if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) { completedSlot.set(it) }
+                // Conflate UI observations without suspending the hardware reader on the main thread.
+                val update: suspend (CaptureMetrics) -> Unit = { metrics ->
+                    if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
+                        val slot = completedSlot.get()
+                        updates.value = CapturePublication(metrics, assembler?.progress(), slot?.utcStartMillis,
+                            slot?.source, slot?.uncertaintyMillis)
+                    }
+                }
+                val slotBuilder = assembler
+                if (slotBuilder != null) {
                     val timed = capture as? TimestampedMicrophoneCapture ?: throw CaptureException("This audio backend does not provide timestamps.")
                     timed.captureTimed(id, update) {
-                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) assembler.push(it)
+                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) slotBuilder.push(it)
                     }
                 } else capture.capture(id, update)
                 throw CaptureException("Microphone capture ended. Press Start microphone to retry.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
-                capture.clear(); latestSlot = null
+                capture.clear(); latestSlot = null; completedSlot.set(null); updates.value = null
                 state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null,
                     error = if (error is CaptureException || error is TimeException) error.message
                     else "Could not capture the microphone. Check permission and the input, then retry.")
-            } finally { assembler?.clear() }
+            } finally { render.cancel(); assembler?.clear() }
         }
         job = next
         // Completion also runs if Stop cancels before the coroutine body ever starts.
         next.invokeOnCompletion {
             viewModelScope.launch(Dispatchers.Main.immediate) {
                 if (job === next) {
+                    latestSlot = completedSlot.get()
                     if (discard) { capture.clear(); latestSlot = null }
-                    state.value = state.value.copy(phase = CapturePhase.IDLE, metrics = state.value.metrics.takeUnless { discard },
-                        slots = state.value.slots?.copy(collected = 0).takeUnless { discard },
-                        latestSlotUtcMillis = latestSlot?.utcStartMillis)
+                    state.value = state.value.copy(phase = CapturePhase.IDLE,
+                        metrics = (updates.value?.metrics ?: state.value.metrics).takeUnless { discard },
+                        slots = assembler?.progress().takeIf { updates.value != null }.takeUnless { discard }, latestSlotUtcMillis = latestSlot?.utcStartMillis,
+                        slotSource = latestSlot?.source, slotUncertaintyMillis = latestSlot?.uncertaintyMillis)
                     job = null
                 }
             }
