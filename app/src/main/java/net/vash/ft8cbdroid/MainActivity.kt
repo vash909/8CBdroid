@@ -1,6 +1,8 @@
 package net.vash.ft8cbdroid
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -20,6 +22,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.vash.ft8cbdroid.recording.RecordedSlotViewModel
 import net.vash.ft8cbdroid.recording.RecordedSlotUiState
 import net.vash.ft8cbdroid.recording.RecordedSlotPanel
+import net.vash.ft8cbdroid.audio.CaptureViewModel
+import net.vash.ft8cbdroid.audio.CaptureUiState
+import net.vash.ft8cbdroid.audio.CapturePanel
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
 import net.vash.ft8cbdroid.message.HashSessionUiState
@@ -45,6 +50,13 @@ import net.vash.ft8cbdroid.settings.StationSettingsViewModel
 import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
+    private lateinit var captureViewModel: CaptureViewModel
+    private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        captureViewModel.permissionResult(it)
+    }
+    private val microphoneDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        captureViewModel.export(it?.toString())
+    }
     private lateinit var lanViewModel: LanViewModel
     private lateinit var waveformViewModel: WaveformViewModel
     private val wavDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
@@ -68,6 +80,7 @@ class MainActivity : ComponentActivity() {
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
+        captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver))[CaptureViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
@@ -75,6 +88,7 @@ class MainActivity : ComponentActivity() {
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
+            val capture by captureViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(station.saved?.callsign) {
                 hashViewModel.changeStation(station.saved?.callsign)
                 recordedSlotViewModel.changeStation(station.saved?.callsign)
@@ -100,6 +114,17 @@ class MainActivity : ComponentActivity() {
                 onCommitHashes = hashViewModel::commit,
                 onResetHashes = hashViewModel::reset,
                 recording = recording,
+                capture = capture,
+                onSelectInput = captureViewModel::select,
+                onStartCapture = {
+                    if (captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
+                        microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                },
+                onStopCapture = { captureViewModel.stop() },
+                onLeaveAudio = { captureViewModel.stop("Microphone stopped after leaving Audio.", clear = true) },
+                onSaveCapture = {
+                    if (captureViewModel.prepareExport()) microphoneDestination.launch("8CBdroid-microphone.wav")
+                },
                 onRecordedUtc = recordedSlotViewModel::changeUtc,
                 onRecordedProfile = recordedSlotViewModel::changeProfile,
                 onImportRecording = { if (recordedSlotViewModel.prepareImport()) wavSource.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) },
@@ -118,6 +143,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.", clear = true)
         if (!isChangingConfigurations) lanViewModel.stop()
         super.onStop()
     }
@@ -152,6 +178,12 @@ fun EightCbApp(
     onCommitHashes: () -> Unit = {},
     onResetHashes: () -> Unit = {},
     recording: RecordedSlotUiState = RecordedSlotUiState(),
+    capture: CaptureUiState = CaptureUiState(),
+    onSelectInput: (Int) -> Unit = {},
+    onStartCapture: () -> Unit = {},
+    onStopCapture: () -> Unit = {},
+    onLeaveAudio: () -> Unit = {},
+    onSaveCapture: () -> Unit = {},
     onRecordedUtc: (String) -> Unit = {},
     onRecordedProfile: (Ft8DecodeProfile) -> Unit = {},
     onImportRecording: () -> Unit = {},
@@ -177,7 +209,7 @@ fun EightCbApp(
                     sections.forEachIndexed { index, label ->
                         NavigationBarItem(
                             selected = section == index,
-                            onClick = { section = index },
+                            onClick = { if (section == 2 && index != 2) onLeaveAudio(); section = index },
                             icon = { Text(listOf("FT8", "USB", "VOX", "UDP", "TXT")[index]) },
                             label = { Text(label) },
                         )
@@ -193,7 +225,7 @@ fun EightCbApp(
                 Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
                 Text("FT8 • 11 metres • Android", color = MaterialTheme.colorScheme.primary)
                 Panel("Development preview") {
-                    Text("Station settings, LAN monitoring and offline message previews are available. Live local RX/TX, radio control and audio are pending.")
+                    Text("Station settings, LAN monitoring, offline FT8 tools and microphone capture are available. Live local FT8 decoding, radio control and audio output are pending.")
                 }
                 when (section) {
                     0 -> {
@@ -256,17 +288,9 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
+                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture)
                         HorizontalDivider()
-                        Text("Audio and VOX", style = MaterialTheme.typography.titleLarge)
-                        Panel("Phone microphone and speaker") {
-                            Text("Planned for acoustic coupling to a radio with VOX enabled.")
-                            Text("Microphone access, audio input/output, level calibration and resampling are not implemented.")
-                        }
-                        Panel("Audio USB") {
-                            Text("Planned for an Android-compatible USB audio interface. CAT and audio will be configured separately.")
-                        }
-                        OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
+                        RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
                     }
                     4 -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
                         waveform, onWaveformInput, onWaveformFrequency, onWaveformLevel, onWaveformConsent,

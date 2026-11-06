@@ -25,7 +25,7 @@ import java.nio.ByteOrder
 import java.security.MessageDigest
 import kotlin.math.abs
 
-/** Separate no-permission APK: never opens the main app, audio devices or network. */
+/** Offline entry point: never opens the main app, audio devices or network. */
 class OfflineEngineProbe : Instrumentation() {
     private var profileRequested = false
     override fun onCreate(arguments: Bundle?) {

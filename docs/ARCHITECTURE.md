@@ -1,7 +1,7 @@
 # Architecture
 
 The UI receives state and callbacks. Android device/file access and UDP I/O stay
-outside Compose; CB rules live in JVM code. LAN listening, file decoding and WAV
+outside Compose; CB rules live in JVM code. LAN listening, file decoding, microphone capture and WAV
 generation are explicit actions. No radio or live audio session starts on launch.
 For current capabilities and tested revisions, see [validation](VALIDATION.md).
 
@@ -11,13 +11,15 @@ For current capabilities and tested revisions, see [validation](VALIDATION.md).
 app (Compose, ViewModels, DataStore, Android USB/document access)
  ├── core (station models, CB codec/hash sessions, WAV/recorded-slot logic,
  │        radio/audio/DSP contracts)
+ ├── audio (AndroidMicrophoneCapture; device access and recording worker)
+ │    └── core
  ├── dsp:ft8 (NativeFt8Engine + JNI bridge)
  │    └── core
  └── protocol:wsjtcb (wire codec, UDP listener and peer state)
       └── core
 
 native (CMake, pinned ft8_lib channel routines + waveform/metadata adapters)
-engineprobe (separate offline instrumentation APK, uses the same core/DSP)
+engineprobe (separate development APK; offline and explicit acoustic entry points)
 reference/wsjtcb (host-only original sources, adapters and expected fixtures)
 ```
 
@@ -25,7 +27,8 @@ reference/wsjtcb (host-only original sources, adapters and expected fixtures)
 Android. The Android native library is built from source through `dsp:ft8`;
 Fortran, Qt and Boost are host reference-test dependencies, not APK runtimes.
 Main-app packages exclude the reference corpus. The separate probe packages test
-fixtures and needs no audio, USB or network permissions.
+fixtures; the offline entry point opens no devices. The separate audio probe
+uses microphone permission only when explicitly invoked. Neither uses USB/network.
 
 ## State lifetime
 
@@ -37,6 +40,7 @@ fixtures and needs no audio, USB or network permissions.
 | USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
 | Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
 | Generated waveform/export snapshot | `WaveformViewModel` | Edits invalidate old PCM; rotation retained, process restart discards it. Exported documents remain outside the session. |
+| Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit foreground session; stops/clears on Audio exit, rotation or background. No automatic restart or saved PCM. |
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
 Only station identity is currently stored as app configuration. Choosing a radio
@@ -121,15 +125,22 @@ Hamlib/JNI is an alternative requiring separate Android file-descriptor access
 and license/build review; it is not included. CAT and USB audio are separate
 capabilities. See [USB scope and verification](USB_CAT.md).
 
-## Future microphone, playback and VOX
+## Microphone input and future playback/VOX
 
-`AudioEngine` distinguishes phone and USB audio routes, but capture/playback,
-focus, routing, levels and resampling are unimplemented. The main manifest
-currently declares `RECORD_AUDIO`; the app does not request runtime microphone
-permission or record audio. Document import/export uses Android's file picker.
+`MicrophoneCapture` is the core input boundary; `AndroidMicrophoneCapture` in the
+Android `audio` module owns the recorder, effect handles, device callbacks and
+nonblocking IO worker. Compose receives only state/callbacks. `CaptureViewModel`
+owns permission handoff, explicit starts, cancellation/cleanup and frozen WAV
+exports. The unused combined `AudioEngine` skeleton still has no RX/TX backend;
+it is not the implemented microphone contract.
 
-Live reception needs hardware-rate conversion to DSP PCM, timestamped buffers
-and complete UTC slots before feeding the existing decoder. Acoustic operation
-also needs a tested radio VOX setup, output-level calibration and lead/tail
-handling. PTT, scheduling, AutoSeq and background-service lifecycles require
-separate implementations and hardware evidence.
+The JVM `CaptureResampler` preserves filter history/rational phase across chunks,
+and `CaptureBuffer` retains five seconds at 12 kHz. Metering happens before
+conversion. Device selection must match the actual route; interruptions stop the
+session. No audio queue feeds `Ft8Engine` yet. Details and test boundaries are in
+[microphone capture](MICROPHONE_CAPTURE.md).
+
+Live reception still needs timestamped buffers, missing-sample/clock handling and
+complete UTC slots. Acoustic VOX also needs speaker output, calibrated levels,
+lead/tail handling and tested radio hardware. PTT, scheduling, AutoSeq and
+background-service lifecycles remain separate implementations.

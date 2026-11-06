@@ -121,8 +121,10 @@ the desktop GUI remains a separate pending integration check.
 
 ## Phone probe and evidence
 
-`engineprobe` is a separate APK with no launcher activity or audio/USB/network
-permissions. It uses the same core/native backend and packages only test data
+`engineprobe` is a separate development APK. Its ordinary `OfflineEngineProbe`
+entry point opens no audio, USB or network resources. R10 adds a separate opt-in
+[audio probe](MICROPHONE_CAPTURE.md#verification) with microphone permission.
+The offline entry point uses the same core/native backend and packages test data
 excluded from the main app. It now checks 154 message cases, 96 hash scenarios,
 12 generated waveforms, four original desktop WAVs and 12 recorded-slot cases,
 plus roundtrip, silence and invalid-input rejection.
@@ -150,5 +152,5 @@ The original R04 gate passed on the A51 / Android 13 / ARM64 on 2026-11-05 using
 probe SHA-256 `46c3d9603cee4fb4ad1cb9ef6f441912377ee58d279591913954b71b89a426ce`:
 four WAV decodes at 151/147/180/172 ms, encode 37 ms, PSS 45,135 KiB and native
 allocation 7,705,296 bytes. Those historical observations predate R08 metadata
-changes. [Validation](VALIDATION.md#latest-samsung-a51-result-r08) records the
+changes. [Validation](VALIDATION.md#samsung-a51-result-r08) records the
 latest merged revision, current probe/UI checks and outstanding qualification.

@@ -63,7 +63,7 @@ source scripts/env.sh
 bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
-The check runs `:core:test`, `:protocol:wsjtcb:test`, app JVM tests, app/DSP/probe
+The check runs `:core:test`, `:protocol:wsjtcb:test`, app JVM tests, app/audio/DSP/probe
 lint, and both debug APK builds. It uses `--no-daemon`. JVM tests read committed
 reference data and need no host Fortran/Qt compiler; building the JNI dependency
 does need the selected Android NDK/CMake.
@@ -71,7 +71,7 @@ does need the selected Android NDK/CMake.
 | Output | Path |
 | --- | --- |
 | Main app | `app/build/outputs/apk/debug/app-debug.apk` |
-| Offline instrumentation probe | `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk` |
+| Development instrumentation probes | `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk` |
 | JVM test reports | `core/build/reports/tests/`, `protocol/wsjtcb/build/reports/tests/`, `app/build/reports/tests/` |
 | Lint reports | Each Android module's `build/reports/lint-results-debug.*` |
 
@@ -236,3 +236,9 @@ record checksums/results, since downloads may expire. CI has no protected releas
 signing, store publication or stable debug-key provisioning. Keep signing keys,
 credentials, caches, private recordings and backups out of Git. Committed
 synthetic/reference WAVs are intentional test fixtures with documented provenance.
+
+## Microphone checks
+
+R10 adds a separate, opt-in acoustic probe that records a short speaker reference
+tone on an unlocked phone. Its microphone permission does not change the ordinary
+offline probe behavior. See [capture procedure and limitations](MICROPHONE_CAPTURE.md#verification).
