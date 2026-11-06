@@ -118,8 +118,8 @@ Log parsing still needs the schema-specific QDateTime representation.
 ## Android network access
 
 The current target SDK is 36, using the existing `INTERNET` manifest permission.
-Before raising the target to 37+, implement the local-network runtime permission
-requirements described in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
+Before changing the target SDK, review the applicable local-network access
+requirements in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
 No foreground service or background-listening capability is claimed here.
 
 ## Verification and upstream sources
@@ -138,5 +138,9 @@ foreground stop ordering and disposal. Android device/real-desktop interoperabil
 - [MessageClient.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/MessageClient.cpp): ephemeral socket, schema upgrade and Status sender.
 - [Configuration.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Configuration.cpp): desktop server defaults.
 
-FT8 engine compatibility still requires separate tests of CB callsigns, hashes,
-type 4 packing and CB QSO sequences. The local FT8 engine is not integrated.
+Local offline FT8 now has separate [message/hash](CB_MESSAGE_CODEC.md),
+[waveform](OFFLINE_WAVEFORM.md) and [recorded-slot](RECORDED_SLOTS.md) paths.
+They do not consume LAN audio or share learned-call sessions. LAN SNR/DT are
+reported by the desktop; recorded SNR/DT come from the local backend and supplied
+UTC. Full live/RF and QSO interoperability remain unverified; see
+[validation](VALIDATION.md).

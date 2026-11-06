@@ -24,9 +24,10 @@ and Network development libraries. For example, Debian/Ubuntu provide them in
 the Android build and APK do not depend on Qt or Fortran.
 
 ```bash
-python3 scripts/wsjtcb_qso.py --check
-python3 scripts/wsjtcb_qso.py --check --optimization O2
-python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+source scripts/env.sh
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
+bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 Run without `--check` to regenerate `qso.json` and review the diff. CI checks O0
@@ -120,9 +121,11 @@ automating a QSO, and document deliberate differences from these desktop outcome
 Successful reference regeneration is compatibility evidence, not permission to
 implement every observed outcome as an Android rule.
 
-## Phone verification
+## Historical R03c phone scope
 
-Install the PR's debug APK, save station settings, reopen the app, receive a LAN
-decode and open Radio's USB discovery view. All text must remain English. There
-are no new screens or local FT8 functions in R03c. The host reference job validates
-the new behavior; a phone smoke covers only regressions in the existing client.
+R03c added no screens or local FT8 runtime behavior. Its app smoke test checked
+station persistence, LAN and USB discovery regressions; host reference checks
+validated the parser/generation/decision traces. Later offline codec/DSP device
+tests do not turn these host traces into an Android AutoSeq implementation. See
+[current validation](../../docs/VALIDATION.md) and
+[phone review steps](../../docs/DEVELOPMENT.md#phone-checks).

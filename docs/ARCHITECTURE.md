@@ -1,116 +1,131 @@
 # Architecture
 
-The Android UI depends on `core` and `protocol:wsjtcb`. JVM modules can be tested
-without an emulator. Hardware and network work stay outside Compose. No radio
-operation or listener starts automatically.
+The UI receives state and callbacks. Android device/file access and UDP I/O stay
+outside Compose; CB rules live in JVM code. LAN listening, file decoding and WAV
+generation are explicit actions. No radio or live audio session starts on launch.
+For current capabilities and tested revisions, see [validation](VALIDATION.md).
+
+## Modules and ownership
 
 ```text
-app (Compose, settings/LAN ViewModels, Android lifecycle)
- ├── core (station identity, radio/audio/DSP contracts)
- ├── dsp:ft8 (offline JNI channel engine; no UI session)
+app (Compose, ViewModels, DataStore, Android USB/document access)
+ ├── core (station models, CB codec/hash sessions, WAV/recorded-slot logic,
+ │        radio/audio/DSP contracts)
+ ├── dsp:ft8 (NativeFt8Engine + JNI bridge)
  │    └── core
- └── protocol:wsjtcb (wire codec, UDP listener, connection state)
+ └── protocol:wsjtcb (wire codec, UDP listener and peer state)
       └── core
 
-native (CMake, pinned ft8_lib channel + JNI, built by dsp:ft8)
-engineprobe (separate offline instrumentation APK, uses dsp:ft8)
+native (CMake, pinned ft8_lib channel routines + waveform/metadata adapters)
+engineprobe (separate offline instrumentation APK, uses the same core/DSP)
+reference/wsjtcb (host-only original sources, adapters and expected fixtures)
 ```
+
+`core` and `protocol:wsjtcb` are Kotlin/JVM modules. They can be tested without
+Android. The Android native library is built from source through `dsp:ft8`;
+Fortran, Qt and Boost are host reference-test dependencies, not APK runtimes.
+Main-app packages exclude the reference corpus. The separate probe packages test
+fixtures and needs no audio, USB or network permissions.
+
+## State lifetime
+
+| State | Owner | Lifetime / side effects |
+| --- | --- | --- |
+| Saved station callsign/locator | DataStore repository | Durable across process restarts; written only by explicit Save. |
+| Station draft/load/save status | `StationSettingsViewModel` | Retained across rotation; unread data cannot be overwritten while loading or after a read failure. |
+| LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Inputs survive rotation; not durable. Backgrounding stops the listener and clears peer/history. |
+| USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
+| Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
+| Generated waveform/export snapshot | `WaveformViewModel` | Edits invalidate old PCM; rotation retained, process restart discards it. Exported documents remain outside the session. |
+| Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
+
+Only station identity is currently stored as app configuration. Choosing a radio
+connection label does not implement or persist an operating profile. Android
+system picker history/USB grants have their own OS lifecycle.
 
 ## Station settings
 
-`StationSettingsViewModel` exposes editable and saved identity through StateFlow.
-The UI collects it with lifecycle awareness. Preferences DataStore writes the
-callsign and locator together on an explicit save request and reports completion
-only after the write succeeds. Editing stays disabled until the initial read
-succeeds, preventing accidental replacement of unread settings. The application
-context delegate provides one DataStore instance per process.
+Preferences DataStore writes callsign and locator together on Save. StateFlow
+reports completion after the write succeeds; initial-read failures expose Retry
+and keep editing disabled. The application-context delegate supplies one
+DataStore instance per process. Unsaved station drafts do not change RX hash
+context. No station setting arms TX or opens hardware.
 
 ## LAN monitoring
 
-`LanViewModel` owns a `WsjtCbBridge`, validates the IPv4/port inputs and serializes
-Start/Stop/Replay requests. `UdpWsjtCbBridge` binds on an IO dispatcher and receives
-unicast UDP on a socket-owning worker thread. Its StateFlow exposes listener
-phase, selected desktop, latest Status and bounded decode history. Socket close
-releases blocking receive without joining on the UI thread. A new bind waits on
-IO for the previous receiver to exit; session guards prevent stale publication.
+`LanViewModel` validates IPv4/port inputs and serializes Start/Stop/Replay.
+`UdpWsjtCbBridge` binds on IO and receives unicast UDP on a socket-owning worker.
+Only a valid heartbeat establishes a peer; IP, ephemeral source port and instance
+ID remain pinned until Close or timeout. Status/Decode/Clear from that peer
+refresh its lifetime. Appended extensions are ignored after required fields.
 
-Only a valid heartbeat establishes a peer. IP, ephemeral source port and instance
-ID remain pinned until Close or timeout. Outbound messages are heartbeat and
-explicit Replay; neither starts radio transmission. Status and Decode parsing
-ignore appended extensions. Decode history retains the latest 200 distinct
-payloads, ignoring the Live/Replay flag for deduplication; a live decode upgrades
-an existing replay. Clear from the desktop, peer loss and Stop clear history.
-The local Clear list button changes only phone state. Log parsing remains pending.
+Decode history holds 200 distinct payloads; a Live decode upgrades a matching
+Replay. Desktop Clear, peer loss and Stop clear history. Local Clear list changes
+only phone state. Outbound messages are heartbeat and explicit Replay; there is
+no Reply, QSO log import or radio/TX control.
 
-The activity stops LAN listening when it leaves the foreground, except during
-configuration changes such as rotation. Clearing the ViewModel closes the socket.
-There is no background service. Port/filter inputs survive rotation but not process
-termination. See [the wire contract and phone test](WSJT_CB_INTEGRATION.md).
+Socket close unblocks receive without joining on the UI thread. A new bind waits
+on IO for the old receiver to exit, and session guards reject stale publications.
+The activity stops listening on background transitions except rotation; there is
+no foreground/background operating service. See [the LAN contract](WSJT_CB_INTEGRATION.md).
+LAN SNR/timing are supplied by the desktop, separately from local recorded estimates.
+
+## Offline message and audio-file paths
+
+1. `CbMessageCodec` packs/unpacks selected WSJT-CB text formats and calculates
+   callsign hashes. It is stateless; TX previews can render only explicitly
+   supplied identities and never warm a receiver cache.
+2. `CbMessageSession` stages/commits bounded full-call learning and preserves
+   unknown/ambiguous hashes. Its Messages simulator is independent of LAN and
+   imported recordings. See [codec](CB_MESSAGE_CODEC.md) and [sessions](CB_HASH_SESSIONS.md).
+3. `OfflineFt8Generator` packs a message, requires consent for content changes,
+   calls `Ft8Engine.encode` and produces PCM16 WAV bytes. Android's
+   `DocumentWaveformExporter` writes a frozen snapshot on IO. Edits/cancellation
+   cannot publish stale generation results. See [waveform generation](OFFLINE_WAVEFORM.md).
+4. `DocumentRecordedSlotReader` opens a selected URI on IO; the JVM
+   `RecordedSlotWav` reader validates size, RIFF chunks, format and full-slot length.
+   `RecordedSlotDecoder` combines CRC/LDPC-qualified frames, supplied UTC and a
+   fresh CB session with the saved station. Files do not teach other sessions.
+   See [recorded slots](RECORDED_SLOTS.md).
+
+`Ft8Engine` accepts immutable 77-bit payloads and normalized 12 kHz mono slots.
+`NativeFt8Engine` runs JNI on `Dispatchers.Default`. A process-wide mutex permits
+one native encode/decode at a time across instances; ViewModels own request
+admission, cancellation and stale-result checks. The native channel layer has
+no text/hash cache or absolute UTC. It returns relative timing, offset, sync
+score and a nullable experimental SNR estimate. The JVM recorded-slot layer
+supplies UTC and derives DT. A sync score is not SNR.
+
+Cancellation is observed around JNI calls, not within native search. A blocking
+document read must return before its work ends. Search/candidate bounds exist,
+but interruptible work, production queue policy and sustained cost remain future
+qualification. See [engine bounds](FT8_ENGINE.md).
 
 ## USB discovery and future radio control
 
-`UsbViewModel` owns an application-context `AndroidUsbInventory`. The inventory
-uses `UsbManager` and pinned Java serial drivers for descriptor discovery and
-explicit permission requests; Compose receives immutable state and callbacks.
-A pure Kotlin session tracks device-specific pending/granted/denied access.
-No USB port is opened. See [USB setup, scope and phone checks](USB_CAT.md).
+The application-context inventory uses `UsbManager` and pinned Java serial
+drivers to enumerate descriptors and request access to recognized interfaces.
+A pure JVM session tracks pending/granted/denied access per device. No device or
+serial port is opened when access is granted. Compose never owns receivers or
+USB handles; inventory receivers are released with their ViewModel.
 
-`RadioController` defines connection, frequency and PTT operations. Its placeholder
-returns Unavailable and advertises no capabilities. Future implementations can use:
+The selected transport direction follows FT8CN's Java USB-serial approach.
+`RadioController` currently has an unavailable implementation with no advertised
+capabilities. A real backend still needs the first radio/cable, manufacturer
+protocol, baud/port settings, bounded I/O, detach behavior and PTT release tests.
+Hamlib/JNI is an alternative requiring separate Android file-descriptor access
+and license/build review; it is not included. CAT and USB audio are separate
+capabilities. See [USB scope and verification](USB_CAT.md).
 
-1. Hamlib built with Android NDK and JNI. USB access must integrate with file
-   descriptors authorized by `UsbManager`; compiling Hamlib alone does not grant
-   access to `/dev/ttyUSB*` on Android.
-2. Kotlin/Java CAT drivers for explicitly supported radios, using documented
-   manufacturer commands and an Android serial transport such as
-   [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android).
+## Future microphone, playback and VOX
 
-Before integration, pin dependency versions, review licenses and choose the first
-radio/cable to test. Attach/detach, device permissions, VID/PID, baud rate, timeouts,
-capabilities and PTT release on failure still need implementation. USB audio is
-separate from CAT. No universal radio compatibility is claimed.
+`AudioEngine` distinguishes phone and USB audio routes, but capture/playback,
+focus, routing, levels and resampling are unimplemented. The main manifest
+currently declares `RECORD_AUDIO`; the app does not request runtime microphone
+permission or record audio. Document import/export uses Android's file picker.
 
-## Future audio and VOX
-
-`AudioEngine` distinguishes phone microphone/speaker and USB audio. Implement
-routing, audio focus, runtime microphone permission and capture/playback through
-Android audio APIs or Oboe. The current manifest declares RECORD_AUDIO but the app
-does not request it because recording is not implemented.
-
-The DSP profile uses 12 kHz PCM; Android hardware may require resampling from
-48 kHz. Define buffers, timestamps, channel layout and PCM representation when
-building the real engine. In acoustic operation the radio handles VOX, while the
-app will need level calibration and leading/trailing audio timing. Future
-background microphone operation requires its own service/permission design.
-
-## Offline FT8 channel engine
-
-`Ft8Engine` now uses typed 77-bit payloads, immutable PCM slots and frame metadata.
-`NativeFt8Engine` implements offline encode/decode behind this boundary, with JNI
-work outside Compose and one native call at a time. It is packaged with the app
-but no operating session starts it. The separate `engineprobe` APK exercises the
-same backend with independent WSJT-CB audio fixtures.
-
-The channel layer has no text codec, hash state, absolute UTC or SNR estimator.
-`core.message.CbMessageCodec` implements stateless text packing/unpacking outside
-Compose, with typed unresolved hashes. `CbMessageSession` owns bounded pending and
-committed full calls, typed hash resolution and reset semantics. `HashSessionViewModel`
-owns the Messages tab's explicit offline receive simulation and survives rotation;
-the cache is never persisted. Saved station changes reset the session; unsaved
-drafts do not. This session is separate from stateless TX preview, DSP and LAN.
-AutoSeq remains future domain work.
-`OfflineFt8Generator` connects message packing to raw PCM with explicit frequency
-and level, requiring consent for content changes. `WaveformViewModel` owns one
-replaceable job and generated WAV bytes; stale results are discarded on edits.
-Its Android document exporter writes a user-selected URI on IO. Compose receives
-state/callbacks; no device audio or radio is opened. See [R07](OFFLINE_WAVEFORM.md).
-See [the message-codec contract](CB_MESSAGE_CODEC.md) and
-[hash-session behavior and desktop differences](CB_HASH_SESSIONS.md). See
-[engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,
-Android toolchain/ABI choices and current limitations.
-
-Recorded-slot reception uses a pure JVM bounded RIFF reader and
-`RecordedSlotDecoder`, with an isolated CB hash session per file. Android document
-access stays in `DocumentRecordedSlotReader`; `RecordedSlotViewModel` owns request
-snapshots and stale-result rejection. Compose displays state only. See
-[recorded-slot limits](RECORDED_SLOTS.md).
+Live reception needs hardware-rate conversion to DSP PCM, timestamped buffers
+and complete UTC slots before feeding the existing decoder. Acoustic operation
+also needs a tested radio VOX setup, output-level calibration and lead/tail
+handling. PTT, scheduling, AutoSeq and background-service lifecycles require
+separate implementations and hardware evidence.

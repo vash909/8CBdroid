@@ -23,9 +23,10 @@ Use Linux with Python 3 and GNU Fortran (`gfortran`, or `FC` and optional
 `FFLAGS`). No network, Qt, FFTW, NDK or radio is needed:
 
 ```bash
-python3 scripts/wsjtcb_packing.py --check
-python3 scripts/wsjtcb_packing.py --check --optimization O2
-python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+source scripts/env.sh
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 Run without `--check` to intentionally regenerate `packing.json`, then review
@@ -80,8 +81,8 @@ R04 removes this one case from deterministic TX comparisons (67 becomes 66).
 zero-prefix payload; its expected decode is still `<...> 26AT101`. The generator
 rejects unresolved placeholders in TX inputs before compilation. This preserves
 RX coverage without assigning a portable meaning to uninitialized TX data.
-R05 must report unresolved TX identities as unsupported, not transmit a guessed
-hash. Original production routines remain byte-for-byte unchanged.
+The R05 Kotlin codec reports unresolved TX identities as unsupported rather
+than encoding a guessed hash. Original production routines remain byte-for-byte unchanged.
 
 ## Results that constrain the Android implementation
 
@@ -108,14 +109,17 @@ hash. Original production routines remain byte-for-byte unchanged.
 These are payload fixtures, not 174-bit LDPC codewords, CRC checks, tones or audio.
 A binary payload with a flipped bit may still describe another valid message;
 the reserved-type and non-binary-input checks do not establish corrupt-frame
-rejection. No app encoder, decoder, hash cache, CAT/PTT or AutoSeq is added.
+rejection. These fixtures themselves do not implement an app encoder, decoder,
+hash cache, CAT/PTT or AutoSeq. Later runtime layers are documented in
+[the codec guide](../../docs/CB_MESSAGE_CODEC.md) and [validation](../../docs/VALIDATION.md).
 
-## Phone smoke test
+## Historical R03b phone scope
 
-Install the PR's `8CBdroid-debug` APK and open Station, LAN and Radio. Check that
-saved settings restore, LAN listening/decodes still work with WSJT-CB, and USB
-discovery opens. There are no new screens. These checks cover app regressions;
-the host reference job validates R03b. OTG hardware is not required for this PR.
+R03b introduced no app screens. Its phone smoke test concerned regressions in
+station settings, LAN and USB discovery; only the host reference job validated
+the new fixtures. For current offline message/hash and recorded-audio checks,
+use [development](../../docs/DEVELOPMENT.md#phone-checks) and
+[validation](../../docs/VALIDATION.md).
 
 R05 adds sixteen TX cases and seventeen RX scenarios for portable standard
 messages, CQ modifiers, standard-call suffixes, report boundaries/aliases,

@@ -31,8 +31,10 @@ retains all known candidates and renders `<...>`. `UnresolvedCall` retains an
 unknown/overflow reason and also renders `<...>`. No result authorizes AutoSeq.
 Types 1/2 carry 22-bit hashes and type 4 carries 12-bit hashes; direct lookup also
 supports 10 bits for reference compatibility. Other message subtypes remain
-unsupported. Later live RX must supply CRC/LDPC-qualified frames; accepting a
-77-bit container alone does not establish signal integrity.
+unsupported. Recorded-slot decoding supplies CRC/LDPC-qualified frames before
+using its isolated session. The Messages simulator is a separate inspection
+path; accepting a 77-bit container alone does not establish signal integrity.
+Future live RX must preserve that boundary.
 
 ## Desktop reference and deliberate differences
 
@@ -65,15 +67,17 @@ The original Fortran and desktop JSON remain unchanged. Other tests cover reset,
 session isolation, invalid input, rejected-frame learning and bounded storage.
 
 ```bash
-python3 scripts/wsjtcb_codec.py --check
 source scripts/env.sh
+bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
 bash scripts/controlled.sh 600 bash scripts/check.sh
 ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/probe_phone.sh
 ```
 
 The probe reports `hash_session_scenarios=96` alongside the existing 154 text
 vectors and four desktop WAVs. Device execution is reported separately in the PR;
-building the probe alone does not establish a phone pass.
+building the probe alone does not establish a phone pass. The command above
+installs the local probe; [CI deployment](DEVELOPMENT.md#deploy-and-test-on-a-phone)
+uses verified CI artifacts. Accepted results are recorded in [validation](VALIDATION.md).
 
 ## Phone verification
 

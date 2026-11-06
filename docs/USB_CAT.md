@@ -26,7 +26,8 @@ Dependency: `com.github.mik3y:usb-serial-for-android:3.11.0`, MIT license, from
 [JitPack](https://github.com/mik3y/usb-serial-for-android/tree/3.11.0). The Gradle
 repository filter allows only this module from JitPack. The upstream license is
 included in APK assets and linked in [third-party notices](../THIRD_PARTY_NOTICES.md).
-No Hamlib, JNI or NDK is needed for descriptor discovery and permission handling.
+Descriptor discovery and permission handling use no Hamlib or native driver.
+The app still needs the NDK for its separate offline FT8 channel library.
 This selects the Java transport direction; a particular radio's CAT command set
 and settings still need a separate implementation and test.
 
@@ -71,13 +72,15 @@ When a data/OTG adapter and serial interface are available:
 Automated JVM tests cover permission-state isolation, retry, duplicate-request
 blocking, removal, replacement, revocation and ViewModel cleanup. They do not test
 the Android system dialog or physical USB interoperability. No phone/interface
-combination is certified by this PR; hardware tests remain pending.
+combination is certified by the discovery feature; physical OTG/CAT tests remain
+pending. Current accepted checks are recorded in [validation](VALIDATION.md).
 
 ## R01b: first real radio connection
 
-The owner currently has no USB OTG adapter; no test radio model, interface or phone
-has been selected. Keep R01 incomplete until those details and physical results
-are recorded. Required follow-up:
+The debug phone is a Samsung A51, but no radio/OTG-cable combination has been
+qualified. The owner previously reported that an OTG adapter was unavailable;
+select and record the actual hardware before implementing the first CAT backend.
+Keep R01 incomplete until those details and physical results are recorded. Required follow-up:
 
 - Pin the first radio's CAT documentation and serial settings; choose its exact
   interface and port. Define identity/frequency read fixtures from that protocol.

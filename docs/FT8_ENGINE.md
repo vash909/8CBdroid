@@ -1,145 +1,146 @@
-# Offline FT8 channel engine (R04)
+# Offline FT8 channel engine
 
-R04 selects a source-built channel backend for offline experiments. It does not
-add local RX/TX controls to the app. The separate [R05 text codec](CB_MESSAGE_CODEC.md) adds offline packing/unpacking.
-[R06 hash learning](CB_HASH_SESSIONS.md) and [R07 offline WAV generation](OFFLINE_WAVEFORM.md)
-are separate layers. AutoSeq, live audio and radio operation remain later milestones.
+The source-built native backend encodes raw FT8 payloads and decodes complete
+PCM slots. The main app uses it for [offline WAV generation](OFFLINE_WAVEFORM.md)
+and [recorded-slot import](RECORDED_SLOTS.md). These paths do not open live audio,
+control a radio or implement AutoSeq. Current test/device outcomes are in
+[validation](VALIDATION.md).
 
 ## Decision and dependencies
 
-Use [ft8_lib](https://github.com/kgoba/ft8_lib/tree/9fec6ca39886edbf96f4f5e71edc76da5074e871)
-commit `9fec6ca39886edbf96f4f5e71edc76da5074e871` (MIT), with its bundled KISS FFT
-(BSD-3-Clause). Exact vendored paths and SHA-256 values are in
-[`manifest.json`](../native/third_party/ft8_lib/manifest.json). No native binary
-is downloaded. Build with NDK **28.2.13676358**, CMake **3.22.1**, C99/C++17;
-package **arm64-v8a** and **x86_64**, minimum API 26. ARM32 is not built.
-The C++ runtime is linked statically. There is no Hamlib, Qt, Fortran or Boost
-runtime in the Android library. See [notices](../THIRD_PARTY_NOTICES.md).
+The channel backend introduced in R04 uses
+[ft8_lib](https://github.com/kgoba/ft8_lib/tree/9fec6ca39886edbf96f4f5e71edc76da5074e871)
+commit **`9fec6ca39886edbf96f4f5e71edc76da5074e871`** (MIT), with bundled KISS FFT
+(BSD-3-Clause). Exact paths/checksums are in the
+[vendored manifest](../native/third_party/ft8_lib/manifest.json). The waveform
+adapter follows the upstream GFSK demo. No native binary is downloaded.
 
-The inspected FT8CN tree at `a98fbfaec379a0c7a07d2a50c27be223aef948d8` supplies
-prebuilt DSP libraries under `ft8cn/app/libs/`, without their native source in
-that tree. It remains a useful operating-feature reference. A source-built
-channel layer allows reproducible builds and future CB-specific adaptation.
+Build settings are NDK **28.2.13676358**, CMake **3.22.1**, C99/C++17, minimum API
+26, and **arm64-v8a/x86_64**. ARM32 is absent. LLVM libc++ is statically linked;
+there is no Hamlib, Qt, Fortran or Boost runtime in the Android library.
+[Third-party notices](../THIRD_PARTY_NOTICES.md) describe the packaged licenses.
 
-At R04 selection, the unmodified ft8_lib amateur text codec differed from the
-pinned WSJT-CB production packer on **63 of 66** R03b inputs, including rejection and different
-payloads. `codec_probe` reports the exact cases; `message.c` and `text.c` are
-**excluded from Android**. Do not use their callsign/message policy for CB.
-The selected layer accepts raw 77-bit payloads only. R05 implements the separate
-text codec and R06 adds learned RX hash behavior before live-operation milestones.
+The inspected FT8CN tree at `a98fbfaec379a0c7a07d2a50c27be223aef948d8` served as
+an operating-feature reference; it supplied prebuilt DSP libraries without
+native sources in that tree. The chosen backend can be built from source and
+keeps CB policy separate from channel coding.
 
-## Contracts and bounded work
+The unmodified ft8_lib amateur text codec is incompatible with the CB corpus:
+R04 observed 63 mismatches in the original 66 cases; the expanded 82-case corpus
+reports 68. `codec_probe` lists the current cases. Its `message.c`/`text.c` remain
+host-only comparison inputs and are **excluded from Android**. Runtime text
+packing/unpacking comes from the [Kotlin CB codec](CB_MESSAGE_CODEC.md), with
+[separate hash sessions](CB_HASH_SESSIONS.md).
 
-`core.Ft8Engine` encodes `Ft8Payload77` to `Ft8PcmSlot` and decodes a complete
-slot to typed frames: raw payload, relative start time, audio frequency and sync
-score. Buffers own defensive copies; malformed bit lengths/padding, incomplete
-slots and non-finite/out-of-range PCM are rejected. DSP PCM is mono float at
-12 kHz, normalized to [-1, 1], exactly 180,000 samples (15 seconds).
+## Contracts and execution
 
-The encoder exposes a peak amplitude of 0.01–1 (default 0.4), onset fixed at
-0.8 seconds and base frequency 200–2900 Hz. R07 adds message-level orchestration,
-WAV export and independent clean-waveform checks through pinned desktop LDPC/CRC.
-The A51-exported WAV passed that known-time/frequency check; full desktop GUI
-import remains pending. See [the R07 evidence and limits](OFFLINE_WAVEFORM.md).
-These settings do not establish TX scheduling or hardware output calibration.
+| Contract | Representation |
+| --- | --- |
+| `Ft8Payload77` | Ten bytes, with three zero padding bits; defensive copies. |
+| `Ft8PcmSlot` | Exactly 180,000 finite normalized float samples in [-1, 1]: mono 12 kHz, 15 seconds. |
+| `Ft8DecodedFrame` | CRC/LDPC-valid payload, corrected relative onset, audio frequency, sync score and nullable estimated SNR. |
+| `Ft8DecodeResult` | Decoded frames plus candidate count; duplicate payloads collapsed within a slot. |
 
-`dsp:ft8` runs JNI on `Dispatchers.Default`, with one process-wide mutex. Native
-calls own their buffers and have no shared message/hash state. Decoder search is
-200–3000 Hz, 2× time/frequency oversampling, at most 60 candidates and 25 LDPC
-iterations per candidate. Frames require zero parity errors and matching CRC.
-Duplicate payloads are collapsed within a slot. A valid channel frame does not
-establish a plausible CB message or a QSO peer.
+`NativeFt8Engine` runs JNI on `Dispatchers.Default`. A process-wide mutex allows
+one encode/decode call at a time across instances. Buffers and native work belong
+to each call; text, hash tables, absolute UTC and QSO state stay outside native.
+Malformed payload padding, incomplete slots and non-finite/out-of-range PCM are
+rejected before use.
 
-The sync score is **not SNR**. No fabricated SNR or absolute UTC is returned.
-Cancellation is observed around calls, not inside native search. Queue policy,
-interruptible decoding, weak/noisy sensitivity, multiple-signal handling,
-false-positive rates and thermal/battery behavior are R08/R09 work. The small
-upstream monitor still uses its original C allocation behavior; production
-memory-pressure recovery needs qualification before live reception.
+The encoder produces a fixed slot with signal onset at **0.8 s**, 79 symbols
+at 1,920 samples each (**12.64 s**) and **20 ms** start/end ramps. Base audio
+frequency is **200–2900 Hz** and peak amplitude **0.01–1**, default **0.4**.
+These are digital waveform parameters, not hardware volume, UTC scheduling or
+RF power calibration. The message layer checks unsupported/lossy content before
+encoding; see [WAV behavior and format](OFFLINE_WAVEFORM.md).
 
-## Independent desktop evidence
+## Decoder metadata and limits
 
-[`channel-sources.json`](../reference/wsjtcb/channel-sources.json) pins nine
-additional original WSJT-CB files at
-`94f776d54946fe43db5e0bb9c966b1595c7b7d97`. The test harness calls the original
-`encode174_91`, `get_ft8_tones_from_77bits` and `gen_ft8wave`; no channel algorithm
-is stubbed. Linker section removal discards unused legacy routines.
-Boost headers implement the original desktop CRC wrapper, host-only.
+The search uses **200–3000 Hz**, **2x time/frequency oversampling**, at most
+**60 candidates** and **25 LDPC iterations** per candidate. Frames require zero
+parity errors and matching CRC. Deduplication by payload can collapse identical
+messages at different offsets; no complete multiple-signal behavior is claimed.
 
-[`channel.json`](../reference/wsjtcb/channel/channel.json) now contains **131
-unique payloads** from the R03b/R03c corpora, including binary raw RX test
-cases, with exact 174-bit codewords
-and 79-tone sequences. The native check compares every payload/tone and reverses
-Gray coding to verify every codeword. Four committed clean WAVs are generated
-independently by the desktop routines: CQ, both type-4 hash orientations and a
-roger report. Each is mono PCM16, 12 kHz, 15 seconds, base 1000 Hz and onset 0.8 s.
-The fixtures establish raw channel compatibility, including payloads whose text
-meaning is lossy or inadmissible; they do not certify CB text acceptance.
+R08 corrects the fixed one-symbol (**160 ms**) FFT-window delay in reported
+onset. Search timing has an **80 ms** grid. The recorded-slot JVM layer adds the
+operator-supplied UTC boundary and derives DT as onset minus **0.5 s**, rounding
+absolute signal UTC to milliseconds. Document dates never establish UTC.
 
-Reproduce on a host with GNU Fortran, C++17, Boost headers, CMake and Ninja:
+**Sync score is not SNR.** R08 separately estimates SNR in a 2500 Hz bandwidth
+from recovered-tone power and outside-band noise probes. JNI uses NaN for an
+unavailable value; Kotlin exposes `null`. This estimator is experimental and
+can be biased by interference, colored noise, overlap or timing/frequency error.
+See [the estimator and recorded-slot limits](RECORDED_SLOTS.md#snr-estimate-and-decoder-limits).
+It is not WSJT-CB's calibrated estimator.
 
-```bash
-python3 scripts/wsjtcb_channel.py --check
-cmake -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build .tooling/native-host --parallel 2
-python3 scripts/check_native.py .tooling/native-host
-```
+Cancellation is observed before/after native calls, not during candidate search.
+The mutex is not a production admission/queue policy. Interruptible decoding,
+weak-signal sensitivity, false-positive rates, memory peaks and sustained thermal/
+battery behavior remain unqualified. The upstream monitor retains its original
+C allocation behavior; memory-pressure recovery needs further work. A valid
+channel frame alone does not establish supported CB text, a peer or a QSO.
 
-On this Linux PC run each heavy command through
-`bash scripts/controlled.sh 120 COMMAND ...`. The SDK CMake binary is under
-`$ANDROID_HOME/cmake/3.22.1/bin`; add it to PATH. The locally extracted Fortran
-setup is `.tooling/qso-env.sh`; also set `BOOST_INCLUDEDIR` to
-`.tooling/reference-boost/root/usr/include` using an absolute path.
-A system installation of gfortran/Boost needs no such overrides.
-The checker regenerates exact channel bits/tones and compares desktop PCM with
-an eight-unit PCM16 tolerance for Fortran/libm rounding. Committed WAV SHA-256
-values must match exactly. Native tests additionally cover own-encoder roundtrip,
-silence and invalid input. Independent WAV decoding is the interoperability gate;
-the own-encoder roundtrip alone is insufficient.
+## Independent desktop checks
 
-## Reproduce on a phone
+The pinned WSJT-CB revision is
+**`94f776d54946fe43db5e0bb9c966b1595c7b7d97`**. Original host-only Fortran/C++
+sources generate or verify expected results; Boost implements the original CRC
+wrapper. No Fortran/Qt/Boost runtime is shipped in the APK.
 
-`engineprobe` is a separate APK with no audio, USB or network permissions and no
-launcher activity. It uses the same native library as the main app. Installing
-it leaves the main app and station settings intact. It packages test WAVs that
-are excluded from the main APK.
+| Check | Independent reference / boundary |
+| --- | --- |
+| [Channel corpus](../reference/wsjtcb/channel/channel.json) | 131 exact payload/codeword/tone vectors and four clean WAVs generated through original `encode174_91`, `get_ft8_tones_from_77bits`, `gen_ft8wave`; sources pinned by [channel manifest](../reference/wsjtcb/channel-sources.json). |
+| [Generated PCM](OFFLINE_WAVEFORM.md#independent-checks-and-limits) | 21 cases checked through original desktop LDPC/CRC/unpacker plus supplied-time/frequency Goertzel analysis, duration/envelope and limited spectral probes; additional sources pinned by [PCM manifest](../reference/wsjtcb/pcm-sources.json). |
+| [Recorded corpus](../reference/wsjtcb/recordings/recordings.json) | Four clean, four fixed AWGN, two onset shifts, corrupted data and noise-only rejection. Native search compared with a supplied-sync desktop channel adapter. |
+
+Channel vectors deliberately include payloads whose text can be unsupported or
+lossy. The regular native checker verifies original fixture hashes and exact
+codewords/tones. Desktop waveform regeneration allows eight PCM16 units for
+Fortran/libm rounding, while committed WAV hashes must match exactly. Own-engine
+round trips supplement rather than replace independent inputs.
+
+After building `.tooling/native-host` and configuring the host compilers as in
+[development](DEVELOPMENT.md#desktop-reference-and-native-checks):
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
-bash scripts/probe_phone.sh
+bash scripts/controlled.sh 120 python3 scripts/check_native.py .tooling/native-host
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
 ```
 
-Expected result: `PASS`, four desktop WAVs decoded to exact payloads, matching
-time/frequency within 0.16 s / 6.25 Hz, successful encode/decode, no silence frames
-and rejection of NaN frequency. The instrumentation reports encode and per-WAV
-decode milliseconds, post-test process PSS and allocated native heap. **Post-test
-PSS is not peak memory**, and clean offline fixtures are not a sensitivity or
-sustained-operation benchmark. GitHub CI builds both APKs and checks host
-references; it does not run a physical phone or prove radio interoperability.
+These adapter checks do not run the full WSJT-CB desktop search/plausibility
+filters or establish decoder parity. Import of an actual phone-exported WAV in
+the desktop GUI remains a separate pending integration check.
 
-## Phone evidence
+## Phone probe and evidence
 
-Measured on **Samsung Galaxy A51 SM-A515F, Android 13, arm64-v8a**, 2026-11-05,
-using the debug probe APK, disconnected from radio/audio hardware:
+`engineprobe` is a separate APK with no launcher activity or audio/USB/network
+permissions. It uses the same core/native backend and packages only test data
+excluded from the main app. It now checks 154 message cases, 96 hash scenarios,
+12 generated waveforms, four original desktop WAVs and 12 recorded-slot cases,
+plus roundtrip, silence and invalid-input rejection.
 
-| Check | Result |
-| --- | --- |
-| Independent desktop WAVs | 4/4 exact payloads; time/frequency tolerances passed |
-| Per-WAV decode | 151, 147, 180, 172 ms |
-| Own encoder | 37 ms; emitted PCM decoded to the original payload |
-| Silence / invalid frequency | No frames / rejected |
-| Post-test process PSS | 45,135 KiB (about 44.1 MiB), not a peak |
-| Post-test allocated native heap | 7,705,296 bytes (about 7.3 MiB), not a peak |
+For local-build smoke testing, after the regular build:
 
-The runner force-stops only its own probe package on exit, including timeout.
-The main app and its station settings were left intact. This is R04's offline
-ARM64 smoke gate, not a live RX, calibrated SNR or radio interoperability result.
+```bash
+source scripts/env.sh
+ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/probe_phone.sh
+```
 
-Tested debug probe APK SHA-256: `46c3d9603cee4fb4ad1cb9ef6f441912377ee58d279591913954b71b89a426ce`.
+This helper installs the **local** probe APK and force-stops only that package
+on exit/timeout. For a code PR, deploy the verified **CI** APKs as described in
+[phone deployment](DEVELOPMENT.md#deploy-and-test-on-a-phone). A signing mismatch
+is not permission to uninstall or clear data. Inspect both the explicit `PASS`
+and `INSTRUMENTATION_CODE: -1`.
 
-R08 extends frame metadata with a nullable experimental 2500 Hz SNR estimate and
-corrects the fixed 160 ms FFT-window onset delay. The clean/noisy recorded-slot
-corpus checks onset, payload and SNR against supplied reference context; see
-[recorded-slot qualification and limits](RECORDED_SLOTS.md). The JNI result now
-includes a float SNR array; NaN maps to an unavailable Kotlin value.
+The probe reports per-case time, post-test process PSS and native allocation.
+These are short offline observations; post-test PSS is not peak memory. CI builds
+the probe but does not run a physical device.
+
+The original R04 gate passed on the A51 / Android 13 / ARM64 on 2026-11-05 using
+probe SHA-256 `46c3d9603cee4fb4ad1cb9ef6f441912377ee58d279591913954b71b89a426ce`:
+four WAV decodes at 151/147/180/172 ms, encode 37 ms, PSS 45,135 KiB and native
+allocation 7,705,296 bytes. Those historical observations predate R08 metadata
+changes. [Validation](VALIDATION.md#latest-samsung-a51-result-r08) records the
+latest merged revision, current probe/UI checks and outstanding qualification.

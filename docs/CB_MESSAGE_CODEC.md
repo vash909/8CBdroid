@@ -40,8 +40,10 @@ with the original hash width/value. Unknown hashes render as `<...>` and never
 become invented calls. Static TX hash calculation is included; learned-call
 storage, collision resolution, local-station context and warm RX behavior are
 provided separately by [R06 hash sessions](CB_HASH_SESSIONS.md). The stateless
-codec remains cold and cannot learn from a TX preview. Message parsing does not verify channel CRC/LDPC; later RX must use
-integrity-checked DSP frames. A decoded string is not AutoSeq permission.
+codec remains cold and cannot learn from a TX preview. Message parsing does not
+verify channel CRC/LDPC. Recorded reception supplies integrity-checked DSP frames
+before using this codec; the Messages simulator accepts explicit payloads for
+offline inspection. A decoded string is not AutoSeq permission.
 
 ## Losses and desktop edge cases
 
@@ -71,17 +73,21 @@ or require explicit rejection when the desktop rejects the payload. Additional
 tests cover four explicit raw RX cases, visible losses, hash collisions, statelessness, invalid inputs,
 explicit free text, reserved types and 2,000 deterministic arbitrary payloads.
 The raw channel corpus is extended to **131** vectors; the four desktop WAVs stay
-unchanged. Noisy audio, full decoder acceptance and live interoperability are
-later milestones.
+unchanged. Recorded-slot checks now add a small noisy corpus; full desktop
+decoder acceptance, sensitivity and live interoperability remain unqualified.
+See [recorded-slot limits](RECORDED_SLOTS.md) and [validation](VALIDATION.md).
 
 ```bash
-python3 scripts/wsjtcb_packing.py --check
-python3 scripts/wsjtcb_packing.py --check --optimization O2
-python3 scripts/wsjtcb_codec.py --check
 source scripts/env.sh
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
+bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
 bash scripts/controlled.sh 600 bash scripts/check.sh
-bash scripts/probe_phone.sh
 ```
+
+Host compiler setup and verified-CI phone deployment are described in
+[development](DEVELOPMENT.md). The local probe helper installs a local APK;
+use CI artifacts when recording PR device evidence.
 
 The separate probe APK also checks all 154 text cases on Android before its
 existing four-WAV DSP smoke. CI regenerates desktop results and verifies the
@@ -89,7 +95,9 @@ TSV adapter, then builds both APKs. Keep all local heavy commands inside the
 controlled wrapper. Do not reinstall over a signing conflict or clear station
 data without owner approval; CI-phone deployment may remain pending for that reason.
 
-Phone UI checks after installing the CI APK:
+## Phone verification
+
+After the agent installs the verified CI APK and the phone is unlocked:
 
 1. Open **Messages**; `CQ 1AT106` should show the same encoded text.
 2. Enter `<1AT106> 26AT101 R-10`; verify the lost-report warning and preview.

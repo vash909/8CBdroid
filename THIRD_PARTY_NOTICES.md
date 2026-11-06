@@ -1,13 +1,14 @@
 # Third-party notices
 
-8CBdroid is an Android development skeleton. It does not yet include the
-desktop DSP engine or Hamlib.
+8CBdroid includes Kotlin CB message/hash algorithms and a source-built FT8
+channel backend. The complete WSJT-CB desktop engine and Hamlib are not bundled.
+Original desktop sources are used separately for host reference tests.
 
 - [WSJT-CB](https://github.com/vash909/WSJT-CB), derived from WSJT-X by Joe
   Taylor K1JT and contributors, modified by Vash / 1AT106 / 1XZ001, with
   further credits listed upstream. Its UDP protocol, FT8 parameters and CB
   grammar serve as references at the commit pinned in the documentation.
-  Upstream is distributed under GPLv3. This skeleton uses GPL-3.0-only.
+  Upstream is distributed under GPLv3. 8CBdroid uses GPL-3.0-only.
   Unmodified CB predicates, FT8 message packing/unpacking and hash routines,
   desktop Radio/DecodedText code and main-window QSO methods, together with
   required legacy packing/include and module dependencies, are
@@ -65,3 +66,12 @@ native libraries and their transitive dependencies.
   `reference/wsjtcb/source/pcm/`, pinned by `pcm-sources.json`. They are GPLv3
   host-only verification sources, never part of the Android native library.
   See `docs/OFFLINE_WAVEFORM.md` for adapter boundaries and verification limits.
+
+## Generated audio fixtures
+
+R08 adds deterministic noisy, shifted-onset and corrupted-data derivatives of
+pinned desktop-generated WAVs under `reference/wsjtcb/recordings/`, plus a noise-only
+control. The manifest records input provenance, parameters, hashes and expected
+outcomes; `scripts/wsjtcb_recordings.py` reproduces them. These are reference-test
+assets in the separate probe APK, excluded from the main app. No personal or
+radio recording is included. See [recorded-slot qualification](docs/RECORDED_SLOTS.md).

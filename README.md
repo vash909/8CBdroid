@@ -1,54 +1,60 @@
 # 8CBdroid
 
-Android development skeleton for FT8 on CB / 11 metres, with planned
-compatibility with [WSJT-CB](https://github.com/vash909/WSJT-CB).
+An Android FT8 client in development for CB / 11 metres, built around
+[WSJT-CB](https://github.com/vash909/WSJT-CB) message compatibility. The app and
+project documentation use English.
 
-**Status: early development.** A debug APK can be built.
-Station callsign and locator can be saved and restored after reopening the app.
-The LAN tab shows WSJT-CB status and live/replayed decodes, with explicit replay
-and local clear controls. Decode history holds up to 200 messages and is cleared
-when the peer disconnects or listening stops. Live local FT8, USB radio control, audio
-and logging are not implemented yet. The entire client uses English.
-The Radio tab can discover USB interfaces and request access; radio connection
-and CAT/PTT commands remain unimplemented.
-An experimental source-built offline FT8 channel backend and a separate phone
-probe APK are available. The **Messages** tab previews CB text encoding offline,
-including loss warnings. Its offline receive simulator can learn calls per
-session, commit pending identities and show unknown or ambiguous hashes.
-Local operating controls remain pending. See [message preview and limits](docs/CB_MESSAGE_CODEC.md)
-and [hash sessions and phone checks](docs/CB_HASH_SESSIONS.md).
-The Messages tab can also generate and save an offline FT8 WAV with explicit
-audio frequency/peak level and confirmation of lossy encodings. It never plays
-audio or keys a radio. See [waveform checks and deferred phone tests](docs/OFFLINE_WAVEFORM.md).
-Recorded-slot reception (R08): the **Audio** tab imports a 15-second mono PCM16
-WAV at 12 kHz with an explicit UTC boundary. Results include CB text/hash state,
-offset, DT and experimental SNR; live microphone reception remains pending. See
-[recorded-slot setup and limits](docs/RECORDED_SLOTS.md).
-See [engine scope and verification](docs/FT8_ENGINE.md).
+**Current state:** LAN monitoring, offline CB message encoding, WAV generation
+and recorded-slot decoding are implemented. Microphone/speaker operation,
+CAT/PTT, live local reception, AutoSeq and QSO logging remain unimplemented.
+The app cannot yet make a radio QSO.
 
-In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
-locator, then tap **Save settings**. Wait for confirmation before closing.
-[Phone verification steps](docs/DEVELOPMENT.md#phone-checks).
+## What works
 
-For LAN monitoring, tap **Start listening** and configure WSJT-CB's UDP server
-to this phone's Wi-Fi IPv4 address and selected port (default 2237). Keep the
-app in the foreground. See [LAN setup and testing](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test),
-including the PC-side `scripts/wsjtcb_lan_probe.py` simulator.
+| Screen | Available behavior | Current boundary |
+| --- | --- | --- |
+| **Station** | Save callsign/locator; restore them after reopening; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
+| **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
+| **Audio** | Import and decode one recorded FT8 WAV with supplied UTC, CB text/hash flags, offset, DT and estimated SNR. | Exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. No capture, playback or conversion. |
+| **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
+| **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
-For USB interface discovery and permission checks, see the [USB CAT guide](docs/USB_CAT.md).
+The intended connection paths are acoustic phone microphone/speaker with radio
+VOX, documented USB CAT/audio hardware, and a separate WSJT-CB LAN companion
+mode. USB discovery alone establishes neither CAT nor USB audio support. LAN
+packets carry desktop status/messages, not audio.
 
-## Planned connection paths
+## Try the current app
 
-- **USB OTG / CAT:** radio control through Hamlib/JNI or equivalent Android
-  CAT drivers. CAT/PTT and USB audio use separate paths.
-- **VOX:** phone microphone and speaker for acoustic coupling to a radio
-  with VOX enabled.
-- **LAN:** WSJT-CB's existing binary UDP protocol for status, decodes, logs
-  and supported commands. These APIs do not carry audio.
+Download **8CBdroid-debug** from a successful
+[GitHub Actions run](https://github.com/vash909/8CBdroid/actions/workflows/android.yml).
+These are development APKs, not release builds. The agent deploys the matching
+CI APK through ADB to the authorized debug phone and asks when it needs unlocking.
+A debug-signature conflict requires approval before reinstalling and restoring
+settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone).
 
-## Quick start on this PC / Linux x86_64
+1. In **Station**, save a complete CB callsign and a 4- or 6-character locator,
+   for example `1AT106` / `JN45AB`. Wait for the save confirmation.
+2. In **Messages**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
+   then save it through Android's document picker. Content changes require consent.
+3. In **Audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
+   select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
+   This example assigns UTC context to a test file; it does not measure a clock.
+4. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
+   send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
+   [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
+   describe the desktop request setting and foreground lifecycle.
 
-Requirements: Python 3.12+, `curl`, `unzip`, Git and Internet access.
+Android's system document picker can use the phone's own language. App controls
+and messages remain English. Ordinary WAV import/export requires no broad
+storage permission. The saved station is persistent; hash sessions, decoded
+recordings and generated PCM are temporary. Exported documents remain in the
+chosen location.
+
+## Build from source
+
+Supported automated setup: Linux x86_64, Python 3.12+, Git, `curl`, `unzip`,
+Internet access and a systemd user session for controlled builds.
 
 ```bash
 python3 scripts/bootstrap.py
@@ -56,71 +62,58 @@ source scripts/env.sh
 bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
-Bootstrap downloads JDK 17 and Android SDK into `.tooling/`, checks the
-published checksums and displays SDK licenses. It installs no system packages.
-Local tooling and `local.properties` are excluded from Git.
+Bootstrap installs project-local JDK/Android tooling in ignored `.tooling/`,
+checks download checksums and prompts for SDK licenses. It does not install
+system packages or Android Studio. The check builds both APKs and runs JVM
+tests/lint; the separate desktop-reference checks need host compilers.
 
-APK: `app/build/outputs/apk/debug/app-debug.apk`.
+- App: `app/build/outputs/apk/debug/app-debug.apk`
+- Offline test probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
 
-With a connected phone and USB debugging authorized:
+On this PC, heavy jobs use **one job, two CPU cores, 16 GiB maximum RAM, no swap
+and a finite deadline**. Use `--no-daemon` for additional Gradle commands.
+[Development setup](docs/DEVELOPMENT.md) covers Android Studio, other systems,
+reference compilers, CI artifacts and safe phone deployment.
 
-```bash
-source scripts/env.sh
-adb devices
-./gradlew :app:installDebug
-```
-
-In Android Studio, open the repository root and select Gradle JDK 17
-(`.tooling/jdk-17` on this PC). `local.properties` points to the local SDK.
-For other systems, see the [development guide](docs/DEVELOPMENT.md).
-
-## Structure
-
-| Path | Responsibility |
+| Tool/platform | Repository setting |
 | --- | --- |
-| `app/` | English Compose UI, station/LAN/message/recording ViewModels, DataStore and hardware placeholders |
-| `core/` | Station models, CB callsigns, offline message codec/hash sessions, PCM generation/WAV reader/writer, recorded-slot results and radio/audio/DSP contracts |
-| `protocol/wsjtcb/` | Wire codec, UDP status/decodes, explicit replay and peer lifetime |
-| `dsp/ft8/` | Android offline channel backend and JNI adapter |
-| `native/` | Pinned ft8_lib channel sources and host checks |
-| `engineprobe/` | Separate no-permission offline phone test APK |
-| `scripts/` | Local environment setup and checks |
-| `.github/workflows/` | Build, JVM tests, lint and debug APK on GitHub Actions |
+| Android | Minimum API 26 (Android 8.0); compile/target API 36 |
+| Native ABIs | `arm64-v8a`, `x86_64`; no ARM32 build |
+| JVM / Gradle | JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.2.21 |
+| Compose / native tools | BOM 2025.10.01, NDK 28.2.13676358, CMake 3.22.1 |
 
-Tests include DataStore file persistence across reopening, settings validation,
-loading/saving failures, duplicate-save prevention and real loopback UDP sessions. Develop on focused
-branches with short PR descriptions. Merge only after the owner's explicit OK,
-once the PR build has been checked.
+## Compatibility and verification
 
-Pinned versions: JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.2.21,
-Compose BOM 2025.10.01, compile/target SDK 36, minimum Android 8.0 / API 26.
-Native build: NDK 28.2.13676358, CMake 3.22.1, arm64-v8a/x86_64.
-The Linux controlled wrapper requires a systemd user session; other systems can
-run `bash scripts/check.sh` directly with Gradle limited to two workers.
+WSJT-CB reference: **`94f776d54946fe43db5e0bb9c966b1595c7b7d97`**. Kotlin implements
+selected CB text/hash algorithms; a source-built ft8_lib channel backend handles
+raw FT8 payloads and PCM. The complete WSJT-CB desktop engine is not bundled.
+The original WSJT-X 3.0.0-rc1 snapshot and later subsystem comparisons have
+separate recorded provenance in the [compatibility inventory](docs/WSJT_CB_COMPATIBILITY.md).
 
-## Compatibility work ahead
+[Validation evidence](docs/VALIDATION.md) records the merged implementation,
+exact tested commits/CI runs and Samsung A51 results. Coverage includes 154
+message cases, 96 hash scenarios, 131 channel vectors, 21 generated-waveform
+checks and 12 recorded-slot cases. These corpora do not establish full desktop
+decoder parity, weak-signal sensitivity, sustained phone operation or RF
+interoperability. Recorded SNR is experimental; unknown hashes never identify
+an invented peer. Import into the full WSJT-CB desktop GUI remains a separate
+pending check.
 
-The profile uses WSJT-CB's FT8 parameters (15-second slots, 12 kHz DSP PCM,
-79 symbols) and default frequencies of 27.265 / 27.045 MHz. Callsign validation
-follows its complete CB grammar; **it is not an FT8 encoder**. Hashes, type 4
-messages and CB sequences need interoperability tests against the desktop engine.
+## Documentation and contributions
 
-The inspected reference is WSJT-CB `94f776d54946fe43db5e0bb9c966b1595c7b7d97`.
-The desktop engine is not downloaded or compiled as an app dependency.
-Host-only reference tests cover CB predicates, 77-bit payloads, hash learning,
-message parsing/generation and AutoSeq decisions using pinned desktop routines.
-See the [packing/hash fixtures](reference/wsjtcb/PACKING.md) and
-[QSO traces](reference/wsjtcb/QSO.md) for reproduction and limits.
+Start with the [documentation index](docs/README.md),
+[architecture](docs/ARCHITECTURE.md) and [development guide](docs/DEVELOPMENT.md).
+The [roadmap](docs/ROADMAP.md) describes planned work; verified capability and
+review outcomes are recorded in [validation](docs/VALIDATION.md).
 
-- [Architecture and Hamlib/USB/audio integration](docs/ARCHITECTURE.md)
-- [LAN contract verified against upstream sources](docs/WSJT_CB_INTEGRATION.md)
-- [Environment, build and debugging](docs/DEVELOPMENT.md)
-- [CB difference inventory and desktop reference fixtures](docs/WSJT_CB_COMPATIBILITY.md)
-- [Roadmap](docs/ROADMAP.md)
+Use focused branches and short English PR descriptions. Run relevant local
+checks and CI, deploy/test on the available debug phone, then wait for the
+owner's explicit merge approval. Repository instructions are in [AGENTS.md](AGENTS.md).
 
 ## License and commercial use
 
-GPL-3.0-only; see [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
-Selling the app is permitted under GPLv3's conditions, including Corresponding
-Source and recipient rights. Repository privacy does not remove those obligations.
-See the [commercial distribution policy](docs/COMMERCIAL_DISTRIBUTION.md).
+**GPL-3.0-only**: see [LICENSE](LICENSE), [third-party notices](THIRD_PARTY_NOTICES.md)
+and [commercial distribution](docs/COMMERCIAL_DISTRIBUTION.md). Selling copies
+is permitted subject to GPL obligations, including Corresponding Source and
+recipient rights; attribution alone is insufficient. Signing material, local
+tooling, credentials and private recordings do not belong in Git.

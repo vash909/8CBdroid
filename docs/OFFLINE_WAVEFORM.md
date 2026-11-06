@@ -49,7 +49,7 @@ Four unchanged host-only sources are pinned in `reference/wsjtcb/pcm-sources.jso
 at `94f776d54946fe43db5e0bb9c966b1595c7b7d97`: `bpdecode174_91var`, its parity
 table, `chkcrc14a` and `platanh`. They use the existing pinned CRC implementation
 and original `unpack77var`. A small test adapter performs Goertzel demodulation
-with **known frequency and a fixed 0.8-second onset**, checks all Costas symbols,
+with **supplied frequency and the generated 0.8-second onset**, checks all Costas symbols,
 then invokes the desktop LDPC/CRC decoder and text unpacker. No decoder algorithm
 is stubbed or replaced with ft8_lib's own decoder in this independent check.
 
@@ -63,7 +63,8 @@ This is a clean-channel qualification with supplied synchronization, **not** the
 full desktop candidate search, weak-signal demodulator, acceptance filters or
 RF interoperability. Loading an actual phone-exported WAV into WSJT-CB remains
 a separate integration check. No noisy sensitivity or desktop decoder parity is
-claimed. R08/R09 cover recorded reception and decoder cost/quality.
+claimed. [Recorded reception](RECORDED_SLOTS.md) now covers a small fixed noisy corpus;
+broader decoder cost/quality qualification is still pending.
 
 ```bash
 source scripts/env.sh
@@ -76,13 +77,19 @@ CI runs the independent channel checks and builds both APKs. The phone probe
 additionally generates 12 message waveforms across the three frequency/level
 pairs and saves `files/r07-generated.wav` in its private test package. That file
 can be copied via `adb exec-out run-as` and checked with `wsjtcb_pcm.py --wave`,
-supplying its expected payload, frequency and level. PR #22 was merged after
-owner approval on 2026-11-06. The A51 passed 12 generated waveforms, the desktop
-WAV corpus and UI generation/export, invalid settings, consent/reset and reopening.
-The UI-exported CQ WAV matched the independently checked phone waveform byte for
-byte. Full desktop GUI import and rotation/cancellation/retry checks remain pending.
+supplying its expected payload, frequency and level. [Validation](VALIDATION.md#r07-export-evidence)
+records the tested R07 commit/CI run, A51 checks and exact exported-file hash.
+Generation/export, invalid settings, consent/reset, invalidation on edits and
+reopening passed. Full desktop GUI import and remaining generation/export
+rotation, cancellation and retry checks are still pending. R08 import tests do
+not establish those separate generation/export paths.
 
-## Deferred phone and desktop checklist
+<a id="deferred-phone-and-desktop-checklist"></a>
+
+## Phone and desktop checklist
+
+This is a reusable checklist, not a claim that every step passed. Check the
+[validation record](VALIDATION.md#checks-still-pending) for outstanding items.
 
 1. Let the agent deploy the successful PR CI APK via ADB, preserving station data.
 2. Generate `CQ 1AT106` at 1000 Hz / 40%, save it and verify the metadata/size.

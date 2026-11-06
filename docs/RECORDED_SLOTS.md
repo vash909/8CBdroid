@@ -51,8 +51,8 @@ backend retains its bounded 60 candidates, 25 LDPC iterations, 200–3000 Hz sea
 and payload deduplication. CB message packing/unpacking/hash behavior uses the
 pinned reference; full desktop candidate search, plausibility filters,
 sensitivity and false-positive parity are not established. Do not use this
-output as permission to advance a QSO. R09 measures and bounds decoder cost and
-qualifies a broader reception corpus before live capture is connected.
+output as permission to advance a QSO. Production queue/cancellation policy,
+sustained decoder cost and a broader reception corpus remain future qualification before live capture is connected.
 Cancellation currently discards work around JNI calls, not during a native call;
 a document provider must return for a blocking read to finish.
 
@@ -61,7 +61,8 @@ a document provider must return for a blocking read to finish.
 `reference/wsjtcb/recordings/recordings.json` records provenance, hashes, UTC,
 expected payload/text, onset and noise parameters. Four clean source WAVs were
 created by pinned WSJT-CB waveform routines. Four deterministic AWGN derivatives
-have -4/-8/-12/-8 dB injected SNR in 2500 Hz; no clipping or normalization hides their noise.
+have -4/-8/-12/-8 dB injected SNR in 2500 Hz; no clipping or normalization
+hides their noise.
 Two time-shifted copies test onset correction at 0.32 and 1.28 seconds.
 Two rejection cases contain pure noise and intact sync symbols with half the
 data symbols spliced from a different desktop codeword.
@@ -83,10 +84,22 @@ bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/nat
 
 The separate phone probe reads the same recordings through the production JVM
 WAV reader and recorded-slot decoder, checking payloads, cold text, onset/offset,
-SNR tolerance and rejection. Device execution and UI import require a successful
-CI APK deployment; CI alone does not establish an Android device pass.
+SNR tolerance and rejection. The A51 probe and UI checks passed for PR #23,
+merged after owner approval on 2026-11-06. [Validation](VALIDATION.md#latest-samsung-a51-result-r08) records the
+exact commit/run, per-case times and checked UI paths. CI alone does not establish
+an Android device pass.
 
 ## Phone review
+
+These are repeatable review steps; use [validation](VALIDATION.md) to distinguish
+completed checks from additional tests.
+
+The committed clean CQ file is [`channel/cq.wav`](../reference/wsjtcb/channel/cq.wav);
+noisy/corrupt/noise fixtures and their hashes are in the
+[recording corpus](../reference/wsjtcb/recordings/recordings.json). Copy test WAVs
+into a dedicated Download folder, leaving existing documents alone. Some Android
+file pickers need media indexing before they display files copied through ADB;
+refresh/index only the test files, or select them through internal storage.
 
 1. Let the agent deploy the CI APK and copy test WAVs to the authorized debug
    phone. Unlock it when notified and keep it awake for the UI checks.
