@@ -41,7 +41,8 @@ later estimates; do not promise a complete Android port in one PR.
   probe passed 96 hash scenarios, 154 messages and four WAVs; the CI APK was
   installed with verified settings restoration. The owner approved merge on 2026-11-06.
 - Local operating sessions, microphone capture, playback, CAT/PTT, AutoSeq and QSO
-  logging remain pending. R07 is prepared below; implementation has not started.
+  logging remain pending. R07 in the current PR adds offline message-to-WAV
+  generation; phone execution and desktop import are deferred until the A51 is available.
 
 ## Reference strategy: reuse the CB work
 
@@ -148,24 +149,20 @@ and USB audio must remain separate capabilities.
 - Local checks, CI and phone deployment passed; the owner approved PR #21 for
   merge. No live RX/TX, AutoSeq or persistent learned-call database is included.
 
-### Next: R07 preparation only
+### Current PR: R07 offline PCM and WAV
 
-- Branch: `feat/offline-ft8-pcm`, based on merged R06. The verified 16 GiB local
-  build-limit change is prepared there for the next PR.
-- Build the supported CB text-to-payload-to-PCM path on the existing
-  `CbMessageCodec` and `NativeFt8Engine.encode`. R04 already generates raw-payload
-  PCM; that alone does not complete R07's message-level behavior and evidence.
-- Define explicit audio offset and level, preserving the fixed 12 kHz mono DSP
-  profile. Keep loss/unsupported-message reporting visible before generation.
-- Require independent desktop decoding of generated audio plus symbol, duration,
-  envelope and spectral checks. An Android encoder/decoder round trip alone is
-  insufficient. Use the pinned reference and bounded host/phone jobs.
-- Keep this milestone offline. Playback, radio output, PTT and UTC scheduling
-  remain later milestones. Run local checks, CI and ADB deployment before review,
-  then wait for explicit owner merge approval.
-
-This is a handoff for the next development session; no R07 implementation or PR
-has started.
+- Branch: `feat/offline-ft8-pcm`, including the verified 16 GiB local build limit.
+- Pure Kotlin message-to-PCM orchestration with explicit base frequency/peak
+  level, rejection of unsupported input and confirmation of content changes.
+- Messages generates a fixed 12 kHz mono slot and saves PCM16 WAV via Android
+  document selection. Edits cancel/discard old results; exports use snapshots.
+- Twenty-one clean waveforms pass a known-time/frequency adapter using original
+  WSJT-CB LDPC/CRC and text unpacking, exact tone/payload checks, envelope/level
+  measurements and bounded spectral probes. This is not the full desktop search.
+- Local checks and CI precede review. A51 execution, ADB deployment and actual
+  desktop import remain deferred at the owner's request. See [R07](OFFLINE_WAVEFORM.md).
+  Playback, RF output and scheduling remain later milestones. Merge still requires
+  explicit owner approval; R08 has not started.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

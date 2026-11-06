@@ -99,6 +99,11 @@ owns the Messages tab's explicit offline receive simulation and survives rotatio
 the cache is never persisted. Saved station changes reset the session; unsaved
 drafts do not. This session is separate from stateless TX preview, DSP and LAN.
 AutoSeq remains future domain work.
+`OfflineFt8Generator` connects message packing to raw PCM with explicit frequency
+and level, requiring consent for content changes. `WaveformViewModel` owns one
+replaceable job and generated WAV bytes; stale results are discarded on edits.
+Its Android document exporter writes a user-selected URI on IO. Compose receives
+state/callbacks; no device audio or radio is opened. See [R07](OFFLINE_WAVEFORM.md).
 See [the message-codec contract](CB_MESSAGE_CODEC.md) and
 [hash-session behavior and desktop differences](CB_HASH_SESSIONS.md). See
 [engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,

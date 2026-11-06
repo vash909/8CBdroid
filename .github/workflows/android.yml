@@ -30,6 +30,7 @@ jobs:
           cmake -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build .tooling/native-host --parallel 2
           python3 scripts/check_native.py .tooling/native-host
+          python3 scripts/wsjtcb_pcm.py .tooling/native-host
           python3 scripts/wsjtcb_reference.py --check
           python3 scripts/wsjtcb_packing.py --check
           python3 scripts/wsjtcb_packing.py --check --optimization O2

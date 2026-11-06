@@ -13,9 +13,11 @@ Tones encode_tones(Payload const& payload) {
     return tones;
 }
 
-std::vector<float> encode_slot(Payload const& payload, float frequency_hz) {
+std::vector<float> encode_slot(Payload const& payload, float frequency_hz, float peak_amplitude) {
     if (!std::isfinite(frequency_hz) || frequency_hz < 200 || frequency_hz > 2900)
         throw std::invalid_argument("Audio frequency must be between 200 and 2900 Hz");
+    if (!std::isfinite(peak_amplitude) || peak_amplitude < .01f || peak_amplitude > 1)
+        throw std::invalid_argument("Peak amplitude must be between 0.01 and 1");
     auto tones = encode_tones(payload);
     constexpr int sps = 1920, wave_samples = 79 * sps, lead_samples = 9600;
     constexpr double pi = 3.14159265358979323846;
@@ -37,7 +39,7 @@ std::vector<float> encode_slot(Payload const& payload, float frequency_hz) {
     std::vector<float> slot(slot_samples, 0);
     double phase=0;
     for (int i=0; i<wave_samples; ++i) {
-        slot[lead_samples+i] = float(0.4*std::sin(phase));
+        slot[lead_samples+i] = float(peak_amplitude*std::sin(phase));
         phase = std::fmod(phase+phase_step[i+sps], 2*pi);
     }
     for (int i=0; i<sps/8; ++i) {

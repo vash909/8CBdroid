@@ -23,11 +23,11 @@ export CMAKE_BUILD_PARALLEL_LEVEL=2
 export OMP_NUM_THREADS=2
 export OPENBLAS_NUM_THREADS=2
 export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:ActiveProcessorCount=2"
-echo "Limits: 2 CPUs, 4 GiB RAM, no swap, ${limit_seconds}s deadline" >&2
+echo "Limits: 2 CPUs, 16 GiB RAM maximum, no swap, ${limit_seconds}s deadline" >&2
 started=$SECONDS
 status=0
 systemd-run --user --scope --quiet --unit="$job_unit" \
-    -p CPUQuota=200% -p MemoryHigh=3G -p MemoryMax=4G -p MemorySwapMax=0 \
+    -p CPUQuota=200% -p MemoryHigh=12G -p MemoryMax=16G -p MemorySwapMax=0 \
     timeout --signal=TERM --kill-after=5s "${limit_seconds}s" "$@" || status=$?
 echo "Job finished: exit $status, $((SECONDS - started))s elapsed" >&2
 exit "$status"

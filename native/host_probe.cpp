@@ -33,6 +33,11 @@ int main(int argc, char** argv) {
         if (argc==3 && std::string(argv[1])=="encode") {
             for (auto tone:eightcb::encode_tones(payload(argv[2]))) std::cout << int(tone);
             std::cout << '\n';
+        } else if (argc==6 && std::string(argv[1])=="wave") {
+            auto pcm=eightcb::encode_slot(payload(argv[2]),std::stof(argv[3]),std::stof(argv[4]));
+            std::ofstream out(argv[5],std::ios::binary);
+            out.write(reinterpret_cast<char const*>(pcm.data()),pcm.size()*sizeof(float));
+            if (!out) throw std::runtime_error("Could not write generated PCM");
         } else if (argc==3 && std::string(argv[1])=="roundtrip") {
             decoded(eightcb::encode_slot(payload(argv[2]),1000));
         } else if (argc==2 && std::string(argv[1])=="silence") {
@@ -47,6 +52,6 @@ int main(int argc, char** argv) {
             std::vector<float> pcm;
             for (auto value:samples) pcm.push_back(value/32768.0f);
             decoded(pcm);
-        } else throw std::invalid_argument("Usage: engine_probe encode|roundtrip BITS, decode WAV, or silence");
+        } else throw std::invalid_argument("Usage: engine_probe encode|roundtrip BITS, wave BITS HZ LEVEL FILE, decode WAV, or silence");
     } catch (std::exception const& e) {std::cerr << e.what() << '\n';return 1;}
 }
