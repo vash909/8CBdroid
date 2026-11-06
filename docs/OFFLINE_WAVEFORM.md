@@ -76,9 +76,11 @@ CI runs the independent channel checks and builds both APKs. The phone probe
 additionally generates 12 message waveforms across the three frequency/level
 pairs and saves `files/r07-generated.wav` in its private test package. That file
 can be copied via `adb exec-out run-as` and checked with `wsjtcb_pcm.py --wave`,
-supplying its expected payload, frequency and level. Phone execution/deployment
-is **pending** for R07 because the owner is away from the A51; host passes and
-APK builds do not establish an Android device pass.
+supplying its expected payload, frequency and level. PR #22 was merged after
+owner approval on 2026-11-06. The A51 passed 12 generated waveforms, the desktop
+WAV corpus and UI generation/export, invalid settings, consent/reset and reopening.
+The UI-exported CQ WAV matched the independently checked phone waveform byte for
+byte. Full desktop GUI import and rotation/cancellation/retry checks remain pending.
 
 ## Deferred phone and desktop checklist
 

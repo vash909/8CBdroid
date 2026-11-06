@@ -20,6 +20,10 @@ and [hash sessions and phone checks](docs/CB_HASH_SESSIONS.md).
 The Messages tab can also generate and save an offline FT8 WAV with explicit
 audio frequency/peak level and confirmation of lossy encodings. It never plays
 audio or keys a radio. See [waveform checks and deferred phone tests](docs/OFFLINE_WAVEFORM.md).
+Recorded-slot reception (R08): the **Audio** tab imports a 15-second mono PCM16
+WAV at 12 kHz with an explicit UTC boundary. Results include CB text/hash state,
+offset, DT and experimental SNR; live microphone reception remains pending. See
+[recorded-slot setup and limits](docs/RECORDED_SLOTS.md).
 See [engine scope and verification](docs/FT8_ENGINE.md).
 
 In **Station**, enter a complete CB callsign and a 4- or 6-character Maidenhead
@@ -74,8 +78,8 @@ For other systems, see the [development guide](docs/DEVELOPMENT.md).
 
 | Path | Responsibility |
 | --- | --- |
-| `app/` | English Compose UI, station/LAN/message ViewModels, DataStore and hardware placeholders |
-| `core/` | Station models, CB callsigns, offline message codec/hash sessions, PCM generation/WAV writer and radio/audio/DSP contracts |
+| `app/` | English Compose UI, station/LAN/message/recording ViewModels, DataStore and hardware placeholders |
+| `core/` | Station models, CB callsigns, offline message codec/hash sessions, PCM generation/WAV reader/writer, recorded-slot results and radio/audio/DSP contracts |
 | `protocol/wsjtcb/` | Wire codec, UDP status/decodes, explicit replay and peer lifetime |
 | `dsp/ft8/` | Android offline channel backend and JNI adapter |
 | `native/` | Pinned ft8_lib channel sources and host checks |

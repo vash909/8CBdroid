@@ -39,7 +39,8 @@ slots and non-finite/out-of-range PCM are rejected. DSP PCM is mono float at
 The encoder exposes a peak amplitude of 0.01–1 (default 0.4), onset fixed at
 0.8 seconds and base frequency 200–2900 Hz. R07 adds message-level orchestration,
 WAV export and independent clean-waveform checks through pinned desktop LDPC/CRC.
-Phone-exported WAV validation remains pending; see [the R07 evidence and limits](OFFLINE_WAVEFORM.md).
+The A51-exported WAV passed that known-time/frequency check; full desktop GUI
+import remains pending. See [the R07 evidence and limits](OFFLINE_WAVEFORM.md).
 These settings do not establish TX scheduling or hardware output calibration.
 
 `dsp:ft8` runs JNI on `Dispatchers.Default`, with one process-wide mutex. Native
@@ -136,3 +137,9 @@ The main app and its station settings were left intact. This is R04's offline
 ARM64 smoke gate, not a live RX, calibrated SNR or radio interoperability result.
 
 Tested debug probe APK SHA-256: `46c3d9603cee4fb4ad1cb9ef6f441912377ee58d279591913954b71b89a426ce`.
+
+R08 extends frame metadata with a nullable experimental 2500 Hz SNR estimate and
+corrects the fixed 160 ms FFT-window onset delay. The clean/noisy recorded-slot
+corpus checks onset, payload and SNR against supplied reference context; see
+[recorded-slot qualification and limits](RECORDED_SLOTS.md). The JNI result now
+includes a float SNR array; NaN maps to an unavailable Kotlin value.

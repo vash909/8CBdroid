@@ -68,7 +68,8 @@ collision and lifecycle checks in the Messages tab.
 For **Generate offline WAV** and document export, follow
 [the R07 checklist](OFFLINE_WAVEFORM.md#deferred-phone-and-desktop-checklist).
 Its host qualification invokes pinned desktop LDPC/CRC with known time/frequency;
-the A51 probe and actual desktop import are pending until the phone is available.
+the A51 probe and UI export passed for PR #22. Full desktop GUI import remains
+pending. For recorded-slot import and decode, follow [the R08 guide](RECORDED_SLOTS.md).
 
 ## Phone checks
 
@@ -154,3 +155,8 @@ build processes. Exclude `.tooling`, `.gradle` and `build` trees from editor fil
 watchers and search in local workspace settings. Avoid restarting unrelated
 processes or deleting station settings. Resource saturation alone does not
 identify the responsible extension or build task.
+
+R08 recorded-slot reference checks: run
+`bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host`
+with the native host build and reference compiler environment. CI runs this check;
+the phone probe uses the same committed recordings. See [phone review](RECORDED_SLOTS.md#phone-review).

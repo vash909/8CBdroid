@@ -1,5 +1,6 @@
 #include "engine.hpp"
 #include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -24,7 +25,10 @@ static void decoded(std::vector<float> const& pcm) {
         if (!first) std::cout << ',';
         first=false;
         std::cout << "{\"payload77\":\"" << bits(frame.payload) << "\",\"time\":" << frame.time_seconds
-                  << ",\"frequency\":" << frame.frequency_hz << ",\"score\":" << frame.sync_score << '}';
+                  << ",\"frequency\":" << frame.frequency_hz << ",\"score\":" << frame.sync_score << ",\"snr\":";
+        if (std::isfinite(frame.estimated_snr_db)) std::cout << frame.estimated_snr_db;
+        else std::cout << "null";
+        std::cout << '}';
     }
     std::cout << "]}\n";
 }

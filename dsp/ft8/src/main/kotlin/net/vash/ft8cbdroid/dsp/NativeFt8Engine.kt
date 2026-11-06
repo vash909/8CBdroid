@@ -22,7 +22,7 @@ class NativeFt8Engine : Ft8Engine {
             val result = NativeBridge.decode(slot.toFloatArray())
             Ft8DecodeResult(result.payloads.indices.map { i ->
                 Ft8DecodedFrame(Ft8Payload77.fromBytes(result.payloads[i]), result.times[i],
-                    result.frequencies[i], result.scores[i])
+                    result.frequencies[i], result.scores[i], result.snrs[i].takeIf { it.isFinite() })
             }, result.candidates)
         }
     }
@@ -35,7 +35,7 @@ class NativeFt8Engine : Ft8Engine {
 
 internal class NativeResult(
     val payloads: Array<ByteArray>, val times: FloatArray, val frequencies: FloatArray,
-    val scores: IntArray, val candidates: Int,
+    val scores: IntArray, val snrs: FloatArray, val candidates: Int,
 )
 
 internal object NativeBridge {

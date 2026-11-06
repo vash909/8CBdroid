@@ -108,3 +108,9 @@ See [the message-codec contract](CB_MESSAGE_CODEC.md) and
 [hash-session behavior and desktop differences](CB_HASH_SESSIONS.md). See
 [engine decision, bounds and evidence](FT8_ENGINE.md) for source pins, licenses,
 Android toolchain/ABI choices and current limitations.
+
+Recorded-slot reception uses a pure JVM bounded RIFF reader and
+`RecordedSlotDecoder`, with an isolated CB hash session per file. Android document
+access stays in `DocumentRecordedSlotReader`; `RecordedSlotViewModel` owns request
+snapshots and stale-result rejection. Compose displays state only. See
+[recorded-slot limits](RECORDED_SLOTS.md).

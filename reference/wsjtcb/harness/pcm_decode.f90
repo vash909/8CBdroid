@@ -3,12 +3,12 @@
 program pcm_decode_reference
   use packjt77var, only: unpack77var
   implicit none
-  integer, parameter :: nsps=1920, lead=9600, total=180000
+  integer, parameter :: nsps=1920, total=180000
   integer(kind=1) :: header(44), mask(174), message77(77), codeword(174)
   integer(kind=2) :: pcm(total)
   real :: llr(174)
   real(kind=8) :: samples(total), powers(0:7), coefficient, q0, q1, q2, frequency, pi, leakage, outside
-  integer :: tones(79), gray(0:7), sync(7), symbol, tone, j, k, position, harderrors, iteration, unit, start
+  integer :: tones(79), gray(0:7), sync(7), symbol, tone, j, k, position, harderrors, iteration, unit, start, lead
   character(len=1024) :: path, argument
   character(len=77) :: bits
   character(len=37) :: text
@@ -18,6 +18,13 @@ program pcm_decode_reference
   call get_command_argument(1,path)
   call get_command_argument(2,argument)
   read(argument,*) frequency
+  lead=9600
+  call get_command_argument(3,argument)
+  if(len_trim(argument)>0) then
+    read(argument,*) coefficient
+    lead=nint(coefficient*12000)
+  endif
+  if(lead<0.or.lead+79*nsps>total) stop 6
   open(newunit=unit,file=trim(path),access='stream',form='unformatted',status='old')
   read(unit) header,pcm
   close(unit)
