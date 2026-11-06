@@ -35,9 +35,13 @@ later estimates; do not promise a complete Android port in one PR.
   stateless CB message codec and an English Messages preview. CI passed; the Samsung
   A51 probe passed 154 message cases and four desktop WAVs. The CI APK was installed
   with verified settings restoration, and the owner approved merge on 2026-11-06.
-- Local operating sessions, microphone capture, playback, CAT/PTT and QSO logging are pending.
-  R06 in the current PR adds session-scoped hash learning and an offline receive
-  simulator; live local reception and AutoSeq remain pending.
+- [PR #21](https://github.com/vash909/8CBdroid/pull/21) is merged: R06 adds
+  session-scoped hash learning, explicit collision ambiguity and an offline receive
+  simulator. CI passed with 734 JVM tests and 41 script tests. The Samsung A51
+  probe passed 96 hash scenarios, 154 messages and four WAVs; the CI APK was
+  installed with verified settings restoration. The owner approved merge on 2026-11-06.
+- Local operating sessions, microphone capture, playback, CAT/PTT, AutoSeq and QSO
+  logging remain pending. R07 is prepared below; implementation has not started.
 
 ## Reference strategy: reuse the CB work
 
@@ -111,8 +115,8 @@ scenarios, including hash collisions and lossy encodings. See
 [the QSO trace guide](../reference/wsjtcb/QSO.md) for adapter boundaries and known
 desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
 the offline host and ARM64 phone checks. R05 is complete in PR #20: offline packing/unpacking and visible
-message-loss previews. R06 is implemented in the current PR and awaits validation
-and owner review; R07 follows after merge. RF/audio and the
+message-loss previews. R06 is complete in PR #21: bounded session learning and
+explicit unknown/ambiguous hash results. R07 is next. RF/audio and the
 full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.
@@ -131,7 +135,7 @@ and USB audio must remain separate capabilities.
 
 ## B. Reach useful standalone reception
 
-### Current PR: R06 hash sessions
+### Completed: R06 hash sessions
 
 - Pure JVM session with pending/committed learning, explicit reset and bounded
   storage. Hash results retain width/value and distinguish unknown, known-candidate
@@ -141,8 +145,27 @@ and USB audio must remain separate capabilities.
 - All 96 pinned desktop RX scenarios run through a shared test-only JVM/phone
   adapter. Known collisions deliberately remain ambiguous instead of selecting
   the desktop's last writer. See [the session guide](CB_HASH_SESSIONS.md).
-- Acceptance still requires local checks, CI, phone deployment and owner review.
-  No live RX/TX, AutoSeq or persistent learned-call database is included.
+- Local checks, CI and phone deployment passed; the owner approved PR #21 for
+  merge. No live RX/TX, AutoSeq or persistent learned-call database is included.
+
+### Next: R07 preparation only
+
+- Branch: `feat/offline-ft8-pcm`, based on merged R06. The verified 16 GiB local
+  build-limit change is prepared there for the next PR.
+- Build the supported CB text-to-payload-to-PCM path on the existing
+  `CbMessageCodec` and `NativeFt8Engine.encode`. R04 already generates raw-payload
+  PCM; that alone does not complete R07's message-level behavior and evidence.
+- Define explicit audio offset and level, preserving the fixed 12 kHz mono DSP
+  profile. Keep loss/unsupported-message reporting visible before generation.
+- Require independent desktop decoding of generated audio plus symbol, duration,
+  envelope and spectral checks. An Android encoder/decoder round trip alone is
+  insufficient. Use the pinned reference and bounded host/phone jobs.
+- Keep this milestone offline. Playback, radio output, PTT and UTC scheduling
+  remain later milestones. Run local checks, CI and ADB deployment before review,
+  then wait for explicit owner merge approval.
+
+This is a handoff for the next development session; no R07 implementation or PR
+has started.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |
