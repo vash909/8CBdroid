@@ -23,6 +23,7 @@ implemented behavior, device evidence and checks still pending.
 | --- | --- |
 | [Architecture](ARCHITECTURE.md) | Module boundaries, state ownership, persistence and Android I/O. |
 | [Development environment](DEVELOPMENT.md) | Tool versions, controlled commands, CI and phone workflow. |
+| [Decoder profiles and work bounds](DECODER_PROFILES.md) | Fast/Standard budgets, native cancellation, admission limits and finite device measurements. |
 | [FT8 channel engine](FT8_ENGINE.md) | Native dependency pin, ABI/contracts, search limits and reference checks. |
 | [Validation evidence](VALIDATION.md) | Tested revisions, corpus sizes, A51 observations and remaining verification gaps. |
 | [WSJT-CB compatibility inventory](WSJT_CB_COMPATIBILITY.md) | Reference provenance, CB changes versus WSJT-X and deliberate Android differences. |

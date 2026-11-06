@@ -62,7 +62,7 @@ class RecordedSlotTest {
         val unknown = Ft8DecodedFrame(encoded.payload, .8f, 1000f, 30, -8f)
         val unsupported = Ft8DecodedFrame(Ft8Payload77.fromBits("1".repeat(77)), .72f, 1500f, 20)
         val engine = object : Ft8Engine {
-            override suspend fun decode(slot: Ft8PcmSlot) = Ft8DecodeResult(listOf(unknown, unsupported), 12)
+            override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile) = Ft8DecodeResult(listOf(unknown, unsupported), 12)
             override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot = error("No TX")
         }
         val decoder = RecordedSlotDecoder(engine)

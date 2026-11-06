@@ -15,7 +15,7 @@ The app cannot yet make a radio QSO.
 | --- | --- | --- |
 | **Station** | Save callsign/locator; restore them after reopening; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
 | **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Import and decode one recorded FT8 WAV with supplied UTC, CB text/hash flags, offset, DT and estimated SNR. | Exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. No capture, playback or conversion. |
+| **Audio** | Import and decode one recorded FT8 WAV with supplied UTC, CB text/hash flags, offset, DT, estimated SNR and Fast/Standard profiles. | Exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. No capture, playback or conversion. |
 | **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
 | **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
@@ -74,6 +74,8 @@ On this PC, heavy jobs use **one job, two CPU cores, 16 GiB maximum RAM, no swap
 and a finite deadline**. Use `--no-daemon` for additional Gradle commands.
 [Development setup](docs/DEVELOPMENT.md) covers Android Studio, other systems,
 reference compilers, CI artifacts and safe phone deployment.
+[Decoder profiles](docs/DECODER_PROFILES.md) describe bounded admission,
+cooperative cancellation and the finite phone benchmark.
 
 | Tool/platform | Repository setting |
 | --- | --- |

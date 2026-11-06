@@ -7,12 +7,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 import net.vash.ft8cbdroid.core.message.UnpackResult
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 import net.vash.ft8cbdroid.core.recording.RecordedDecodeFlag
 
 @Composable
 fun RecordedSlotPanel(
     state: RecordedSlotUiState,
     onUtc: (String) -> Unit,
+    onProfile: (Ft8DecodeProfile) -> Unit,
     onImport: () -> Unit,
     onCancel: () -> Unit,
     onClear: () -> Unit,
@@ -24,6 +26,16 @@ fun RecordedSlotPanel(
             label = { Text("Slot start (UTC)") }, placeholder = { Text("2026-11-06T12:00:00Z") },
             supportingText = { Text("Use a known 00, 15, 30 or 45 second boundary. File dates are not used.") },
             enabled = state.canImport, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Ft8DecodeProfile.entries.forEach { profile ->
+                FilterChip(selected = state.profile == profile, onClick = { onProfile(profile) },
+                    enabled = state.canImport, label = { Text(profile.label) })
+            }
+        }
+        Text(when (state.profile) {
+            Ft8DecodeProfile.FAST -> "Fast: less work, with a higher risk of missing weak signals."
+            Ft8DecodeProfile.STANDARD -> "Standard: the default search budget."
+        })
         Button(onClick = onImport, enabled = state.canImport) { Text("Open WAV and decode") }
         if (state.isChoosing) Text("Choose a WAV document…")
         if (state.isDecoding) {
@@ -34,6 +46,7 @@ fun RecordedSlotPanel(
         state.notice?.let { Text(it) }
         state.result?.let { result ->
             Text("Recorded file • ${result.context.slotStartUtc}")
+            Text("Profile: ${result.profile.label}" + (result.decodeMillis?.let { " • Decode: $it ms" } ?: ""))
             Text("${result.decodes.size} valid channel frames • ${result.candidateCount} candidates")
             if (result.decodes.isEmpty()) Text("No valid FT8 frames found.")
             result.decodes.forEach { row ->

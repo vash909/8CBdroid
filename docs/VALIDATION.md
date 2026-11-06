@@ -97,6 +97,15 @@ R08's picker cancellation/rotation tests concern recorded-file import. They do
 not establish that the separate R07 generation/export cancellation, rotation
 and failed-save paths were tested on the phone.
 
+## R09 work under review
+
+The R09 branch adds one active native job plus one waiter, cooperative
+cancellation/deadlines and Fast/Standard recorded-slot profiles. Its fixed
+40-slot/profile corpus and finite phone procedure are defined in
+[decoder work bounds](DECODER_PROFILES.md). Feature-PR validation records the
+current run/device outcomes; these do not change the accepted R08 baseline above
+until owner review and merge.
+
 ## Checks still pending
 
 - Import the actual exported WAV in the full WSJT-CB desktop decoder, including

@@ -10,7 +10,7 @@ import org.junit.Test
 class OfflineFt8GeneratorTest {
     private class Engine : Ft8Engine {
         val calls = mutableListOf<Triple<Ft8Payload77, Float, Float>>()
-        override suspend fun decode(slot: Ft8PcmSlot) = error("Generation must not call its own decoder")
+        override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile) = error("Generation must not call its own decoder")
         override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot {
             calls += Triple(payload, audioFrequencyHz, peakAmplitude)
             return Ft8PcmSlot.fromSamples(FloatArray(Ft8PcmSlot.sampleCount))

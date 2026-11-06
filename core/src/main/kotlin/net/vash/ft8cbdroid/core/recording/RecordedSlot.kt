@@ -94,12 +94,15 @@ data class RecordedDecode(
     val deltaTimeSeconds: Float,
     val flags: Set<RecordedDecodeFlag>,
 )
-data class RecordedSlotResult(val context: RecordedSlotContext, val decodes: List<RecordedDecode>, val candidateCount: Int)
+data class RecordedSlotResult(
+    val context: RecordedSlotContext, val decodes: List<RecordedDecode>, val candidateCount: Int,
+    val profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD, val decodeMillis: Long? = null,
+)
 
 /** Isolated file reception; it cannot teach the live/LAN or preview hash sessions. */
 class RecordedSlotDecoder(private val engine: Ft8Engine) {
-    suspend fun decode(pcm: Ft8PcmSlot, context: RecordedSlotContext, stationCall: String? = null): RecordedSlotResult {
-        val channel = engine.decode(pcm)
+    suspend fun decode(pcm: Ft8PcmSlot, context: RecordedSlotContext, stationCall: String? = null, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): RecordedSlotResult {
+        val channel = engine.decode(pcm, profile)
         val session = CbMessageSession(stationCall)
         val rows = channel.frames.map { frame ->
             val message = session.unpack(frame.payload)
@@ -113,6 +116,6 @@ class RecordedSlotDecoder(private val engine: Ft8Engine) {
                 context.slotStartUtc.plusMillis((frame.startSecondsInSlot.toDouble() * 1000).roundToLong()),
                 frame.startSecondsInSlot - .5f, flags.toSet())
         }
-        return RecordedSlotResult(context, rows, channel.candidateCount)
+        return RecordedSlotResult(context, rows, channel.candidateCount, channel.profile, channel.decodeMillis)
     }
 }

@@ -122,9 +122,11 @@ bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
 bash scripts/controlled.sh 180 python3 scripts/wsjtcb_channel.py --check
 bash scripts/controlled.sh 60 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
 bash scripts/controlled.sh 120 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" --build .tooling/native-host --parallel 2
+bash scripts/controlled.sh 120 .tooling/native-host/control_checks
 bash scripts/controlled.sh 120 python3 scripts/check_native.py .tooling/native-host
 bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
 bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
+bash scripts/controlled.sh 240 python3 scripts/ft8_benchmark.py .tooling/native-host
 bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
@@ -188,6 +190,10 @@ timeout 90 adb shell am instrument --user 0 -w -r net.vash.ft8cbdroid.engineprob
 There is no launcher icon for the probe. Inspect its explicit `PASS` and
 `INSTRUMENTATION_CODE: -1`; a shell exit code alone is insufficient.
 The [validation record](VALIDATION.md) shows the latest accepted A51 results.
+For R09, use the installed verified CI probe with
+`ADB_LIBUSB=1 bash scripts/controlled.sh 240 bash scripts/profile_phone.sh`;
+[the profile guide](DECODER_PROFILES.md) defines the finite corpus, sampling,
+thermal scope and private local report. This helper does not install APKs.
 
 ## Phone checks
 

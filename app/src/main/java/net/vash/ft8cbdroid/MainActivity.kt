@@ -27,6 +27,7 @@ import net.vash.ft8cbdroid.message.WaveformViewModel
 import net.vash.ft8cbdroid.message.WaveformUiState
 import net.vash.ft8cbdroid.core.message.EncodingMode
 import net.vash.ft8cbdroid.core.Ft8Payload77
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
 import net.vash.ft8cbdroid.core.StationIdentity
@@ -100,6 +101,7 @@ class MainActivity : ComponentActivity() {
                 onResetHashes = hashViewModel::reset,
                 recording = recording,
                 onRecordedUtc = recordedSlotViewModel::changeUtc,
+                onRecordedProfile = recordedSlotViewModel::changeProfile,
                 onImportRecording = { if (recordedSlotViewModel.prepareImport()) wavSource.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) },
                 onCancelRecording = recordedSlotViewModel::cancel,
                 onClearRecording = recordedSlotViewModel::clear,
@@ -151,6 +153,7 @@ fun EightCbApp(
     onResetHashes: () -> Unit = {},
     recording: RecordedSlotUiState = RecordedSlotUiState(),
     onRecordedUtc: (String) -> Unit = {},
+    onRecordedProfile: (Ft8DecodeProfile) -> Unit = {},
     onImportRecording: () -> Unit = {},
     onCancelRecording: () -> Unit = {},
     onClearRecording: () -> Unit = {},
@@ -253,7 +256,7 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        RecordedSlotPanel(recording, onRecordedUtc, onImportRecording, onCancelRecording, onClearRecording)
+                        RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
                         HorizontalDivider()
                         Text("Audio and VOX", style = MaterialTheme.typography.titleLarge)
                         Panel("Phone microphone and speaker") {

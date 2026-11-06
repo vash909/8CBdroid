@@ -27,7 +27,9 @@ import kotlin.math.abs
 
 /** Separate no-permission APK: never opens the main app, audio devices or network. */
 class OfflineEngineProbe : Instrumentation() {
+    private var profileRequested = false
     override fun onCreate(arguments: Bundle?) {
+        profileRequested = arguments?.getString("benchmark") == "true"
         super.onCreate(arguments)
         start()
     }
@@ -138,6 +140,15 @@ class OfflineEngineProbe : Instrumentation() {
                     "Silence produced a valid frame"
                 }
                 check(runCatching { engine.encode(payload, Float.NaN) }.isFailure) { "Invalid frequency accepted" }
+                if (profileRequested) {
+                    val profile = DecoderProfileProbe(context).run(engine)
+                    report.putString("profile_summary", profile.getJSONArray("profiles").toString())
+                    report.putString("profile_cancellation_ms", profile.getJSONArray("cancel_to_release_ms").toString())
+                    report.putLong("profile_sampled_max_pss_kib", profile.getLong("sampled_max_pss_kib"))
+                    report.putString("profile_result", profile.getString("result"))
+                    report.putString("profile_report_sha256", MessageDigest.getInstance("SHA-256")
+                        .digest(java.io.File(context.filesDir, "r09-profile.json").readBytes()).joinToString("") { "%02x".format(it) })
+                }
                 val memory = Debug.MemoryInfo()
                 Debug.getMemoryInfo(memory)
                 report.putString("desktop_decode_ms", timings.joinToString(","))

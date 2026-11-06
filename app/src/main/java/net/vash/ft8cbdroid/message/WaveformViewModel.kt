@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.vash.ft8cbdroid.core.Ft8Engine
+import net.vash.ft8cbdroid.core.Ft8EngineBusyException
+import net.vash.ft8cbdroid.core.Ft8EngineTimeoutException
 import net.vash.ft8cbdroid.core.message.*
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 
@@ -134,6 +136,10 @@ class WaveformViewModel(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (error: Ft8EngineBusyException) {
+                if (ticket == version) state.value = state.value.copy(error = error.message)
+            } catch (error: Ft8EngineTimeoutException) {
+                if (ticket == version) state.value = state.value.copy(error = error.message)
             } catch (_: UnsatisfiedLinkError) {
                 if (ticket == version) state.value = state.value.copy(error = "The offline DSP backend is unavailable.")
             } catch (_: Exception) {

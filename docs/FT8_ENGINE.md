@@ -42,7 +42,8 @@ packing/unpacking comes from the [Kotlin CB codec](CB_MESSAGE_CODEC.md), with
 | `Ft8DecodeResult` | Decoded frames plus candidate count; duplicate payloads collapsed within a slot. |
 
 `NativeFt8Engine` runs JNI on `Dispatchers.Default`. A process-wide mutex allows
-one encode/decode call at a time across instances. Buffers and native work belong
+one encode/decode call at a time across instances, with at most one FIFO waiter.
+Further requests fail with a busy/retry error before JNI allocation. Buffers and native work belong
 to each call; text, hash tables, absolute UTC and QSO state stay outside native.
 Malformed payload padding, incomplete slots and non-finite/out-of-range PCM are
 rejected before use.
@@ -57,7 +58,10 @@ encoding; see [WAV behavior and format](OFFLINE_WAVEFORM.md).
 ## Decoder metadata and limits
 
 The search uses **200–3000 Hz**, **2x time/frequency oversampling**, at most
-**60 candidates** and **25 LDPC iterations** per candidate. Frames require zero
+**60 candidates** and **25 LDPC iterations** per candidate in Standard.
+Fast uses 24 candidates and 12 iterations; both retain the same integrity checks.
+Their cooperative native deadlines are 4 seconds and 2 seconds respectively.
+See [profiles and admission policy](DECODER_PROFILES.md). Frames require zero
 parity errors and matching CRC. Deduplication by payload can collapse identical
 messages at different offsets; no complete multiple-signal behavior is claimed.
 
@@ -73,10 +77,12 @@ can be biased by interference, colored noise, overlap or timing/frequency error.
 See [the estimator and recorded-slot limits](RECORDED_SLOTS.md#snr-estimate-and-decoder-limits).
 It is not WSJT-CB's calibrated estimator.
 
-Cancellation is observed before/after native calls, not during candidate search.
-The mutex is not a production admission/queue policy. Interruptible decoding,
-weak-signal sensitivity, false-positive rates, memory peaks and sustained thermal/
-battery behavior remain unqualified. The upstream monitor retains its original
+R09 adds cancellation checks between FFT blocks, candidate operations and SNR
+symbols, with atomic per-call flags and cleanup before gate capacity is released.
+Individual vendor calls remain non-preemptible. A fixed 40-slot/profile corpus
+and a finite device diagnostic measure reception/cost without claiming desktop
+parity; wider weak-signal/false-positive qualification and long thermal/battery
+operation remain unqualified. The upstream monitor retains its original
 C allocation behavior; memory-pressure recovery needs further work. A valid
 channel frame alone does not establish supported CB text, a peer or a QSO.
 
@@ -134,7 +140,9 @@ on exit/timeout. For a code PR, deploy the verified **CI** APKs as described in
 is not permission to uninstall or clear data. Inspect both the explicit `PASS`
 and `INSTRUMENTATION_CODE: -1`.
 
-The probe reports per-case time, post-test process PSS and native allocation.
+The ordinary probe reports per-case time, post-test process PSS and native allocation.
+The explicit [R09 profile run](DECODER_PROFILES.md#device-procedure-and-limits)
+adds sampled memory maxima, profile latencies and short thermal observations.
 These are short offline observations; post-test PSS is not peak memory. CI builds
 the probe but does not run a physical device.
 

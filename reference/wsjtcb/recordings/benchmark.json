@@ -1,0 +1,355 @@
+{
+  "schema": 1,
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "baseline_phone": "SM-A515F / Android 13 / arm64-v8a",
+  "noise": "XorShift32; 12 summed U[0,1) draws minus 6; approximate Gaussian, not exact AWGN",
+  "gain": 0.02,
+  "profiles": [
+    {
+      "name": "Fast",
+      "candidates": 24,
+      "iterations": 12,
+      "deadline_ms": 2000
+    },
+    {
+      "name": "Standard",
+      "candidates": 60,
+      "iterations": 25,
+      "deadline_ms": 4000
+    }
+  ],
+  "cases": [
+    {
+      "id": "recorded-cq.wav",
+      "file": "cq.wav",
+      "sha256_pcm": "a405d7ba408d8ea50b20254e908917e119966ec715dede254ecfb86edd5463b9",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-noisy-cq.wav",
+      "file": "noisy-cq.wav",
+      "sha256_pcm": "47876a9ac08780c7f3a815bc0f8628b831330a8fefe19775bf034550297a34ef",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-leading-hash.wav",
+      "file": "leading-hash.wav",
+      "sha256_pcm": "87ecc0138dea57abcc593db5e1a62dd597546345fab076d2d0d927c40a30ae4a",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-noisy-leading-hash.wav",
+      "file": "noisy-leading-hash.wav",
+      "sha256_pcm": "534052cbe1ba19ad6d7b4bd5a2ea63b163927be904bef4e6d3434ed23cb33728",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-trailing-hash.wav",
+      "file": "trailing-hash.wav",
+      "sha256_pcm": "1759b83700ba37095e1bc9a9e48457ce25b9140bbb38f0b4c4fea2ed8955dfe1",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-noisy-trailing-hash.wav",
+      "file": "noisy-trailing-hash.wav",
+      "sha256_pcm": "a1c5b136e0696cce679b840e55f47449580f9ac86cb211f6af57658ce731341a",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-roger-report.wav",
+      "file": "roger-report.wav",
+      "sha256_pcm": "1571990931e0cee103c47ccf9edb60515186cc7cf194a84ad68d7fa1190258ba",
+      "payload77": "00000000001111110010111100000011010010011100000010010011000011000001101000000",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-noisy-roger-report.wav",
+      "file": "noisy-roger-report.wav",
+      "sha256_pcm": "8a441ab1c1c6f5d05d48f3e397e1781ac378d01dc7e61132dc2196d2f3617491",
+      "payload77": "00000000001111110010111100000011010010011100000010010011000011000001101000000",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-onset-320.wav",
+      "file": "onset-320.wav",
+      "sha256_pcm": "05872fc1526485678d63432ac784693eba6116e89f752acb4a686345c76cae40",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-onset-1280.wav",
+      "file": "onset-1280.wav",
+      "sha256_pcm": "43947deb014bf9dfc89b5c0bc9b6edf064b167503ee0ad9886d9b36a27bd5003",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "recorded"
+    },
+    {
+      "id": "recorded-corrupt-data.wav",
+      "file": "corrupt-data.wav",
+      "sha256_pcm": "214a43c7665165836cfa62b8f386a951c88c83fbf1f2a716da45721093fd6b61",
+      "payload77": null,
+      "kind": "negative"
+    },
+    {
+      "id": "recorded-noise-only.wav",
+      "file": "noise-only.wav",
+      "sha256_pcm": "bc235ca732856f6a5f2614864d8c4710b9bd1e7dacfef3508c9cb5ae275bd33e",
+      "payload77": null,
+      "kind": "negative"
+    },
+    {
+      "id": "sweep-cq.wav--8-901",
+      "file": "cq.wav",
+      "snr_db": -8,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "a0a9b4123ae341bc11367227794e1c981cc405506a1e797fb9b0b38d6dbc3c0f"
+    },
+    {
+      "id": "sweep-cq.wav--8-902",
+      "file": "cq.wav",
+      "snr_db": -8,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "9fc97116dc0e216e92565aec75dc7f0558d963b064b4312e890932b6030dd11d"
+    },
+    {
+      "id": "sweep-cq.wav--12-901",
+      "file": "cq.wav",
+      "snr_db": -12,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "dddca69b6bc61844f212903cadbf9ee56a9b6440cbb31bdb3025c5b243fc4748"
+    },
+    {
+      "id": "sweep-cq.wav--12-902",
+      "file": "cq.wav",
+      "snr_db": -12,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "c62a07e5d11fed660c1b68fcc70237498cc3f2c6588e153a91956947c8e30895"
+    },
+    {
+      "id": "sweep-cq.wav--16-901",
+      "file": "cq.wav",
+      "snr_db": -16,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "78da1048ae039f1a474fdb8415f1dc7ccacb0bbad41e9ef9bcfbcdd12a2f50d0"
+    },
+    {
+      "id": "sweep-cq.wav--16-902",
+      "file": "cq.wav",
+      "snr_db": -16,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "1f17fe4517748bff71ea6ee5918d1542c5f726944b987ba1e07f015f01eb6af8"
+    },
+    {
+      "id": "sweep-cq.wav--20-901",
+      "file": "cq.wav",
+      "snr_db": -20,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "e7e9da4ad5fda9baec0a38ef0383c8a50d222dadf8dd334375f924ceaaeb39d7"
+    },
+    {
+      "id": "sweep-cq.wav--20-902",
+      "file": "cq.wav",
+      "snr_db": -20,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "kind": "sweep",
+      "sha256_pcm": "7e905b9130b981ed8c15bfeb2409e2ba58fc251bb5ea10cf00dc9d753c380d1d"
+    },
+    {
+      "id": "sweep-leading-hash.wav--8-901",
+      "file": "leading-hash.wav",
+      "snr_db": -8,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "a72605629bf6761401fce116ccc5952b10f611aac1235b6249dc2e94e21eec31"
+    },
+    {
+      "id": "sweep-leading-hash.wav--8-902",
+      "file": "leading-hash.wav",
+      "snr_db": -8,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "6c13ad1d965c65426a8cad2f3c378c63572b06f0dcdb5b1a83f432597ecaaf31"
+    },
+    {
+      "id": "sweep-leading-hash.wav--12-901",
+      "file": "leading-hash.wav",
+      "snr_db": -12,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "67b81e5675c3820d41f65b80f9ae3df51327e79718d994afedd24ccddac53063"
+    },
+    {
+      "id": "sweep-leading-hash.wav--12-902",
+      "file": "leading-hash.wav",
+      "snr_db": -12,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "cf97ed4eda89bd078f0b297eb96a1dc71ef3c367daa9ed56ad47ba01644036ce"
+    },
+    {
+      "id": "sweep-leading-hash.wav--16-901",
+      "file": "leading-hash.wav",
+      "snr_db": -16,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "24c6e778fb39d5e477d003113089cc60b340859a3df13dd017f811f3feeab696"
+    },
+    {
+      "id": "sweep-leading-hash.wav--16-902",
+      "file": "leading-hash.wav",
+      "snr_db": -16,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "605db9f65dfb38d11c1443f1a94526be00cffe5c255b560e066cb2ee7e00a802"
+    },
+    {
+      "id": "sweep-leading-hash.wav--20-901",
+      "file": "leading-hash.wav",
+      "snr_db": -20,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "21a5459018c8745dd2e65aebfa0c9f555874e9162708e2116c1dca8c6ea35fec"
+    },
+    {
+      "id": "sweep-leading-hash.wav--20-902",
+      "file": "leading-hash.wav",
+      "snr_db": -20,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "kind": "sweep",
+      "sha256_pcm": "d32e29b828361fd66b73f7b59a33e59cba1f83aa0621d1a967190ca3f09f18c0"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--8-901",
+      "file": "trailing-hash.wav",
+      "snr_db": -8,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "1e2db2cf5471835b5bc7e33710cd4fac8fca3d29e1a3ffeb96ac31e3cae745ca"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--8-902",
+      "file": "trailing-hash.wav",
+      "snr_db": -8,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "064756a871eda1170d0429034f35f900f9ce36f03a33736395b720a83dd0fea1"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--12-901",
+      "file": "trailing-hash.wav",
+      "snr_db": -12,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "24de13812a777fe1adb3ffa42eb87c15bb3571b74ad1a5233b4c37d7aaf275b7"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--12-902",
+      "file": "trailing-hash.wav",
+      "snr_db": -12,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "9f78b9d7f3afc26ab658a7ad3f55a3e2c0d718c1dced0c133455bc90ff4a9076"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--16-901",
+      "file": "trailing-hash.wav",
+      "snr_db": -16,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "1d9b027af397518d184e948104e4f45b19d2d9531094cb5a0cd6851251f38ec7"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--16-902",
+      "file": "trailing-hash.wav",
+      "snr_db": -16,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "6360bbf687a166ffff116a569fc244bf686aaa1bf8397a587f6404df5639ff16"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--20-901",
+      "file": "trailing-hash.wav",
+      "snr_db": -20,
+      "seed": 901,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "cad7cd439e38cc7ea78621a44791d65292244739ae66dabda57b29603fc65417"
+    },
+    {
+      "id": "sweep-trailing-hash.wav--20-902",
+      "file": "trailing-hash.wav",
+      "snr_db": -20,
+      "seed": 902,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "kind": "sweep",
+      "sha256_pcm": "9e66c9d0972980368b84a8f91646f2697c207d2e91738894a5e125566179e3e2"
+    },
+    {
+      "id": "negative-903-0",
+      "seed": 903,
+      "tone_hz": 0,
+      "payload77": null,
+      "kind": "negative-synthetic",
+      "sha256_pcm": "da20be79f14f3542a9a4811ff1ab80b1eebc4bd55a5c7b95ac37d869b271d352"
+    },
+    {
+      "id": "negative-904-0",
+      "seed": 904,
+      "tone_hz": 0,
+      "payload77": null,
+      "kind": "negative-synthetic",
+      "sha256_pcm": "8a386fd57c428015011955bf67b27ae2d97fae39bb334a8d33b3525ba4f05552"
+    },
+    {
+      "id": "negative-905-300",
+      "seed": 905,
+      "tone_hz": 300,
+      "payload77": null,
+      "kind": "negative-synthetic",
+      "sha256_pcm": "51c1ca3958c24e0cd0b0aa94e069a9471be0022a5610fe579381ba7c4a8ae79b"
+    },
+    {
+      "id": "negative-906-1500",
+      "seed": 906,
+      "tone_hz": 1500,
+      "payload77": null,
+      "kind": "negative-synthetic",
+      "sha256_pcm": "fe85e70a1f8d11b8831630e094c1ead900fe4589403643cfc9d3aed8ef76a54d"
+    }
+  ]
+}
