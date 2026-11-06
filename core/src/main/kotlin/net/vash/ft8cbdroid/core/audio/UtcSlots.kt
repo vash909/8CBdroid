@@ -84,7 +84,7 @@ class UtcSlotAssembler(private val clock: ReceiveClock, private val completed: (
                 if (size == buffer.size) {
                     val utc = target / 12000 * 1000
                     completed(CompletedUtcSlot(utc, Ft8PcmSlot.fromSamples(buffer), mapping.source,
-                        mapping.uncertaintyMillis?.plus(3.1)))
+                        clock.snapshot().uncertaintyMillis?.plus(3.1)))
                     count++; lastUtc = utc; size = 0; targetGrid = target + buffer.size
                 }
             }

@@ -29,24 +29,27 @@ class ReceiveTimeTest {
         val source = Source(); val original = source.now; val clock = ReceiveClock(source); clock.apply(sample(source))
         assertEquals(original, source.read()); rejects { ReceiveClock(source).snapshot() }
     }
-    @Test fun threeConsistentGnssClocksResolveGpsEpochAndLeapSeconds() {
-        val validator = GnssTimeValidator(); val source = Source()
-        fun reading() = GnssTimeReading(100_000_000_000, 100_000_000_000 -
-            (source.now.unixMillis * 1_000_000 - 315_964_800_000_000_000L + 18_000_000_000L),
-            0.0, 18, source.now.monotonicNanos, 100.0, 3)
-        assertNull(validator.accept(reading(), source.now)); source.advance(1000)
-        assertNull(validator.accept(reading(), source.now)); source.advance(1000)
-        val value = validator.accept(reading(), source.now)!!
-        assertEquals(source.now.unixMillis * 1_000_000, value.utcNanos)
+    @Test fun threeFreshGpsFixesSynchronizeWithoutInventingAccuracy() {
+        val validator = GpsTimeValidator(); val source = Source()
+        fun fix() = GpsTimeReading(source.now.unixMillis + 40, source.now.monotonicNanos, true, false)
+        val first = fix()
+        assertNull(validator.accept(first, source.now)); assertNull(validator.accept(first, source.now))
+        source.advance(1000); assertNull(validator.accept(fix(), source.now)); source.advance(1000)
+        val measurement = validator.accept(fix(), source.now)!!
+        assertEquals(source.now.unixMillis * 1_000_000 + 40_000_000, measurement.utcNanos)
+        assertNull(measurement.uncertaintyMillis)
+        val clock = ReceiveClock(source); clock.apply(measurement)
+        assertEquals("GPS/GNSS", clock.snapshot().source); assertNull(clock.snapshot().uncertaintyMillis)
         source.advance(1000)
-        assertNull(validator.accept(reading().copy(discontinuityCount = 4), source.now))
+        assertNull(validator.accept(fix().copy(utcMillis = source.now.unixMillis + 500), source.now))
     }
-    @Test fun uncertainOrOldGnssTimingCannotBeApplied() {
+    @Test fun staleMockFutureOrNonGpsFixesCannotSynchronize() {
         val now = ClockReading(10_000_000_000, 1_800_000_000_000)
-        val reading = GnssTimeReading(1, -1_484_035_217_999_999_999L, 0.0, 18, now.monotonicNanos, 100.0, 0)
-        for (bad in listOf(reading.copy(uncertaintyNanos = Double.NaN), reading.copy(uncertaintyNanos = 5_000_001.0),
-            reading.copy(elapsedRealtimeNanos = now.monotonicNanos - 2_000_000_001), reading.copy(leapSeconds = 100))) {
-            try { GnssTimeValidator().accept(bad, now); fail("Bad GNSS clock accepted") } catch (_: IllegalArgumentException) { }
+        val fix = GpsTimeReading(now.unixMillis, now.monotonicNanos, true, false)
+        for (bad in listOf(fix.copy(isMock = true), fix.copy(isGps = false), fix.copy(utcMillis = 0),
+            fix.copy(elapsedRealtimeNanos = now.monotonicNanos - 2_000_000_001),
+            fix.copy(elapsedRealtimeNanos = now.monotonicNanos + 1))) {
+            try { GpsTimeValidator().accept(bad, now); fail("Bad GPS fix accepted") } catch (_: IllegalArgumentException) { }
         }
     }
     @Test fun customNamesAndIpAddressesAreNormalizedWithoutDns() {

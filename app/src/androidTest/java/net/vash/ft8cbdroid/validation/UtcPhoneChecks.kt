@@ -19,7 +19,7 @@ import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.time.TimeViewModel
 import org.json.JSONObject
 
-/** Real time-source and microphone checks; GPS needs a real satellite solution, not a supplied location. */
+/** Real time-source and microphone checks; GPS needs real satellite fixes, not a supplied location. */
 class UtcPhoneChecks(private val instrumentation: Instrumentation) {
     private val targetContext get() = instrumentation.targetContext
     private val uiAutomation get() = instrumentation.uiAutomation
@@ -74,7 +74,7 @@ class UtcPhoneChecks(private val instrumentation: Instrumentation) {
             val mapping = timing.clock.snapshot()
             check(mapping.source == measurement.source)
             report.put("source", measurement.source).put("offset_ms", measurement.offsetMillis())
-                .put("uncertainty_ms", measurement.uncertaintyMillis)
+                .put("uncertainty_ms", measurement.uncertaintyMillis ?: JSONObject.NULL)
             if (scenario == "ntp-audio") {
                 if (android.os.Build.VERSION.SDK_INT >= 34) uiAutomation.clearCache() else uiAutomation.serviceInfo = uiAutomation.serviceInfo
                 var button = find(uiAutomation.rootInActiveWindow, "Audio")

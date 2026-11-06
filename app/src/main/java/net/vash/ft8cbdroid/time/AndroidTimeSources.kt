@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.*
 import android.os.Build
-import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import kotlinx.coroutines.*
@@ -23,13 +22,13 @@ object AndroidTimeSource : TimeSource {
 
 fun interface GpsTimeClient { suspend fun measure(): TimeMeasurement }
 
-/** Foreground, raw GNSS UTC only. No network provider, last-known fix, coordinates or system-clock write. */
+/** Foreground satellite-derived GPS fix times only; no coordinates or system-clock write. */
 class AndroidGpsTimeClient(context: Context, private val source: TimeSource = AndroidTimeSource) : GpsTimeClient {
     private val app = context.applicationContext
     private val manager = app.getSystemService(LocationManager::class.java)
     @SuppressLint("MissingPermission")
+    @Suppress("DEPRECATION")
     override suspend fun measure(): TimeMeasurement = withTimeout(90_000) {
-        if (Build.VERSION.SDK_INT < 29) throw TimeException("GPS time requires Android 10 or later with raw GNSS boot timestamps.")
         check(app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             "Precise location permission is required for GPS time. Allow it in Android app settings."
         }
@@ -37,44 +36,27 @@ class AndroidGpsTimeClient(context: Context, private val source: TimeSource = An
         check(manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) { "Enable Location/GPS on the phone, then retry." }
         withContext(Dispatchers.Main.immediate) {
             val pending = CompletableDeferred<TimeMeasurement>()
-            run {
-                val handler = Handler(Looper.getMainLooper())
-                val validator = GnssTimeValidator()
-                val listener = object : LocationListener {
-                    override fun onLocationChanged(location: Location) = Unit
-                    override fun onProviderEnabled(provider: String) = Unit
-                    @Deprecated("Legacy callback required on Android 10")
-                    override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) = Unit
-                    override fun onProviderDisabled(provider: String) {
-                        pending.completeExceptionally(TimeException("GPS was disabled. Enable it and retry."))
-                    }
+            val validator = GpsTimeValidator()
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    if (!pending.isActive) return
+                    val mock = if (Build.VERSION.SDK_INT >= 31) location.isMock else location.isFromMockProvider
+                    val value = GpsTimeReading(location.time, location.elapsedRealtimeNanos,
+                        location.provider == LocationManager.GPS_PROVIDER, mock)
+                    runCatching { validator.accept(value, source.read()) }.getOrNull()?.let { pending.complete(it) }
                 }
-                val callback = object : GnssMeasurementsEvent.Callback() {
-                    override fun onGnssMeasurementsReceived(event: GnssMeasurementsEvent) {
-                        if (!pending.isActive || Build.VERSION.SDK_INT < 29) return
-                        val clock = event.clock
-                        if (!clock.hasFullBiasNanos() || !clock.hasLeapSecond() || !clock.hasElapsedRealtimeNanos() ||
-                            !clock.hasElapsedRealtimeUncertaintyNanos() || !clock.hasTimeUncertaintyNanos() ||
-                            (clock.hasBiasNanos() && !clock.hasBiasUncertaintyNanos())) return
-                        val reading = GnssTimeReading(clock.timeNanos, clock.fullBiasNanos,
-                            if (clock.hasBiasNanos()) clock.biasNanos else 0.0, clock.leapSecond, clock.elapsedRealtimeNanos,
-                            clock.timeUncertaintyNanos + clock.elapsedRealtimeUncertaintyNanos +
-                                if (clock.hasBiasNanos()) clock.biasUncertaintyNanos else 0.0, clock.hardwareClockDiscontinuityCount)
-                        runCatching { validator.accept(reading, source.read()) }.getOrNull()?.let { pending.complete(it) }
-                    }
+                override fun onProviderEnabled(provider: String) = Unit
+                @Deprecated("Legacy callback required on older Android versions")
+                override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) = Unit
+                override fun onProviderDisabled(provider: String) {
+                    pending.completeExceptionally(TimeException("GPS was disabled. Enable it and retry."))
                 }
-                try {
-                    // The executor overload avoids the Android 11 callback registration defect.
-                    val registered = if (Build.VERSION.SDK_INT >= 30)
-                        manager.registerGnssMeasurementsCallback(java.util.concurrent.Executor { handler.post(it) }, callback)
-                    else manager.registerGnssMeasurementsCallback(callback, handler)
-                    check(registered) { "This phone does not expose raw GNSS measurements." }
-                    manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, listener, Looper.getMainLooper())
-                    pending.await()
-                } finally {
-                    runCatching { manager.unregisterGnssMeasurementsCallback(callback) }
-                    runCatching { manager.removeUpdates(listener) }
-                }
+            }
+            try {
+                manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, listener, Looper.getMainLooper())
+                pending.await()
+            } finally {
+                runCatching { manager.removeUpdates(listener) }
             }
         }
     }

@@ -53,15 +53,16 @@ fun TimePanel(state: TimeUiState, actions: TimeActions) {
         if (state.awaitingGpsPermission) Text("Waiting for precise location permission…")
         state.busy?.let { Text("Measuring $it…"); OutlinedButton(onClick = actions.cancel) { Text("Cancel time measurement") } }
         state.measurement?.let { value ->
-            Text(String.format(Locale.ROOT, "%s • correction %+.1f ms • estimated uncertainty ±%.1f ms",
-                value.source, value.offsetMillis(), value.uncertaintyMillis))
+            Text(String.format(Locale.ROOT, "%s • correction %+.1f ms", value.source, value.offsetMillis()))
+            Text(value.uncertaintyMillis?.let { String.format(Locale.ROOT, "Estimated uncertainty: ±%.1f ms", it) }
+                ?: "Timing uncertainty is not reported by this GPS receiver.")
             value.roundTripMillis?.let { Text(String.format(Locale.ROOT, "Network round trip: %.1f ms", it)) }
             Text("Measurement age: ${(state.ageMillis ?: 0) / 1000} seconds • expires after 10 minutes")
             Button(onClick = actions.apply, enabled = state.canApply && (state.ageMillis ?: Long.MAX_VALUE) in 0 until 600_000) {
                 Text("Apply measured time")
             }
         }
-        Text("GPS works without Internet and needs precise location permission, raw GNSS timing and a clear sky view. Coordinates are not stored. Measurements stop on background or rotation.")
+        Text("GPS works without Internet and needs precise location permission and a clear sky view. Coordinates are not stored. Measurements stop on background or rotation.")
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }
     }

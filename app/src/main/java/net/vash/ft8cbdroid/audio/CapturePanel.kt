@@ -49,7 +49,8 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         }
         state.latestSlotUtcMillis?.let {
             Text("Latest UTC slot: ${java.time.Instant.ofEpochMilli(it)} • ${state.slotSource}")
-            state.slotUncertaintyMillis?.let { uncertainty -> Text(String.format(Locale.ROOT, "Estimated slot timing uncertainty: ±%.1f ms", uncertainty)) }
+            Text(state.slotUncertaintyMillis?.let { String.format(Locale.ROOT, "Estimated slot timing uncertainty: ±%.1f ms", it) }
+                ?: "Slot timing uncertainty is unavailable: GPS receiver accuracy is not reported.")
         }
         OutlinedButton(onClick = onSaveSlot, enabled = state.canExportSlot) { Text("Save latest UTC slot WAV") }
         Text("Only complete 15-second UTC windows are retained. Stop before saving; initial partials and interrupted windows are discarded. Only the latest complete slot is retained in memory.")

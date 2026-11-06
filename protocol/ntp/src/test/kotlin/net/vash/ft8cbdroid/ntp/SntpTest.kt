@@ -21,7 +21,7 @@ class SntpTest {
         val request = SntpPacket.request(sent, 123)
         val result = SntpPacket.decode(request, response(request, sent.unixMillis + 70, sent.unixMillis + 75), sent, received, "example.org")
         assertEquals(52.5, result.offsetMillis(), .001); assertEquals(35.0, result.roundTripMillis!!, .001)
-        assertEquals(19.5, result.uncertaintyMillis, .001)
+        assertEquals(19.5, result.uncertaintyMillis!!, .001)
     }
     @Test fun rejectsWrongOriginModeStratumLeapMissingTimeAndPoorQuality() {
         val sent = ClockReading(10_000_000_000, 1_800_000_000_000); val received = ClockReading(10_040_000_000, sent.unixMillis + 40)
@@ -59,7 +59,7 @@ class SntpTest {
             }
             val source = TimeSource { ClockReading(System.nanoTime(), System.currentTimeMillis()) }
             val client = UdpNtpClient(source, server.localPort)
-            assertTrue(client.measure(InetAddress.getLoopbackAddress().hostAddress!!).uncertaintyMillis < 100)
+            assertTrue(client.measure(InetAddress.getLoopbackAddress().hostAddress!!).uncertaintyMillis!! < 100)
             responder.await()
             try { client.measure("localhost"); fail("Rate limit bypassed") } catch (_: IllegalStateException) { }
         }
@@ -77,7 +77,7 @@ class SntpTest {
                 val now = System.currentTimeMillis(); val bytes = response(request.data.copyOf(request.length), now, now)
                 server.send(DatagramPacket(bytes, bytes.size, request.socketAddress))
             }
-            assertTrue(client.measure(InetAddress.getLoopbackAddress().hostAddress!!).uncertaintyMillis < 100)
+            assertTrue(client.measure(InetAddress.getLoopbackAddress().hostAddress!!).uncertaintyMillis!! < 100)
             responder.await()
         }
     }

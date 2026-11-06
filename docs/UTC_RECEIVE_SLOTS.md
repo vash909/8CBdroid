@@ -61,20 +61,28 @@ authentication, multi-source selection or a guarantee against network asymmetry.
 
 ## Offline GPS/GNSS time
 
-The GPS backend requires Android 10+ and reported raw GNSS clock/boot timestamps,
-full bias, leap seconds and uncertainty. It converts GPS epoch/time to UTC,
-including bias and leap seconds, and requires three consistent fresh clock
-observations without a hardware discontinuity. Unknown/stale/uncertain timing
-cannot synchronize the app. Older or incompatible devices can use NTP.
+The GPS backend uses three consistent, fresh, non-mock `GPS_PROVIDER` fixes
+and their boot-clock timestamps. Android guarantees that this provider's UTC
+originates in the satellite constellation's clock; see
+[Location.getTime](https://developer.android.com/reference/android/location/Location#getTime()).
+Network/fused providers, last-known locations, stale/future fixes and simulated
+locations cannot synchronize the app. Raw GNSS measurement support is not
+required, so this works with the app's Android 8+ baseline.
 
-Only `GPS_PROVIDER` and raw measurement callbacks are requested. There is no
-network-provider or last-known-location fallback. Coordinates are ignored and
-never stored or included in reports. The client needs no Internet connection;
-cold-start acquisition time and device assistance depend on the phone/sky view.
-Acquisition times out after 90 seconds. Cancel, provider disable, backgrounding
-or rotation unregisters measurement/location callbacks before acquisition ends.
-Approximate permission is insufficient; a late permission grant cannot restart a
-cancelled measurement. No background location permission or service is used.
+The fix API does not report a UTC accuracy bound. GPS measurements and slots
+therefore display **timing uncertainty not reported**, rather than an invented
+millisecond estimate. Position accuracy is never treated as time accuracy.
+Three advancing fixes must agree with elapsed realtime within 10 ms; this checks
+consistency and does not prove absolute UTC accuracy. Compare against NTP/desktop
+and qualify the actual receiver before drawing timing-performance conclusions.
+
+Coordinates are ignored and never stored or included in reports. The client
+needs no Internet connection; cold-start acquisition time and device assistance
+depend on the phone/sky view. Acquisition times out after 90 seconds. Cancel,
+provider disable, backgrounding or rotation removes the location listener before
+acquisition ends. Approximate permission is insufficient; a late permission grant
+cannot restart a cancelled measurement. No background location permission or
+service is used.
 
 ## Capture and export
 
@@ -97,7 +105,8 @@ Only contiguous samples build a slot. Index gaps/duplicates discard partials;
 stale/reset timestamps, inferred recorder overrun, clock steps above 50 ms or
 departure from the nominal audio timeline above 3 ms stop capture. Smaller drift
 is observed/reported, not rate-corrected. Grid quantization is below one 12 kHz
-sample; measured-source uncertainty plus 3.1 ms is reported for slots. Android's
+sample; measured-source uncertainty, holdover growth and 3.1 ms are reported for
+NTP slots; GPS uncertainty remains explicitly unavailable. Android's
 pipeline timestamps do not prove that every device-side sample loss is observable.
 
 A complete slot is exactly 180,000 samples of mono 12 kHz PCM. Export is PCM16
@@ -111,7 +120,7 @@ stopped snapshot through the picker, including cancellation/retry. Nothing rearm
 ## Verification
 
 JVM tests cover NTP packet faults/era arithmetic and actual UDP loopback,
-GNSS epoch/leap/quality/discontinuity, expiry/no fallback, clock steps, both
+GPS freshness/mock/provider/consistency checks, expiry/no fallback, clock steps, both
 capture rates/filter delays, missing samples/partial windows and persistence/
 ViewModel cancellation. These do not establish hardware interoperability.
 
@@ -138,4 +147,4 @@ the PR and [validation](VALIDATION.md); failed or blocked hardware checks stay o
 
 Android contracts: [AudioRecord timestamps](https://developer.android.com/reference/android/media/AudioRecord#getTimestamp(android.media.AudioTimestamp,%20int)),
 [AudioTimestamp boot clock](https://developer.android.com/reference/android/media/AudioTimestamp),
-and [raw GNSS clock fields](https://developer.android.com/reference/android/location/GnssClock).
+and [GPS fix UTC and boot timestamps](https://developer.android.com/reference/android/location/Location#getTime()).

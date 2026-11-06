@@ -55,10 +55,12 @@ class TimeViewModelTest {
     @Test fun gpsDoesNotDependOnAValidNtpDraftOrInternet() = runTest(dispatcher) {
         val clock = ReceiveClock(TimeSource { now })
         val vm = TimeViewModel(Repository(), NtpClient { error("GPS must not call NTP") },
-            GpsTimeClient { sample().copy(source = "GPS/GNSS") }, clock, false); runCurrent()
+            GpsTimeClient { sample().copy(source = "GPS/GNSS", uncertaintyMillis = null) }, clock, false); runCurrent()
         vm.selectPreset("custom"); vm.changeCustom("bad://host")
         assertFalse(vm.uiState.value.canMeasure); assertFalse(vm.uiState.value.canSave)
         vm.requestGps(true); runCurrent(); assertTrue(vm.uiState.value.canApply)
         vm.applyMeasurement(); assertEquals("GPS/GNSS", clock.snapshot().source)
+        assertNull(clock.snapshot().uncertaintyMillis)
+        assertTrue(vm.uiState.value.sourceDescription.contains("timing uncertainty not reported"))
     }
 }

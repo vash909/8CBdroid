@@ -42,9 +42,11 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         val sample = state.value.measurement
         val description = runCatching {
             val mapping = clock.snapshot()
-            if (mapping.uncertaintyMillis == null) "Not synchronized. Choose NTP or GPS."
-            else java.lang.String.format(java.util.Locale.ROOT, "%s • age %d s • estimated uncertainty ±%.1f ms", mapping.source,
-                600 - ((mapping.expiresAtNanos!! - clock.source.read().monotonicNanos) / 1_000_000_000).coerceIn(0, 600), mapping.uncertaintyMillis)
+            val age = 600 - ((mapping.expiresAtNanos!! - clock.source.read().monotonicNanos) / 1_000_000_000).coerceIn(0, 600)
+            val quality = mapping.uncertaintyMillis?.let {
+                java.lang.String.format(java.util.Locale.ROOT, "estimated uncertainty ±%.1f ms", it)
+            } ?: "timing uncertainty not reported by receiver"
+            "${mapping.source} • age $age s • $quality"
         }.getOrElse { it.message ?: "Time correction unavailable" }
         state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(clock.source.read()))
     }

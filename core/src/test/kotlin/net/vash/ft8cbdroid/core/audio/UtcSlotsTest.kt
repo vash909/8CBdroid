@@ -25,6 +25,7 @@ class UtcSlotsTest {
         assertEquals(180000, slots[0].pcm.toFloatArray().size)
         assertEquals((13 * 12000 % 1000) / 1000f, slots[0].pcm.toFloatArray()[0], 0f)
         assertEquals(1L, assembler.progress().discarded)
+        assertTrue(slots[1].uncertaintyMillis!! > slots[0].uncertaintyMillis!!)
     }
     @Test fun droppedSamplesNeverCreateAPaddedOrStitchedSlot() {
         val (s, clock) = setup(); val slots = mutableListOf<CompletedUtcSlot>(); val a = UtcSlotAssembler(clock, slots::add)
