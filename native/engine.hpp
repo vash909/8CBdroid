@@ -13,6 +13,7 @@ struct Frame {
     float time_seconds;
     float frequency_hz;
     int sync_score;
+    float estimated_snr_db; // NaN when a noise floor cannot be measured.
 };
 struct DecodeResult {
     std::vector<Frame> frames;

@@ -42,6 +42,9 @@
 
 ## Debug phone deployment
 
+- Notify the owner when the debug phone must be unlocked and ask them to keep
+  it awake for the device checks. Run the relevant phone tests on each PR when
+  the authorized device is available; report any checks blocked by its lock state.
 - The agent owns deployment via ADB to the connected, authorized debug phone
   (currently Samsung Galaxy A51 / SM-A515F). After successful PR CI, download
   that run's debug APK artifact, verify it matches the current PR commit,

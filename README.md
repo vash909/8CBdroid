@@ -120,3 +120,8 @@ GPL-3.0-only; see [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTIC
 Selling the app is permitted under GPLv3's conditions, including Corresponding
 Source and recipient rights. Repository privacy does not remove those obligations.
 See the [commercial distribution policy](docs/COMMERCIAL_DISTRIBUTION.md).
+
+Recorded-slot reception (R08): the **Audio** tab imports a 15-second mono PCM16
+WAV at 12 kHz with an explicit UTC boundary. Results include CB text/hash state,
+offset, DT and experimental SNR; live microphone reception remains pending. See
+[recorded-slot setup and limits](docs/RECORDED_SLOTS.md).

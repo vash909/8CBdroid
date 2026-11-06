@@ -34,7 +34,8 @@ Java_net_vash_ft8cbdroid_dsp_NativeBridge_decode(JNIEnv* env, jobject, jfloatArr
         auto payloads=env->NewObjectArray(n,env->FindClass("[B"),nullptr);
         auto times=env->NewFloatArray(n), frequencies=env->NewFloatArray(n);
         auto scores=env->NewIntArray(n);
-        if (!payloads || !times || !frequencies || !scores) return nullptr;
+        auto snrs=env->NewFloatArray(n);
+        if (!payloads || !times || !frequencies || !scores || !snrs) return nullptr;
         for (int i=0;i<n;++i) {
             auto const& f=decoded.frames[i];
             auto bytes=env->NewByteArray(10);
@@ -45,9 +46,10 @@ Java_net_vash_ft8cbdroid_dsp_NativeBridge_decode(JNIEnv* env, jobject, jfloatArr
             env->SetFloatArrayRegion(times,i,1,&f.time_seconds);
             env->SetFloatArrayRegion(frequencies,i,1,&f.frequency_hz);
             env->SetIntArrayRegion(scores,i,1,&f.sync_score);
+            env->SetFloatArrayRegion(snrs,i,1,&f.estimated_snr_db);
         }
         auto type=env->FindClass("net/vash/ft8cbdroid/dsp/NativeResult");
-        return env->NewObject(type,env->GetMethodID(type,"<init>","([[B[F[F[II)V"),
-                              payloads,times,frequencies,scores,decoded.candidates);
+        return env->NewObject(type,env->GetMethodID(type,"<init>","([[B[F[F[I[FI)V"),
+                              payloads,times,frequencies,scores,snrs,decoded.candidates);
     } catch (std::exception const& error) {failure(env,error);return nullptr;}
 }

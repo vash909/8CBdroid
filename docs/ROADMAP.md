@@ -40,9 +40,12 @@ later estimates; do not promise a complete Android port in one PR.
   simulator. CI passed with 734 JVM tests and 41 script tests. The Samsung A51
   probe passed 96 hash scenarios, 154 messages and four WAVs; the CI APK was
   installed with verified settings restoration. The owner approved merge on 2026-11-06.
+- [PR #22](https://github.com/vash909/8CBdroid/pull/22) is merged: R07 adds offline
+  message-to-WAV generation. CI and A51 probe/UI generation/export passed; the
+  phone WAV passed the independent known-time/frequency desktop channel check.
+  The owner approved merge on 2026-11-06. Full desktop GUI import remains pending.
 - Local operating sessions, microphone capture, playback, CAT/PTT, AutoSeq and QSO
-  logging remain pending. R07 in the current PR adds offline message-to-WAV
-  generation; phone execution and desktop import are deferred until the A51 is available.
+  logging remain pending. R08 recorded-slot import is the current milestone.
 
 ## Reference strategy: reuse the CB work
 
@@ -117,7 +120,7 @@ scenarios, including hash collisions and lossy encodings. See
 desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
 the offline host and ARM64 phone checks. R05 is complete in PR #20: offline packing/unpacking and visible
 message-loss previews. R06 is complete in PR #21: bounded session learning and
-explicit unknown/ambiguous hash results. R07 is next. RF/audio and the
+explicit unknown/ambiguous hash results. R07 is merged as PR #22; R08 is current. RF/audio and the
 full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.
@@ -149,7 +152,7 @@ and USB audio must remain separate capabilities.
 - Local checks, CI and phone deployment passed; the owner approved PR #21 for
   merge. No live RX/TX, AutoSeq or persistent learned-call database is included.
 
-### Current PR: R07 offline PCM and WAV
+### Completed implementation: R07 offline PCM and WAV
 
 - Branch: `feat/offline-ft8-pcm`, including the verified 16 GiB local build limit.
 - Pure Kotlin message-to-PCM orchestration with explicit base frequency/peak
@@ -159,10 +162,23 @@ and USB audio must remain separate capabilities.
 - Twenty-one clean waveforms pass a known-time/frequency adapter using original
   WSJT-CB LDPC/CRC and text unpacking, exact tone/payload checks, envelope/level
   measurements and bounded spectral probes. This is not the full desktop search.
-- Local checks and CI precede review. A51 execution, ADB deployment and actual
-  desktop import remain deferred at the owner's request. See [R07](OFFLINE_WAVEFORM.md).
-  Playback, RF output and scheduling remain later milestones. Merge still requires
-  explicit owner approval; R08 has not started.
+- Local checks, CI and A51 probe/UI generation/export passed. The exported file
+  matched the independently qualified phone WAV byte for byte. The owner approved
+  merge of PR #22; full desktop GUI import and remaining rotation/cancellation
+  checks are still pending. See [R07](OFFLINE_WAVEFORM.md).
+
+### Current milestone: R08 recorded FT8 slots
+
+- Import one bounded 12 kHz mono PCM16 slot through Android document selection,
+  with an explicit UTC boundary and isolated CB message/hash interpretation.
+- Show payload-backed messages, offset, corrected onset/DT, estimated 2500 Hz SNR
+  and explicit integrity/unsupported/hash flags, separately from LAN decodes.
+- Four clean and four deterministic noisy desktop-derived WAVs, two onset shifts, intact-sync
+  corrupted data and noise-only cases qualify channel integrity and limited SNR
+  behavior. The independent reference adapter has supplied time/frequency; this
+  does not establish full desktop decoder parity.
+- Local tests, CI and A51 deployment/review are required before merge. No live
+  audio is included. See [recorded-slot behavior and limits](RECORDED_SLOTS.md).
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

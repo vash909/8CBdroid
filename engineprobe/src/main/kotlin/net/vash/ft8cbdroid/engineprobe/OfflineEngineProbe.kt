@@ -14,6 +14,9 @@ import net.vash.ft8cbdroid.core.message.OfflineFt8Generator
 import net.vash.ft8cbdroid.core.message.Ft8GenerationSettings
 import net.vash.ft8cbdroid.core.message.EncodingMode
 import net.vash.ft8cbdroid.core.message.WaveformGenerationResult
+import net.vash.ft8cbdroid.core.recording.RecordedSlotWav
+import net.vash.ft8cbdroid.core.recording.RecordedSlotContext
+import net.vash.ft8cbdroid.core.recording.RecordedSlotDecoder
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import net.vash.ft8cbdroid.reference.HashSessionReferenceChecks
 import org.json.JSONObject
@@ -98,6 +101,33 @@ class OfflineEngineProbe : Instrumentation() {
                     check(abs(frame.audioFrequencyHz - fixture.getDouble("frequency_hz")) <= 6.25)
                     check(abs(frame.startSecondsInSlot - fixture.getDouble("lead_seconds")) <= .16)
                 }
+                val recordings = JSONObject(context.assets.open("recordings.json").bufferedReader().use { it.readText() })
+                val recordingCases = recordings.getJSONArray("cases")
+                val recordingDecoder = RecordedSlotDecoder(engine)
+                val recordingContext = RecordedSlotContext.parse(recordings.getString("slot_start_utc"))
+                val recordedTimings = mutableListOf<Long>()
+                repeat(recordingCases.length()) { i ->
+                    val case = recordingCases.getJSONObject(i)
+                    val bytes = context.assets.open(case.getString("file").substringAfterLast('/')).use { it.readBytes() }
+                    check(MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) } == case.getString("sha256"))
+                    val slot = RecordedSlotWav.parse(bytes)
+                    val begin = SystemClock.elapsedRealtime()
+                    val result = recordingDecoder.decode(slot, recordingContext)
+                    recordedTimings += SystemClock.elapsedRealtime() - begin
+                    if (case.isNull("payload77")) {
+                        check(result.decodes.isEmpty()) { "Corrupt/noise recording accepted" }
+                    } else {
+                        val row = result.decodes.single()
+                        check(row.frame.payload.toBitString() == case.getString("payload77"))
+                        check((row.message as UnpackResult.Decoded).message.text == case.getString("text"))
+                        check(abs(row.frame.startSecondsInSlot - case.getDouble("onset_seconds")) <= .08001)
+                        check(abs(row.frame.audioFrequencyHz - case.getDouble("frequency_hz")) <= 6.25)
+                        if (case.getString("kind") == "awgn")
+                            check(abs(requireNotNull(row.frame.estimatedSnrDb) - case.getDouble("expected_snr_db")) <= 3)
+                    }
+                }
+                report.putInt("recorded_slot_cases", recordingCases.length())
+                report.putString("recorded_slot_ms", recordedTimings.joinToString(","))
                 val payload = Ft8Payload77.fromBits(waves.getJSONObject(0).getString("payload77"))
                 val start = SystemClock.elapsedRealtime()
                 val encoded = engine.encode(payload, 1000f)

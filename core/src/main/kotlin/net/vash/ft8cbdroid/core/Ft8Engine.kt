@@ -47,6 +47,8 @@ data class Ft8DecodedFrame(
     val startSecondsInSlot: Float,
     val audioFrequencyHz: Float,
     val syncScore: Int,
+    /** Experimental 2500 Hz estimate; null when the noise floor cannot be measured. */
+    val estimatedSnrDb: Float? = null,
 )
 
 data class Ft8DecodeResult(val frames: List<Ft8DecodedFrame>, val candidateCount: Int)

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <limits>
 
 namespace eightcb {
 Tones encode_tones(Payload const& payload) {
@@ -50,6 +51,47 @@ std::vector<float> encode_slot(Payload const& payload, float frequency_hz, float
     return slot;
 }
 
+// A local Hann-window tone/noise estimate, not WSJT-CB's SNR estimator.
+// 80 ms symbol centers avoid most GFSK transitions. Noise probes lie outside
+// the eight-tone band; interference or colored noise can bias this estimate.
+static float estimate_snr(std::vector<float> const& pcm, Frame const& frame) {
+    auto tones = encode_tones(frame.payload);
+    constexpr int count = 960;
+    constexpr double pi = 3.14159265358979323846;
+    std::array<double, count> window{};
+    double sum = 0, squares = 0;
+    for (int i=0; i<count; ++i) {
+        window[i] = .5 - .5*std::cos(2*pi*i/count);
+        sum += window[i]; squares += window[i]*window[i];
+    }
+    auto power = [&](int start, double frequency) {
+        double real=0, imaginary=0;
+        double step=2*pi*frequency/sample_rate;
+        // Recurrence keeps this diagnostic small compared with candidate decoding.
+        double c=1, s=0, cs=std::cos(step), sn=std::sin(step);
+        for (int i=0; i<count; ++i) {
+            double sample=pcm[start+i]*window[i];
+            real += sample*c; imaginary += sample*s;
+            double next=c*cs-s*sn; s=s*cs+c*sn; c=next;
+        }
+        return real*real+imaginary*imaginary;
+    };
+    double signal=0, noise=0;
+    int used=0;
+    for (int symbol=1; symbol<78; ++symbol) {
+        int start=int(std::lround(frame.time_seconds*sample_rate))+symbol*1920+480;
+        if (start<0 || start+count>int(pcm.size())) continue;
+        signal += power(start, frame.frequency_hz+6.25*tones[symbol]);
+        for (double offset : {-150.0, -100.0, 150.0, 200.0})
+            noise += power(start, frame.frequency_hz+offset)/4;
+        ++used;
+    }
+    if (!used || noise/used < 1e-10 || signal<=noise)
+        return std::numeric_limits<float>::quiet_NaN();
+    double ratio=(signal-noise)/noise * sample_rate*squares/(2500*sum*sum);
+    return float(10*std::log10(ratio));
+}
+
 DecodeResult decode_slot(std::vector<float> const& pcm) {
     if (pcm.size() != slot_samples) throw std::invalid_argument("Expected one 15-second 12 kHz PCM slot");
     for (float value : pcm) if (!std::isfinite(value) || std::abs(value)>1)
@@ -75,8 +117,11 @@ DecodeResult decode_slot(std::vector<float> const& pcm) {
         frame.payload[9] &= 0xf8;
         if (std::any_of(result.frames.begin(), result.frames.end(), [&](Frame const& old) {return old.payload==frame.payload;})) continue;
         frame.frequency_hz = (monitor.min_bin+candidate.freq_offset+float(candidate.freq_sub)/monitor.wf.freq_osr)/monitor.symbol_period;
-        frame.time_seconds = (candidate.time_offset+float(candidate.time_sub)/monitor.wf.time_osr)*monitor.symbol_period;
+        // With this 2x/2x monitor, the trailing FFT window delays the symbol
+        // index by one symbol relative to the actual waveform onset.
+        frame.time_seconds = (candidate.time_offset+float(candidate.time_sub)/monitor.wf.time_osr-1)*monitor.symbol_period;
         frame.sync_score = candidate.score;
+        frame.estimated_snr_db = estimate_snr(pcm, frame);
         result.frames.push_back(frame);
     }
     return result;

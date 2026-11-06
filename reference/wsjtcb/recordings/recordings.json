@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "slot_start_utc": "2026-11-06T12:00:00Z",
+  "provenance": "Desktop-generated source WAVs; deterministic AWGN or data-symbol splicing. Reference LDPC/CRC uses known onset/frequency, not the full desktop search.",
+  "cases": [
+    {
+      "file": "../channel/cq.wav",
+      "sha256": "b88dc7bd032bd6e931fd34cc178cd018b5bf9b94b0ed059a42197a755e1ab17e",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "text": "CQ 1AT106",
+      "kind": "clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    },
+    {
+      "file": "noisy-cq.wav",
+      "sha256": "c28691b6dbbe9fa70a525f7d01a9de74fff1f7bbb29c3ebe6e90d86af9c53711",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "text": "CQ 1AT106",
+      "kind": "awgn",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8,
+      "expected_snr_db": -4,
+      "seed": 80700,
+      "noise_sigma": 0.06937784412805967
+    },
+    {
+      "file": "../channel/leading-hash.wav",
+      "sha256": "5b12e078c98b7779619c9479c2291197356b54abd7e79e1d9d02e222a84d190a",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "text": "<...> 26AT101",
+      "kind": "clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    },
+    {
+      "file": "noisy-leading-hash.wav",
+      "sha256": "4e2e76658bfd7da2d74bb753326df0b4db5ffc8ceef6a102fb974ad26efa1797",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "text": "<...> 26AT101",
+      "kind": "awgn",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8,
+      "expected_snr_db": -8,
+      "seed": 80701,
+      "noise_sigma": 0.10995641484776615
+    },
+    {
+      "file": "../channel/trailing-hash.wav",
+      "sha256": "6b061b0daf1d0b1a0e1d450740b380006627df705b8fd9667756e90b7f3989af",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "text": "26AT101 <...>",
+      "kind": "clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    },
+    {
+      "file": "noisy-trailing-hash.wav",
+      "sha256": "4c5a0435662b7337a0eebbc7d22be95664e181365f142ab661d6e01cb274ba07",
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "text": "26AT101 <...>",
+      "kind": "awgn",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8,
+      "expected_snr_db": -12,
+      "seed": 80702,
+      "noise_sigma": 0.1742691904575977
+    },
+    {
+      "file": "../channel/roger-report.wav",
+      "sha256": "552a22ab660b88317bcb45512307325f3f7aef0f515298a68809278179fd09a9",
+      "payload77": "00000000001111110010111100000011010010011100000010010011000011000001101000000",
+      "text": "26AT101 R-10",
+      "kind": "clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    },
+    {
+      "file": "noisy-roger-report.wav",
+      "sha256": "ac6a486bbd4f1d0e707d14ae44e6067de42070b2f359e44ee507e9fc8eaa816e",
+      "payload77": "00000000001111110010111100000011010010011100000010010011000011000001101000000",
+      "text": "26AT101 R-10",
+      "kind": "awgn",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8,
+      "expected_snr_db": -8,
+      "seed": 80703,
+      "noise_sigma": 0.10995642875764051
+    },
+    {
+      "file": "onset-320.wav",
+      "sha256": "8055b18e2652fa7cd47db9ffd45f0b48ef267d409fff11d5c744e9b1c588c406",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "text": "CQ 1AT106",
+      "kind": "shifted-clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 0.32
+    },
+    {
+      "file": "onset-1280.wav",
+      "sha256": "1a15149b1a9852cfe8d738bc758f87b08af97362dcf8ccf90177b374e355b178",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "text": "CQ 1AT106",
+      "kind": "shifted-clean",
+      "frequency_hz": 1000,
+      "onset_seconds": 1.28
+    },
+    {
+      "file": "corrupt-data.wav",
+      "sha256": "e0a7073c4e312d7cc3470368f5098cd67b92f01a720c01415d4f704dc35bb8e7",
+      "kind": "corrupt-data-with-intact-sync",
+      "payload77": null,
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    },
+    {
+      "file": "noise-only.wav",
+      "sha256": "0e86bc1662e2303e2106131da6085c327796954c967bbdf2dfebef3653444d6b",
+      "kind": "noise-only",
+      "payload77": null,
+      "frequency_hz": 1000,
+      "onset_seconds": 0.8
+    }
+  ]
+}

@@ -17,6 +17,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.vash.ft8cbdroid.recording.RecordedSlotViewModel
+import net.vash.ft8cbdroid.recording.RecordedSlotUiState
+import net.vash.ft8cbdroid.recording.RecordedSlotPanel
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
 import net.vash.ft8cbdroid.message.HashSessionUiState
@@ -46,6 +49,10 @@ class MainActivity : ComponentActivity() {
     private val wavDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
         waveformViewModel.export(it?.toString())
     }
+    private lateinit var recordedSlotViewModel: RecordedSlotViewModel
+    private val wavSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        recordedSlotViewModel.importDocument(it?.toString())
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -59,13 +66,18 @@ class MainActivity : ComponentActivity() {
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
+        recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
-            LaunchedEffect(station.saved?.callsign) { hashViewModel.changeStation(station.saved?.callsign) }
+            val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(station.saved?.callsign) {
+                hashViewModel.changeStation(station.saved?.callsign)
+                recordedSlotViewModel.changeStation(station.saved?.callsign)
+            }
             EightCbApp(
                 station = station,
                 usb = usb,
@@ -86,6 +98,11 @@ class MainActivity : ComponentActivity() {
                 onSimulateReceive = hashViewModel::receive,
                 onCommitHashes = hashViewModel::commit,
                 onResetHashes = hashViewModel::reset,
+                recording = recording,
+                onRecordedUtc = recordedSlotViewModel::changeUtc,
+                onImportRecording = { if (recordedSlotViewModel.prepareImport()) wavSource.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) },
+                onCancelRecording = recordedSlotViewModel::cancel,
+                onClearRecording = recordedSlotViewModel::clear,
                 waveform = waveform,
                 onWaveformInput = waveformViewModel::changeInput,
                 onWaveformFrequency = waveformViewModel::changeFrequency,
@@ -132,6 +149,11 @@ fun EightCbApp(
     onSimulateReceive: (Ft8Payload77) -> Unit = {},
     onCommitHashes: () -> Unit = {},
     onResetHashes: () -> Unit = {},
+    recording: RecordedSlotUiState = RecordedSlotUiState(),
+    onRecordedUtc: (String) -> Unit = {},
+    onImportRecording: () -> Unit = {},
+    onCancelRecording: () -> Unit = {},
+    onClearRecording: () -> Unit = {},
     waveform: WaveformUiState = WaveformUiState(),
     onWaveformInput: (String, EncodingMode) -> Unit = { _, _ -> },
     onWaveformFrequency: (String) -> Unit = {},
@@ -231,6 +253,8 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
+                        RecordedSlotPanel(recording, onRecordedUtc, onImportRecording, onCancelRecording, onClearRecording)
+                        HorizontalDivider()
                         Text("Audio and VOX", style = MaterialTheme.typography.titleLarge)
                         Panel("Phone microphone and speaker") {
                             Text("Planned for acoustic coupling to a radio with VOX enabled.")
