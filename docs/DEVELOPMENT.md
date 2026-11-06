@@ -137,8 +137,8 @@ Toolchain reference: [AGP 8.13](https://developer.android.com/build/releases/agp
 
 Run one heavy job at a time using `bash scripts/controlled.sh SECONDS COMMAND ...`.
 It requires Linux cgroup v2, a systemd user session and `flock`. The wrapper fails
-if limits cannot be applied: CPU quota 200% (two cores total), memory high 3 GiB,
-hard memory maximum 4 GiB, no swap, and a TERM/KILL deadline for all descendants.
+if limits cannot be applied: CPU quota 200% (two cores total), memory high 12 GiB,
+hard memory maximum 16 GiB, no swap, and a TERM/KILL deadline for all descendants.
 It caps CMake/OpenMP/BLAS parallelism and Java's visible processor count at two.
 Gradle also has parallel projects disabled and a maximum of two workers.
 An exclusive project lock rejects concurrent controlled jobs. Completed or
