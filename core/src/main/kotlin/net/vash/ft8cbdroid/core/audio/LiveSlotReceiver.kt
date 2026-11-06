@@ -72,7 +72,7 @@ class LiveSlotReceiver(
     }
     private fun failed(slot: CompletedUtcSlot, message: String) {
         state.update { it.copy(decodingUtcMillis = null, lastSlotUtcMillis = slot.utcStartMillis,
-            failedSlots = it.failedSlots + 1, skippedSlots = dropped.get(), error = message) }
+            failedSlots = it.failedSlots + 1, skippedSlots = dropped.get(), decodeMillis = null, error = message) }
     }
     fun cancel() { pending.cancel(); job.cancel() }
     companion object { const val MAX_ROWS = 60 }

@@ -328,7 +328,7 @@ fun EightCbApp(
                     2 -> {
                         CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile)
                         Text("UTC time: ${time.sourceDescription}")
-                        LiveReceivePanel(capture)
+                        if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
                         HorizontalDivider()
                         RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
                     }

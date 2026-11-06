@@ -8,21 +8,21 @@ import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.util.Locale
 import net.vash.ft8cbdroid.core.audio.LiveSlotReceiver
+import net.vash.ft8cbdroid.core.audio.LiveReceiveState
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.core.recording.RecordedDecodeFlag
 
 @Composable
-fun LiveReceivePanel(capture: CaptureUiState) {
-    if (!capture.decodeLive) return
-    val state = capture.live
+fun LiveReceivePanel(state: LiveReceiveState, profile: Ft8DecodeProfile, phase: CapturePhase) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider()
         Text("Live local decodes", style = MaterialTheme.typography.titleLarge)
-        Text("Source: local microphone • ${capture.liveProfile.label} • latest ${LiveSlotReceiver.MAX_ROWS} frames")
+        Text("Source: local microphone • ${profile.label} • latest ${LiveSlotReceiver.MAX_ROWS} frames")
         Text("${state.decodedSlots} slots decoded • ${state.skippedSlots} pending slots replaced • ${state.failedSlots} failed")
         state.decodingUtcMillis?.let { Text("Decoding local slot: ${Instant.ofEpochMilli(it)}") }
         state.lastSlotUtcMillis?.let { Text("Last local slot: ${Instant.ofEpochMilli(it)}" + (state.decodeMillis?.let { ms -> " • $ms ms" } ?: "")) }
-        if (state.rows.isEmpty()) Text(if (capture.phase == CapturePhase.IDLE) "Start the microphone to receive local FT8."
+        if (state.rows.isEmpty()) Text(if (phase == CapturePhase.IDLE) "Start the microphone to receive local FT8."
             else "Waiting for complete UTC slots and valid FT8 frames…")
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Text("Learned local calls: ${state.learnedCalls}")

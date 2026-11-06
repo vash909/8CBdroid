@@ -81,6 +81,17 @@ class LiveSlotReceiverTest {
         receiver.offer(slot(2)); runCurrent()
         assertEquals(1, engine.calls.size); assertTrue(receiver.uiState.value.rows.isEmpty())
     }
+    @Test fun aFailedSlotCannotReuseThePreviousSuccessfulDecodeTime() = runTest {
+        val engine = Engine().apply { frames = listOf(frame("CQ 1AT106")) }
+        val receiver = LiveSlotReceiver(engine, backgroundScope, null, Ft8DecodeProfile.STANDARD, StandardTestDispatcher(testScheduler))
+        receiver.offer(slot(0)); runCurrent(); assertEquals(21L, receiver.uiState.value.decodeMillis)
+        engine.failure = Ft8EngineTimeoutException("Deadline expired")
+        receiver.offer(slot(1)); runCurrent()
+        assertNull(receiver.uiState.value.decodeMillis)
+        assertEquals(slot(1).utcStartMillis, receiver.uiState.value.lastSlotUtcMillis)
+        assertEquals(slot(0).utcStartMillis, receiver.uiState.value.rows.single().decode.slotStartUtc.toEpochMilli())
+        receiver.cancel()
+    }
     @Test fun historyIsBoundedAndEmptySlotsStillAdvanceTheReceiveSummary() = runTest {
         val engine = Engine().apply { frames = listOf(frame("CQ 1AT106")) }
         val receiver = LiveSlotReceiver(engine, backgroundScope, null, Ft8DecodeProfile.STANDARD, StandardTestDispatcher(testScheduler))
