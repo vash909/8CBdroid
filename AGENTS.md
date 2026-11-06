@@ -67,6 +67,9 @@
 
 ## Debug phone deployment
 
+- Play `bash scripts/notify_action.sh` immediately before any request that needs
+  an owner action, including phone unlock/reconnection or approval. If the
+  desktop sound cannot be played, report that instead of claiming it sounded.
 - Notify the owner when the debug phone must be unlocked and ask them to keep
   it awake for the device checks. Run the relevant phone tests on each PR when
   the authorized device is available; report any checks blocked by its lock state.

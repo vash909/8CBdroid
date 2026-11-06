@@ -102,8 +102,9 @@ message cases, 96 hash scenarios, 131 channel vectors, 21 generated-waveform
 checks and 12 recorded-slot cases. These corpora do not establish full desktop
 decoder parity, weak-signal sensitivity, sustained phone operation or RF
 interoperability. Recorded SNR is experimental; unknown hashes never identify
-an invented peer. Import into the full WSJT-CB desktop GUI remains a separate
-pending check.
+an invented peer. Actual phone-exported CQ and both directed hash orientations
+also passed file decoding in the complete WSJT-CB desktop GUI; see the
+[R07 closure evidence](docs/VALIDATION.md#r07-closure-checks-pr-26).
 
 ## Documentation and contributions
 

@@ -116,8 +116,9 @@ bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/nat
 ```
 
 These adapter checks do not run the full WSJT-CB desktop search/plausibility
-filters or establish decoder parity. Import of an actual phone-exported WAV in
-the desktop GUI remains a separate pending integration check.
+filters or establish decoder parity. The separate full desktop GUI check passed
+actual phone-exported CQ and both directed hash orientations; see
+[R07 closure evidence](VALIDATION.md#r07-closure-checks-pr-26).
 
 ## Phone probe and evidence
 

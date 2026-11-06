@@ -43,9 +43,15 @@ later estimates; do not promise a complete Android port in one PR.
 - [PR #22](https://github.com/vash909/8CBdroid/pull/22) is merged: R07 adds offline
   message-to-WAV generation. CI and A51 probe/UI generation/export passed; the
   phone WAV passed the independent known-time/frequency desktop channel check.
-  The owner approved merge on 2026-11-06. Full desktop GUI import remains pending.
-- Local operating sessions, microphone capture, playback, CAT/PTT, AutoSeq and QSO
-  logging remain pending. R08 recorded-slot import is the current milestone.
+  The owner approved merge on 2026-11-06. [PR #26](https://github.com/vash909/8CBdroid/pull/26)
+  closes the remaining phone recovery and full desktop GUI import checks.
+- [PR #23](https://github.com/vash909/8CBdroid/pull/23),
+  [PR #24](https://github.com/vash909/8CBdroid/pull/24) and
+  [PR #25](https://github.com/vash909/8CBdroid/pull/25) are merged: recorded slots
+  (R08), bounded decoder profiles (R09) and foreground microphone capture (R10).
+  A51 evidence and limitations are recorded in [validation](VALIDATION.md).
+- R11 is next, not started. Local operating sessions, playback, CAT/PTT, AutoSeq
+  and QSO logging remain pending; microphone capture does not yet feed live FT8.
 
 ## Reference strategy: reuse the CB work
 
@@ -120,7 +126,7 @@ scenarios, including hash collisions and lossy encodings. See
 desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
 the offline host and ARM64 phone checks. R05 is complete in PR #20: offline packing/unpacking and visible
 message-loss previews. R06 is complete in PR #21: bounded session learning and
-explicit unknown/ambiguous hash results. R07 is merged as PR #22; R08 is current. RF/audio and the
+explicit unknown/ambiguous hash results. R07 is merged as PR #22; R08–R10 are also merged. RF/audio and the
 full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.
@@ -152,7 +158,7 @@ and USB audio must remain separate capabilities.
 - Local checks, CI and phone deployment passed; the owner approved PR #21 for
   merge. No live RX/TX, AutoSeq or persistent learned-call database is included.
 
-### Completed implementation: R07 offline PCM and WAV
+### Completed: R07 offline PCM and WAV
 
 - Branch: `feat/offline-ft8-pcm`, including the verified 16 GiB local build limit.
 - Pure Kotlin message-to-PCM orchestration with explicit base frequency/peak
@@ -164,10 +170,12 @@ and USB audio must remain separate capabilities.
   measurements and bounded spectral probes. This is not the full desktop search.
 - Local checks, CI and A51 probe/UI generation/export passed. The exported file
   matched the independently qualified phone WAV byte for byte. The owner approved
-  merge of PR #22; full desktop GUI import and remaining rotation/cancellation
-  checks are still pending. See [R07](OFFLINE_WAVEFORM.md).
+  merge of PR #22. PR #26 closes rotation, generation/picker cancellation,
+  failed-save retry and unresolved-input UI checks on the A51; CQ and both hash
+  orientations passed the complete WSJT-CB 1.4.1 GUI file decoder. See
+  [R07](OFFLINE_WAVEFORM.md) and [evidence](VALIDATION.md#r07-closure-checks-pr-26).
 
-### Current milestone: R08 recorded FT8 slots
+### Completed: R08 recorded FT8 slots
 
 - Import one bounded 12 kHz mono PCM16 slot through Android document selection,
   with an explicit UTC boundary and isolated CB message/hash interpretation.
@@ -177,8 +185,26 @@ and USB audio must remain separate capabilities.
   corrupted data and noise-only cases qualify channel integrity and limited SNR
   behavior. The independent reference adapter has supplied time/frequency; this
   does not establish full desktop decoder parity.
-- Local tests, CI and A51 deployment/review are required before merge. No live
-  audio is included. See [recorded-slot behavior and limits](RECORDED_SLOTS.md).
+- Local tests, CI and A51 probe/document-picker checks passed; PR #23 was merged
+  after owner approval. No live decoding is included. See
+  [recorded-slot behavior and limits](RECORDED_SLOTS.md).
+
+### Completed: R09 decoder bounds and R10 microphone capture
+
+- R09 (PR #24): Fast/Standard profiles, bounded admission and cooperative
+  cancellation; finite A51 benchmark and UI/lifecycle checks passed. See
+  [decoder profiles](DECODER_PROFILES.md) for measured limits.
+- R10 (PR #25): selected foreground microphone, actual route/processing, levels,
+  five-second PCM buffer, 12 kHz conversion and diagnostic export. A51 built-in
+  microphone and physical PC/phone tone checks passed. External input detach
+  and radio audio remain unverified. See [capture](MICROPHONE_CAPTURE.md).
+
+### Next: R11 UTC receive slots
+
+R11 has not started. Include the owner's deferred request for a persistent custom
+NTP server IP/address in the time-correction settings. Measure/apply an app clock
+offset without changing Android's system clock; validate failures and uncertainty
+alongside manual correction. This is queued work, not an existing setting.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

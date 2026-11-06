@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="net.vash.ft8cbdroid.validation.WaveformTestProvider"
+            android:authorities="net.vash.ft8cbdroid.test.r07"
+            android:exported="true" />
+    </application>
+</manifest>

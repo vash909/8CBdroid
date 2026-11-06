@@ -1,6 +1,6 @@
 # Implementation and validation record
 
-This record describes the repository through merged **PR #24 (R09)** on
+This record describes the repository through merged **PR #25 (R10)** on
 **2026-11-06**. It records observations at specific commits; it is not a release
 qualification or a statement that all planned checks passed. The
 [roadmap](ROADMAP.md) remains the delivery plan.
@@ -14,9 +14,10 @@ qualification or a statement that all planned checks passed. The
 | USB discovery | Device descriptors, recognized serial drivers and explicit Android permission requests. | Permission-state JVM coverage; actual OTG/CAT/radio interoperability remains unverified. |
 | CB codec and hash sessions | Stateless packing/unpacking plus isolated, bounded RX hash learning with explicit ambiguity. | Desktop-derived JVM/phone fixtures. Full decoder plausibility and QSO admission are separate concerns. |
 | Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
-| Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. No live capture or complete desktop decoder parity. |
+| Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. No live decoding or complete desktop decoder parity. |
+| Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. No UTC slots or live FT8 decoding. |
 
-R10 microphone capture is under review below. There is no implemented CAT/PTT,
+There is no implemented CAT/PTT,
 speaker output, live local RX/TX,
 AutoSeq, QSO log or sustained background operating service.
 
@@ -94,9 +95,51 @@ It matched the phone probe's generated file byte for byte and passed the
 original desktop channel routines through the known-time/frequency adapter.
 This did not run the complete WSJT-CB desktop GUI decoder.
 
-R08's picker cancellation/rotation tests concern recorded-file import. They do
-not establish that the separate R07 generation/export cancellation, rotation
-and failed-save paths were tested on the phone.
+### R07 closure checks (PR #26)
+
+On 2026-11-06 the same A51 passed the remaining generation/export checks:
+rotation retained the generated result; cancelling the document picker retained
+Save WAV, and a subsequent export succeeded. Original rotation settings were
+restored. CQ and both directed hash orientations were exported through the real
+Android picker at 1000 Hz / 40%, each as 360,044-byte PCM16 WAV.
+
+| Message | Actual exported WAV SHA-256 |
+| --- | --- |
+| `CQ 1AT106` | `2aca24c402918763725ca19547197ee79b78a7043b3afd12e11ac79fb38d5618` |
+| `<1AT106> 26AT101` | `602162e18be80226b6d604b6578ab1db7b74138cd46a9f0af5f3d0f6ebcc425b` |
+| `26AT101 <1AT106>` | `3d7926fa841c2053f285b80eaa77742af94aa7b0cbd8d05791fd42b0cbb38eaf` |
+
+The actual phone exports were opened through **File → Open** in the complete
+installed **WSJT-CB 1.4.1** application. Its full FT8 file decoder displayed
+`CQ 1AT106`, `<1AT106> 26AT101` and `26AT101 <1AT106>`, respectively, at 1000 Hz
+and DT +0.3 s. CQ was loaded first to teach the hash. Files were copied without
+PCM conversion and given UTC basenames `261106_120000.wav`, `261106_120015.wav`
+and `261106_120030.wav`. An isolated desktop profile was used; radio, Tune and
+TX were not exercised. The window's default band label does not establish a
+27 MHz radio test.
+
+Desktop binary SHA-256 (`/usr/lib/wsjtcb/bin/wsjtcb`):
+`76337a8f5114256ce122feefdf60a28bbdce437234ada9fe33c8481fb4282e5d`.
+Decoder binary SHA-256 (`jt9`):
+`c7ecfe58e6f47f0daeab4239a956ee2bbb55e290f1f5163ff5043018d8b0bcd9`.
+The same WAVs also passed the pinned channel adapter's exact payload/tone,
+duration, level, ramp and limited spectral checks. Cold hashes remained `<...>`
+there, as expected; the warm desktop session resolved them.
+
+The new test-only instrumentation passed a real ContentResolver write failure,
+visible error and successful retry with the exact CQ hash above. It also passed
+the actual Cancel generation control with bounded queued work, cancellation
+observed during native encoding, cleanup/no stale result, generation retry and
+actual text-field rejection of `<...> 26AT101` with Generate disabled. Only the
+queued-control check temporarily parks dispatcher workers; the separate active
+native cancellation check uses the real encoder. No production backend is mocked.
+
+The closure test was first qualified locally on the A51; the final verified CI
+commit/run, APK hashes and repeated device results are recorded in
+[PR #26](https://github.com/vash909/8CBdroid/pull/26). See
+[the reproducible procedure](DEVELOPMENT.md#r07-device-checks).
+This closes the outstanding R07 file-generation checks, not noisy reception,
+RF interoperability, playback or a complete QSO.
 
 ## Samsung A51 result: R09
 
@@ -125,22 +168,34 @@ negative WAV import, picker cancellation/retry, rotation and reopening with save
 station retained. Local validation included 762 JVM tests, lint/debug APKs and
 native/reference regression checks. See [decoder bounds](DECODER_PROFILES.md).
 
-## R10 microphone capture under review
+## Samsung A51 result: R10
 
-The branch implements selected foreground microphone capture, route/processing
-reporting, input peak/RMS/clipping, bounded recent PCM, hardware-rate conversion
-to 12 kHz and explicit diagnostic WAV export. It adds JVM signal/session tests
-and an opt-in acoustic phone probe. See [microphone capture](MICROPHONE_CAPTURE.md).
-Actual R10 CI/device results are recorded in its feature PR before merge.
-The owner has no wired headset available for physical detach testing; built-in
-microphone qualification must not be presented as USB/wired interoperability.
+[PR #25](https://github.com/vash909/8CBdroid/pull/25) was merged as
+`7cefb71c4cb4f3a5d2368ed57c99784df01f9abe` after owner approval. Tested head
+`eacb2d4a6a30b07ac9719c50ff4f44b5657e0c5a` used successful
+[CI run 42258964880](https://github.com/vash909/8CBdroid/actions/runs/42258964880).
+Local checks passed 774 JVM tests (689 core, 32 protocol, 53 app), lint and APK
+builds. The verified CI APKs ran on the same A51 with settings restored byte for byte.
+
+The built-in microphone reported 48 kHz mono PCM16 with the voice-recognition
+fallback source; echo cancellation was disabled, AGC/noise suppression were
+unavailable. Vendor processing remains possible. Capture converted to 12 kHz,
+retained at most five seconds and exported a 120,044-byte diagnostic WAV.
+
+The acoustic probe passed a 1000 Hz speaker-to-microphone tone and cancellation/
+restart cleanup. With the nearby PC, 1500 Hz PC speaker → A51 microphone and
+1000 Hz A51 speaker → PC microphone checks both passed through physical audio.
+These are reference tones, not bidirectional FT8 or a radio QSO.
+
+Main UI checks passed permission denial/retry, actual route and levels, bounded
+buffer, stop/export, navigation away, rotation and background/reopening without
+automatic restart. Rotation settings and saved station data were preserved.
+The owner had no wired headset for physical detach testing; external inputs,
+USB/wired interoperability, sustained capture and live decoding remain unqualified.
+See [microphone capture](MICROPHONE_CAPTURE.md).
 
 ## Checks still pending
 
-- Import the actual exported WAV in the full WSJT-CB desktop decoder, including
-  both directed hash orientations. Known-time/frequency host checks are narrower.
-- Remaining R07 generation/export device checks: rotation, generation/picker
-  cancellation, failed-save retry and explicit unresolved-input UI rejection.
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
   rates and large overlapping-signal workloads beyond the finite R09 corpus.
 - Sustained performance, memory peaks, thermal/battery behavior and other phones.
