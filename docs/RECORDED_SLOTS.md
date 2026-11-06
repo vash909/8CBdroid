@@ -87,7 +87,7 @@ bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/nat
 The separate phone probe reads the same recordings through the production JVM
 WAV reader and recorded-slot decoder, checking payloads, cold text, onset/offset,
 SNR tolerance and rejection. The A51 probe and UI checks passed for PR #23,
-merged after owner approval on 2026-11-06. [Validation](VALIDATION.md#latest-samsung-a51-result-r08) records the
+merged after owner approval on 2026-11-06. [Validation](VALIDATION.md#samsung-a51-result-r08) records the
 exact commit/run, per-case times and checked UI paths. CI alone does not establish
 an Android device pass.
 

@@ -5,7 +5,7 @@ An Android FT8 client in development for CB / 11 metres, built around
 project documentation use English.
 
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
-and recorded-slot decoding are implemented. Microphone/speaker operation,
+and recorded-slot decoding are implemented, along with foreground microphone capture. Speaker output,
 CAT/PTT, live local reception, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -15,7 +15,7 @@ The app cannot yet make a radio QSO.
 | --- | --- | --- |
 | **Station** | Save callsign/locator; restore them after reopening; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
 | **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Import and decode one recorded FT8 WAV with supplied UTC, CB text/hash flags, offset, DT, estimated SNR and Fast/Standard profiles. | Exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. No capture, playback or conversion. |
+| **Audio** | Select/capture a microphone, inspect route/processing/levels, resample to 12 kHz and save recent audio; separately import/decode recorded FT8 WAVs with Fast/Standard profiles. | Capture retains five seconds; no live decoding or playback. FT8 file import still requires exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
 | **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
@@ -37,10 +37,14 @@ settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
 2. In **Messages**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
    then save it through Android's document picker. Content changes require consent.
-3. In **Audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
+3. In **Audio**, scroll to **Decode a recorded slot**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
    select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
    This example assigns UTC context to a test file; it does not measure a clock.
-4. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
+4. In **Audio → Microphone input**, select an input, press **Start microphone**
+   and grant permission. Confirm the actual route and input levels. Stop before
+   saving the most recent five seconds; this is a capture diagnostic, not live FT8.
+   [Microphone capture](docs/MICROPHONE_CAPTURE.md) describes processing and lifecycle.
+5. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
    send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
    [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
    describe the desktop request setting and foreground lifecycle.
@@ -68,7 +72,7 @@ system packages or Android Studio. The check builds both APKs and runs JVM
 tests/lint; the separate desktop-reference checks need host compilers.
 
 - App: `app/build/outputs/apk/debug/app-debug.apk`
-- Offline test probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
+- Development test probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
 
 On this PC, heavy jobs use **one job, two CPU cores, 16 GiB maximum RAM, no swap
 and a finite deadline**. Use `--no-daemon` for additional Gradle commands.

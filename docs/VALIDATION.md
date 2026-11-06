@@ -1,6 +1,6 @@
 # Implementation and validation record
 
-This record describes the repository through merged **PR #23 (R08)** on
+This record describes the repository through merged **PR #24 (R09)** on
 **2026-11-06**. It records observations at specific commits; it is not a release
 qualification or a statement that all planned checks passed. The
 [roadmap](ROADMAP.md) remains the delivery plan.
@@ -16,7 +16,8 @@ qualification or a statement that all planned checks passed. The
 | Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
 | Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. No live capture or complete desktop decoder parity. |
 
-There is no implemented CAT/PTT, microphone/speaker operation, live local RX/TX,
+R10 microphone capture is under review below. There is no implemented CAT/PTT,
+speaker output, live local RX/TX,
 AutoSeq, QSO log or sustained background operating service.
 
 ## Reproducible coverage
@@ -41,7 +42,7 @@ Reproduction commands and host dependencies are centralized in
 [development](DEVELOPMENT.md#desktop-reference-and-native-checks). Fixture
 provenance is in [the reference directory](../reference/wsjtcb/README.md).
 
-## Latest Samsung A51 result: R08
+## Samsung A51 result: R08
 
 Device: **Samsung Galaxy A51 / SM-A515F, Android 13, ARM64**. No radio/audio
 hardware was connected. The tested APKs came from
@@ -97,14 +98,42 @@ R08's picker cancellation/rotation tests concern recorded-file import. They do
 not establish that the separate R07 generation/export cancellation, rotation
 and failed-save paths were tested on the phone.
 
-## R09 work under review
+## Samsung A51 result: R09
 
-The R09 branch adds one active native job plus one waiter, cooperative
-cancellation/deadlines and Fast/Standard recorded-slot profiles. Its fixed
-40-slot/profile corpus and finite phone procedure are defined in
-[decoder work bounds](DECODER_PROFILES.md). Feature-PR validation records the
-current run/device outcomes; these do not change the accepted R08 baseline above
-until owner review and merge.
+[PR #24](https://github.com/vash909/8CBdroid/pull/24) was merged as
+`d9d797ec911c295f345151fdebc3be846f072881` after owner approval. Its tested head
+`66698752061e2198f73ec81652a6dd63d36b4864` came from successful
+[CI run 42248909556](https://github.com/vash909/8CBdroid/actions/runs/42248909556).
+The matching CI APKs were verified/installed on the same A51, preserving settings.
+
+| Profile | Signals recovered | Unexpected frames | p50 / p95 / maximum |
+| --- | --- | --- | --- |
+| Fast | 32/34 | 0 | 148 / 235 / 246 ms |
+| Standard | 32/34 | 0 | 160 / 257 / 275 ms |
+
+Each profile used 40 fixed slots, including six negative controls. Five actual
+native cancellations released in 5–17 ms; queued cancellation and third-request
+rejection passed. Sampled maxima were 39,882 KiB PSS and 13,328,872 bytes native
+heap, not exact allocator peaks. A 45-second soak completed 298 decodes. Android
+thermal status was 0 before/after, no severe event was observed during the soak,
+and reported battery temperature remained 21.4 °C at the sampled endpoints.
+This finite corpus does not establish a statistical false-positive rate, usable
+sensitivity or sustained-session qualification.
+
+UI checks passed both profiles, profile/time display, stale-result invalidation,
+negative WAV import, picker cancellation/retry, rotation and reopening with saved
+station retained. Local validation included 762 JVM tests, lint/debug APKs and
+native/reference regression checks. See [decoder bounds](DECODER_PROFILES.md).
+
+## R10 microphone capture under review
+
+The branch implements selected foreground microphone capture, route/processing
+reporting, input peak/RMS/clipping, bounded recent PCM, hardware-rate conversion
+to 12 kHz and explicit diagnostic WAV export. It adds JVM signal/session tests
+and an opt-in acoustic phone probe. See [microphone capture](MICROPHONE_CAPTURE.md).
+Actual R10 CI/device results are recorded in its feature PR before merge.
+The owner has no wired headset available for physical detach testing; built-in
+microphone qualification must not be presented as USB/wired interoperability.
 
 ## Checks still pending
 
@@ -113,7 +142,7 @@ until owner review and merge.
 - Remaining R07 generation/export device checks: rotation, generation/picker
   cancellation, failed-save retry and explicit unresolved-input UI rejection.
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
-  rates, cancellation inside native work and bounded queue behavior.
+  rates and large overlapping-signal workloads beyond the finite R09 corpus.
 - Sustained performance, memory peaks, thermal/battery behavior and other phones.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   acoustic VOX, scheduling, PTT and complete radio QSOs.
