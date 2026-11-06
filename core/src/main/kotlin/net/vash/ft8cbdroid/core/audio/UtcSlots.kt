@@ -4,6 +4,8 @@ import net.vash.ft8cbdroid.core.Ft8PcmSlot
 import net.vash.ft8cbdroid.core.time.*
 import kotlin.math.abs
 
+private const val MAX_TIMELINE_ERROR_NANOS = 10_000_000L
+
 data class CaptureTimestamp(val framePosition: Long, val monotonicNanos: Long)
 data class TimedCaptureChunk(val firstOutputSample: Long, val firstSampleNanos: Long, val samples: FloatArray, val driftPpm: Double?)
 
@@ -11,7 +13,7 @@ interface TimestampedMicrophoneCapture : MicrophoneCapture {
     suspend fun captureTimed(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: (TimedCaptureChunk) -> Unit)
 }
 
-/** Fail closed on unavailable/stale timestamps, overruns, resets or >3 ms departure from nominal rate.
+/** Fail closed on unavailable/stale timestamps, overruns, resets or >10 ms departure from nominal rate.
  * The 64-frame causal filter delay is subtracted before assigning DSP sample times.
  */
 class CaptureTimeline(private val rate: Int, private val bufferFrames: Int) {
@@ -32,8 +34,8 @@ class CaptureTimeline(private val rate: Int, private val bufferFrames: Int) {
         val first = anchor ?: value.also { anchor = it }
         val duration = value.monotonicNanos - first.monotonicNanos
         val expected = (value.framePosition - first.framePosition) * 1_000_000_000.0 / rate
-        if (abs(duration - expected) > 3_000_000)
-            throw CaptureException("Audio clock drift exceeded 3 ms. Incomplete UTC audio was discarded; restart capture.",
+        if (abs(duration - expected) > MAX_TIMELINE_ERROR_NANOS)
+            throw CaptureException("Audio timing departure exceeded 10 ms. Incomplete UTC audio was discarded; restart capture.",
                 "rate=$rate readFrames=$readFrames frame=${value.framePosition} anchorFrame=${first.framePosition} " +
                     "elapsedMs=${duration / 1e6} errorMs=${(duration - expected) / 1e6}")
         if (duration >= 2_000_000_000L) driftPpm = (expected / duration - 1) * 1e6
@@ -100,7 +102,7 @@ class UtcSlotAssembler(private val clock: ReceiveClock, private val completed: (
                 (Math.floorMod(utc, 1_000_000_000L) * 12000 + 999_999_999L) / 1_000_000_000L
             targetGrid = Math.floorDiv(anchorGrid + 179999, 180000) * 180000
             if (anchorGrid != targetGrid) discarded++
-        } else if (abs(chunk.firstSampleNanos - anchorNanos - (chunk.firstOutputSample - anchorIndex) * 1_000_000_000L / 12000) > 3_000_000) {
+        } else if (abs(chunk.firstSampleNanos - anchorNanos - (chunk.firstOutputSample - anchorIndex) * 1_000_000_000L / 12000) > MAX_TIMELINE_ERROR_NANOS) {
             clear(); throw TimeException("The audio timeline changed. Restart microphone capture.")
         }
         drift = chunk.driftPpm
@@ -112,7 +114,7 @@ class UtcSlotAssembler(private val clock: ReceiveClock, private val completed: (
                 if (size == buffer.size) {
                     val utc = target / 12000 * 1000
                     completed(CompletedUtcSlot(utc, Ft8PcmSlot.fromSamples(buffer), mapping.source,
-                        clock.snapshot().uncertaintyMillis?.plus(3.1)))
+                        clock.snapshot().uncertaintyMillis?.plus(MAX_TIMELINE_ERROR_NANOS / 1e6 + 0.1)))
                     count++; lastUtc = utc; size = 0; targetGrid = target + buffer.size
                 }
             }

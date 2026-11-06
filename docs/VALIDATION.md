@@ -199,8 +199,25 @@ See [microphone capture](MICROPHONE_CAPTURE.md).
 The feature branch adds NTP/GPS-only time correction, regional/custom NTP server
 preferences and timestamped complete microphone slots. Manual offsets and an
 unsynchronized fallback are excluded. See [UTC slots](UTC_RECEIVE_SLOTS.md).
-Actual CI and device qualification, including a real GNSS solution, must be
-recorded in the feature PR before merge; no R11 hardware pass is claimed here.
+Review builds on the Galaxy A51 (SM-A515F, Android 13) have exercised actual NTP
+exchanges using an IPv4 address and a hostname, app-only correction, physical
+speaker-to-microphone tone capture across two UTC windows, and a 360,044-byte
+slot export. The actual UI also exercised regional/custom preferences,
+permission denial/allow, measurement cancellation, cold microphone startup,
+Stop and document-picker cancellation/retry. Timestamp startup and UI handoff
+faults found during review have regression tests; the audio timing guard now
+allows a declared 10 ms budget, also included in slot uncertainty.
+
+Qualification must match the final CI APK. The tested commits, CI runs, current
+results and remaining checks are recorded in
+[PR #27](https://github.com/vash909/8CBdroid/pull/27). Previous-build evidence
+does not qualify a changed backend.
+
+GPS acquisition timed out near a window and during the owner's outdoor tests.
+The owner reports a possible pre-existing GPS software problem on this A51;
+the cause has not been diagnosed. A real GPS timing solution and offline GPS
+slot capture remain **unverified**, and R11 is not fully hardware-qualified.
+Another suitable receiver is needed for those checks; no mock replaces them.
 
 ## Checks still pending
 

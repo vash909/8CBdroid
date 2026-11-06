@@ -106,9 +106,11 @@ Receipt/poll time is not used as the sample's capture time.
 
 Only contiguous samples build a slot. Index gaps/duplicates discard partials;
 stale/reset timestamps, inferred recorder overrun, clock steps above 50 ms or
-departure from the nominal audio timeline above 3 ms stop capture. Smaller drift
+departure from the nominal audio timeline above 10 ms stop capture. This fixed
+budget accommodates recorder timestamp variation observed on the A51 (including
+a 3.06 ms departure); it does not retime samples or silently move the anchor. Smaller drift
 is observed/reported, not rate-corrected. Grid quantization is below one 12 kHz
-sample; measured-source uncertainty, holdover growth and 3.1 ms are reported for
+sample; measured-source uncertainty, holdover growth and 10.1 ms are reported for
 NTP slots; GPS uncertainty remains explicitly unavailable. Android's
 pipeline timestamps do not prove that every device-side sample loss is observable.
 

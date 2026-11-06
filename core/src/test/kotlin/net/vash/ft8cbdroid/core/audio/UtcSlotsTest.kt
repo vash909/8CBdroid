@@ -26,6 +26,7 @@ class UtcSlotsTest {
         assertEquals((13 * 12000 % 1000) / 1000f, slots[0].pcm.toFloatArray()[0], 0f)
         assertEquals(1L, assembler.progress().discarded)
         assertTrue(slots[1].uncertaintyMillis!! > slots[0].uncertaintyMillis!!)
+        assertTrue(slots[0].uncertaintyMillis!! >= 12.1)
     }
     @Test fun droppedSamplesNeverCreateAPaddedOrStitchedSlot() {
         val (s, clock) = setup(); val slots = mutableListOf<CompletedUtcSlot>(); val a = UtcSlotAssembler(clock, slots::add)
@@ -70,8 +71,20 @@ class UtcSlotsTest {
         val zero = settling.stamp(CaptureTimestamp(74000, boot + 600_000_000), 74000, boot + 600_000_000)
         assertNotNull(zero); assertTrue(settling.ready)
         try {
-            settling.stamp(CaptureTimestamp(74960, boot + 624_000_000), 74960, boot + 624_000_000)
+            settling.stamp(CaptureTimestamp(74960, boot + 631_000_000), 74960, boot + 631_000_000)
             fail("An active timestamp jump must not silently restart settling")
+        } catch (_: CaptureException) { }
+    }
+    @Test fun observedPhoneTimestampVariationKeepsTheOriginalMappingButExcessErrorStopsCapture() {
+        val timeline = CaptureTimeline(48000, 9600)
+        val start = 10_000_000_000L
+        val zero = timeline.stamp(CaptureTimestamp(21120, start), 21120, start)
+        // A51 observation: the timestamp deviated 3.058290 ms over 329,288 frames.
+        assertEquals(zero, timeline.stamp(CaptureTimestamp(350408, start + 6_863_224_957), 350400, start + 6_863_224_957))
+        assertEquals(zero, timeline.stamp(CaptureTimestamp(357120, start + 7_010_000_000), 357120, start + 7_010_000_000))
+        try {
+            timeline.stamp(CaptureTimestamp(405120, start + 8_010_000_001), 405120, start + 8_010_000_001)
+            fail("Timestamp jitter allowance must not silently move the mapping or accept excessive departure")
         } catch (_: CaptureException) { }
     }
     @Test fun timestampResetOverrunStalenessAndExcessDriftFailClosed() {
@@ -82,7 +95,7 @@ class UtcSlotsTest {
                     0 -> t.stamp(CaptureTimestamp(0, 11_000_000_000), 96000, 11_000_000_000)
                     1 -> t.stamp(CaptureTimestamp(96000, 11_000_000_000), 48000, 11_000_000_000)
                     2 -> t.stamp(CaptureTimestamp(96000, 11_000_000_000), 96000, 12_000_000_000)
-                    else -> t.stamp(CaptureTimestamp(96000, 11_004_000_000), 96000, 11_004_000_000)
+                    else -> t.stamp(CaptureTimestamp(96000, 11_011_000_000), 96000, 11_011_000_000)
                 }
                 fail("Bad timeline accepted")
             } catch (_: CaptureException) { }

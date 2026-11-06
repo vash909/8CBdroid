@@ -50,7 +50,10 @@ later estimates; do not promise a complete Android port in one PR.
   [PR #25](https://github.com/vash909/8CBdroid/pull/25) are merged: recorded slots
   (R08), bounded decoder profiles (R09) and foreground microphone capture (R10).
   A51 evidence and limitations are recorded in [validation](VALIDATION.md).
-- R11 is in development: NTP/GPS synchronization and UTC receive slots. Local operating sessions, playback, CAT/PTT, AutoSeq
+- R11 is under review: NTP/GPS synchronization and UTC receive slots. A51 GPS
+  acquisition also timed out outdoors; GPS remains unverified. See
+  [validation](VALIDATION.md#r11-time-and-utc-capture-under-review).
+  Local operating sessions, playback, CAT/PTT, AutoSeq
   and QSO logging remain pending; microphone capture does not yet feed live FT8.
 
 ## Reference strategy: reuse the CB work
