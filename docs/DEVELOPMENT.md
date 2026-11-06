@@ -68,7 +68,8 @@ collision and lifecycle checks in the Messages tab.
 For **Generate offline WAV** and document export, follow
 [the R07 checklist](OFFLINE_WAVEFORM.md#deferred-phone-and-desktop-checklist).
 Its host qualification invokes pinned desktop LDPC/CRC with known time/frequency;
-the A51 probe and actual desktop import are pending until the phone is available.
+the A51 probe and UI export passed for PR #22. Full desktop GUI import remains
+pending. For recorded-slot import and decode, follow [the R08 guide](RECORDED_SLOTS.md).
 
 ## Phone checks
 
