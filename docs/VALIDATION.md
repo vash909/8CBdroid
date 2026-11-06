@@ -194,6 +194,14 @@ The owner had no wired headset for physical detach testing; external inputs,
 USB/wired interoperability, sustained capture and live decoding remain unqualified.
 See [microphone capture](MICROPHONE_CAPTURE.md).
 
+## R11 time and UTC capture under review
+
+The feature branch adds NTP/GPS-only time correction, regional/custom NTP server
+preferences and timestamped complete microphone slots. Manual offsets and an
+unsynchronized fallback are excluded. See [UTC slots](UTC_RECEIVE_SLOTS.md).
+Actual CI and device qualification, including a real GNSS solution, must be
+recorded in the feature PR before merge; no R11 hardware pass is claimed here.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive

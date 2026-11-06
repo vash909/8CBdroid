@@ -84,6 +84,7 @@ jobs:
           path: |
             core/build/reports/tests/
             protocol/wsjtcb/build/reports/tests/
+            protocol/ntp/build/reports/tests/
             app/build/reports/tests/
             app/build/reports/lint-results-debug.*
           if-no-files-found: ignore

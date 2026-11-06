@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="net.vash.ft8cbdroid.validation.UtcPhoneChecks"
+        android:targetPackage="net.vash.ft8cbdroid" android:label="R11 time and timestamped capture checks" />
     <application>
         <provider
             android:name="net.vash.ft8cbdroid.validation.WaveformTestProvider"

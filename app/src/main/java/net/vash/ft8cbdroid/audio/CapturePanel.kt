@@ -8,14 +8,18 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 
 @Composable
-fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onSave: () -> Unit) {
+fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onSave: () -> Unit, onAssembleUtc: (Boolean) -> Unit = {}, onSaveSlot: () -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Microphone input", style = MaterialTheme.typography.titleLarge)
-        Text("Test input levels and capture 12 kHz PCM. Live FT8 decoding, UTC slot alignment and speaker output are pending.")
+        Text("Capture 12 kHz PCM and optionally assemble UTC slots after NTP/GPS synchronization. Live FT8 decoding and speaker output are pending.")
         if (state.inputs.isEmpty()) Text("No supported audio input is available.")
         state.inputs.forEach { input ->
             FilterChip(selected = state.selectedId == input.id, onClick = { onSelect(input.id) },
                 enabled = state.canConfigure, label = { Text(input.label) })
+        }
+        Row {
+            Checkbox(checked = state.assembleUtc, onCheckedChange = onAssembleUtc, enabled = state.canConfigure)
+            Text("Assemble UTC slots (requires NTP/GPS sync in Station)")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onStart, enabled = state.canStart) { Text("Start microphone") }
@@ -39,6 +43,16 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
             Text("Samples: ${metrics.inputSamples} input / ${metrics.outputSamples} at 12 kHz")
             Text("Recent buffer: ${metrics.retainedSamples} / 60,000 samples • recorder buffer: ${metrics.route.bufferFrames} frames")
         }
+        state.slots?.let { slots ->
+            Text("UTC slots: ${slots.completed} complete • ${slots.collected}/180,000 samples • ${slots.discarded} incomplete windows discarded")
+            slots.driftPpm?.let { Text(String.format(Locale.ROOT, "Measured audio clock drift: %+.1f ppm", it)) }
+        }
+        state.latestSlotUtcMillis?.let {
+            Text("Latest UTC slot: ${java.time.Instant.ofEpochMilli(it)} • ${state.slotSource}")
+            state.slotUncertaintyMillis?.let { uncertainty -> Text(String.format(Locale.ROOT, "Estimated slot timing uncertainty: ±%.1f ms", uncertainty)) }
+        }
+        OutlinedButton(onClick = onSaveSlot, enabled = state.canExportSlot) { Text("Save latest UTC slot WAV") }
+        Text("Only complete 15-second UTC windows are retained. Stop before saving; initial partials and interrupted windows are discarded. Only the latest complete slot is retained in memory.")
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }
         OutlinedButton(onClick = onSave, enabled = state.canExport) { Text("Save recent microphone WAV") }

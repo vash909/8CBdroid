@@ -72,10 +72,15 @@ data class InputLevel(val peakDbfs: Double, val rmsDbfs: Double, val clipped: In
     }
 }
 
-/** Diagnostic capture export, deliberately not a UTC-aligned FT8 slot. */
+/** PCM16 export for bounded recent audio or an independently validated complete UTC slot. */
 object CaptureWav {
     fun encode(samples: FloatArray): ByteArray {
         require(samples.size in 1..60000)
+        return write(samples)
+    }
+    fun encodeSlot(slot: net.vash.ft8cbdroid.core.Ft8PcmSlot): ByteArray = write(slot.toFloatArray())
+    private fun write(samples: FloatArray): ByteArray {
+        require(samples.size in 1..180000)
         val data = ByteBuffer.allocate(44 + samples.size * 2).order(ByteOrder.LITTLE_ENDIAN)
         data.put("RIFF".toByteArray()).putInt(36 + samples.size * 2).put("WAVEfmt ".toByteArray())
             .putInt(16).putShort(1).putShort(1).putInt(12000).putInt(24000).putShort(2).putShort(16)

@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":dsp:ft8"))
     implementation(libs.usb.serial)
     implementation(project(":protocol:wsjtcb"))
+    implementation(project(":protocol:ntp"))
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
     implementation(libs.compose.ui)

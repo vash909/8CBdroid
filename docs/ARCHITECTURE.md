@@ -15,6 +15,8 @@ app (Compose, ViewModels, DataStore, Android USB/document access)
  │    └── core
  ├── dsp:ft8 (NativeFt8Engine + JNI bridge)
  │    └── core
+ ├── protocol:ntp (SNTP wire validation, bounded DNS/UDP backend)
+ │    └── core
  └── protocol:wsjtcb (wire codec, UDP listener and peer state)
       └── core
 
@@ -43,7 +45,10 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit foreground session; stops/clears on Audio exit, rotation or background. No automatic restart or saved PCM. |
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
-Only station identity is currently stored as app configuration. Choosing a radio
+Station identity and NTP preset/custom-server preferences are stored as app configuration.
+NTP/GNSS measurements are process-local, expire, and require explicit application.
+[UTC slot assembly](UTC_RECEIVE_SLOTS.md) consumes boot-clock timestamps behind
+the capture contract; it never calls the decoder or changes Android time. Choosing a radio
 connection label does not implement or persist an operating profile. Android
 system picker history/USB grants have their own OS lifecycle.
 

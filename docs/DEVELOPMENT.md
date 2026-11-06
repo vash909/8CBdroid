@@ -63,7 +63,7 @@ source scripts/env.sh
 bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
-The check runs `:core:test`, `:protocol:wsjtcb:test`, app JVM tests, app/audio/DSP/probe
+The check runs `:core:test`, `:protocol:wsjtcb:test`, `:protocol:ntp:test`, app JVM tests, app/audio/DSP/probe
 lint, the app/probe debug APK builds and the Android device-check APK. It uses `--no-daemon`. JVM tests read committed
 reference data and need no host Fortran/Qt compiler; building the JNI dependency
 does need the selected Android NDK/CMake.
@@ -274,3 +274,11 @@ encoding starts and, separately, after observing active JNI encoding. This does
 not measure ordinary generation latency. Failed tests are reported as failures.
 The helper restores its temporary USB stay-awake setting and stops only the
 target app on exit. Reports remain in ignored `.tooling/`.
+
+## R11 time and UTC capture checks
+
+The app device-check APK adds `UtcPhoneChecks`, with `ntp-audio` and `gps`
+scenarios. Use matching verified CI app/test APKs and the
+[UTC procedure](UTC_RECEIVE_SLOTS.md#verification). These open real network,
+GNSS or microphone interfaces only on explicit invocation. A failed real GPS
+fix or audio timestamp check is pending qualification, not a mockable pass.

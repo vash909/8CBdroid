@@ -5,7 +5,7 @@ An Android FT8 client in development for CB / 11 metres, built around
 project documentation use English.
 
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
-and recorded-slot decoding are implemented, along with foreground microphone capture. Speaker output,
+and recorded-slot decoding are implemented, along with foreground microphone capture, NTP/GPS time correction and UTC slot assembly. Speaker output,
 CAT/PTT, live local reception, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -13,9 +13,9 @@ The app cannot yet make a radio QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Station** | Save callsign/locator; restore them after reopening; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
+| **Station** | Save callsign/locator and NTP server preferences; synchronize app time with NTP/GPS; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
 | **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Select/capture a microphone, inspect route/processing/levels, resample to 12 kHz and save recent audio; separately import/decode recorded FT8 WAVs with Fast/Standard profiles. | Capture retains five seconds; no live decoding or playback. FT8 file import still requires exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Audio** | Select/capture a microphone, inspect route/processing/levels, resample to 12 kHz and save recent audio or complete UTC slots; separately import/decode recorded FT8 WAVs with Fast/Standard profiles. | Recent audio retains five seconds; UTC mode retains the latest complete slot after NTP/GPS sync. No live decoding or playback. FT8 file import still requires exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
 | **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
@@ -44,14 +44,19 @@ settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a
    and grant permission. Confirm the actual route and input levels. Stop before
    saving the most recent five seconds; this is a capture diagnostic, not live FT8.
    [Microphone capture](docs/MICROPHONE_CAPTURE.md) describes processing and lifecycle.
-5. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
+5. In **Station → Time synchronization**, select a regional or custom NTP server
+   (IP/hostname), or measure GPS with precise location permission. Apply the valid
+   measurement, then enable **Assemble UTC slots** in Audio. Stop before exporting
+   the latest complete 15-second WAV. [UTC slots](docs/UTC_RECEIVE_SLOTS.md) describes
+   expiry, device requirements and timing limits. There is no manual offset.
+6. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
    send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
    [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
    describe the desktop request setting and foreground lifecycle.
 
 Android's system document picker can use the phone's own language. App controls
 and messages remain English. Ordinary WAV import/export requires no broad
-storage permission. The saved station is persistent; hash sessions, decoded
+storage permission. The saved station and server preferences are persistent; measured time, hash sessions, decoded
 recordings and generated PCM are temporary. Exported documents remain in the
 chosen location.
 
@@ -68,7 +73,7 @@ bash scripts/controlled.sh 600 bash scripts/check.sh
 
 Bootstrap installs project-local JDK/Android tooling in ignored `.tooling/`,
 checks download checksums and prompts for SDK licenses. It does not install
-system packages or Android Studio. The check builds both APKs and runs JVM
+system packages or Android Studio. The check builds the app, probe and device-check APKs and runs JVM
 tests/lint; the separate desktop-reference checks need host compilers.
 
 - App: `app/build/outputs/apk/debug/app-debug.apk`
