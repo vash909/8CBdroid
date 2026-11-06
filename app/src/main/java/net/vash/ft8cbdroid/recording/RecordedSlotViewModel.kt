@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.vash.ft8cbdroid.core.Ft8Engine
 import net.vash.ft8cbdroid.core.Ft8PcmSlot
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
+import net.vash.ft8cbdroid.core.Ft8EngineBusyException
+import net.vash.ft8cbdroid.core.Ft8EngineTimeoutException
 import net.vash.ft8cbdroid.core.recording.*
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 
@@ -26,6 +29,7 @@ class DocumentRecordedSlotReader(private val resolver: ContentResolver) : Record
 
 data class RecordedSlotUiState(
     val utc: String = "",
+    val profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD,
     val isChoosing: Boolean = false,
     val isDecoding: Boolean = false,
     val result: RecordedSlotResult? = null,
@@ -59,6 +63,11 @@ class RecordedSlotViewModel(
         clear()
         state.value = state.value.copy(utc = value)
     }
+    fun changeProfile(profile: Ft8DecodeProfile) {
+        if (profile == state.value.profile) return
+        clear()
+        state.value = state.value.copy(profile = profile)
+    }
     fun clear() {
         version++
         job?.cancel()
@@ -91,13 +100,18 @@ class RecordedSlotViewModel(
             return
         }
         val call = stationCall
+        val profile = state.value.profile
         state.value = state.value.copy(isDecoding = true)
         job = viewModelScope.launch {
             try {
-                val result = withContext(worker) { decoder.decode(reader.read(document), context, call) }
+                val result = withContext(worker) { decoder.decode(reader.read(document), context, call, profile) }
                 if (ticket == version) state.value = state.value.copy(result = result)
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (error: Ft8EngineBusyException) {
+                if (ticket == version) state.value = state.value.copy(error = error.message)
+            } catch (error: Ft8EngineTimeoutException) {
+                if (ticket == version) state.value = state.value.copy(error = error.message)
             } catch (error: IllegalArgumentException) {
                 if (ticket == version) state.value = state.value.copy(error = error.message ?: "Invalid recorded slot.")
             } catch (_: UnsatisfiedLinkError) {

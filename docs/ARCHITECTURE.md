@@ -90,16 +90,20 @@ LAN SNR/timing are supplied by the desktop, separately from local recorded estim
 
 `Ft8Engine` accepts immutable 77-bit payloads and normalized 12 kHz mono slots.
 `NativeFt8Engine` runs JNI on `Dispatchers.Default`. A process-wide mutex permits
-one native encode/decode at a time across instances; ViewModels own request
-admission, cancellation and stale-result checks. The native channel layer has
+one native encode/decode at a time across instances. The shared JVM
+`Ft8WorkGate` admits one active call plus one FIFO waiter and rejects further
+requests before dispatcher work/copies; ViewModels still own input snapshots
+and stale-result checks. The native channel layer has
 no text/hash cache or absolute UTC. It returns relative timing, offset, sync
 score and a nullable experimental SNR estimate. The JVM recorded-slot layer
 supplies UTC and derives DT. A sync score is not SNR.
 
-Cancellation is observed around JNI calls, not within native search. A blocking
-document read must return before its work ends. Search/candidate bounds exist,
-but interruptible work, production queue policy and sustained cost remain future
-qualification. See [engine bounds](FT8_ENGINE.md).
+Cancellation signals a per-call native flag and is checked between FFT blocks,
+candidate operations and SNR symbols. Fast/Standard profiles bound candidates,
+iterations and cooperative native deadlines. The unchanged vendor operations
+finish before their next check. A blocking document read must still return
+before its work ends. Wider/sustained cost and memory-pressure recovery need
+further qualification. See [decoder work bounds](DECODER_PROFILES.md). See [engine bounds](FT8_ENGINE.md).
 
 ## USB discovery and future radio control
 

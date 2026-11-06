@@ -1,6 +1,6 @@
 # Recorded FT8 slots (R08)
 
-The **Audio** tab imports a recorded WAV through Android's document picker and
+The **Audio** tab selects Fast or Standard and imports a recorded WAV through Android's document picker and
 runs the offline native decoder. No microphone, playback, radio access, live RX,
 automation or QSO completion is enabled.
 
@@ -47,14 +47,16 @@ quantization and colored noise can bias it. Clean digital silence is not a
 calibration source; a PCM quantization floor may yield a very large estimate.
 
 This is **not WSJT-CB's calibrated SNR estimator or complete decoder**. The native
-backend retains its bounded 60 candidates, 25 LDPC iterations, 200–3000 Hz search
-and payload deduplication. CB message packing/unpacking/hash behavior uses the
+Standard retains 60 candidates and 25 LDPC iterations; Fast uses 24/12. Both
+retain the 200–3000 Hz search and payload deduplication. See
+[profile/cancellation bounds](DECODER_PROFILES.md). CB message packing/unpacking/hash behavior uses the
 pinned reference; full desktop candidate search, plausibility filters,
 sensitivity and false-positive parity are not established. Do not use this
-output as permission to advance a QSO. Production queue/cancellation policy,
-sustained decoder cost and a broader reception corpus remain future qualification before live capture is connected.
-Cancellation currently discards work around JNI calls, not during a native call;
-a document provider must return for a blocking read to finish.
+output as permission to advance a QSO. The shared gate admits one active native
+call and one waiter; cancellation/deadlines are checked between native work
+units. Individual vendor calls and blocking document reads must still return
+before their work ends. The R09 benchmark adds finite cost/reception observations;
+wider live-capture qualification remains future work.
 
 ## Independent evidence
 
@@ -103,7 +105,8 @@ refresh/index only the test files, or select them through internal storage.
 
 1. Let the agent deploy the CI APK and copy test WAVs to the authorized debug
    phone. Unlock it when notified and keep it awake for the UI checks.
-2. Open **Audio**, enter the UTC boundary above, then **Open WAV and decode**.
+2. Open **Audio**, select Standard, enter the UTC boundary above, then
+   **Open WAV and decode**. Repeat with Fast and confirm the result profile/time.
    Select `cq.wav`: expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
 3. Import `noisy-cq.wav`: expect the same payload/text and estimated SNR near -4 dB.
    Directed fixtures may show the saved station in place of a cold `<...>` hash.

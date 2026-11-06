@@ -31,8 +31,10 @@ the pure writer has JVM tests. No storage permission or account is required.
 
 `WaveformViewModel` owns one generation, cancellation and immutable export bytes.
 Editing input/settings invalidates an old result; late native results cannot
-replace a newer request. JNI cancellation is observed around calls, not midway
-through native computation. Saving uses the snapshot selected when **Save WAV**
+replace a newer request. Native cancellation is checked between waveform symbol/chunk operations;
+cleanup precedes admission of the next job. The engine gate is shared with
+recorded decoding, so a full queue reports a busy/retry error. See
+[work bounds](DECODER_PROFILES.md). Saving uses the snapshot selected when **Save WAV**
 was tapped, even if inputs later change. Rotation retains the ViewModel; process
 termination discards generated PCM and unsaved parameters. Exported documents
 and saved station settings remain separate. RX hash learning is unaffected.

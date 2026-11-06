@@ -15,11 +15,15 @@ class RecordedSlotViewModelTest {
     private val pcm = Ft8PcmSlot.fromSamples(FloatArray(180000))
     private class Engine : Ft8Engine {
         var calls = 0
+        var failure: Exception? = null
+        var lastProfile: Ft8DecodeProfile? = null
         var gate: CompletableDeferred<Unit>? = null
-        override suspend fun decode(slot: Ft8PcmSlot): Ft8DecodeResult {
+        override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile): Ft8DecodeResult {
             calls++
+            lastProfile = profile
+            failure?.let { throw it }
             gate?.let { withContext(NonCancellable) { it.await() } }
-            return Ft8DecodeResult(emptyList(), 0)
+            return Ft8DecodeResult(emptyList(), 0, profile, 17, 0)
         }
         override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot = error("No TX")
     }
@@ -71,4 +75,23 @@ class RecordedSlotViewModelTest {
         old.complete(Unit); advanceUntilIdle()
         assertEquals("2026-11-06T12:00:15Z", vm.uiState.value.result!!.context.slotStartUtc.toString())
     }
+    @Test fun profilesAreSnapshotsAndChangesDiscardOldResultsAndPendingSelection() = runTest(dispatcher) {
+        val engine = Engine(); val vm = model(engine)
+        vm.changeProfile(Ft8DecodeProfile.FAST); vm.select(); advanceUntilIdle()
+        assertEquals(Ft8DecodeProfile.FAST, engine.lastProfile)
+        assertEquals(Ft8DecodeProfile.FAST, vm.uiState.value.result!!.profile)
+        vm.changeProfile(Ft8DecodeProfile.STANDARD); assertNull(vm.uiState.value.result)
+        assertTrue(vm.prepareImport()); vm.changeProfile(Ft8DecodeProfile.FAST)
+        vm.importDocument("stale:wave"); advanceUntilIdle(); assertEquals(1, engine.calls)
+    }
+    @Test fun busyAndDeadlineErrorsAreVisibleAndRetryDoesNotKeepStaleResults() = runTest(dispatcher) {
+        val engine = Engine(); val vm = model(engine)
+        for (failure in listOf(Ft8EngineBusyException(), Ft8EngineTimeoutException("Decode deadline exceeded."))) {
+            engine.failure = failure; vm.select(); advanceUntilIdle()
+            assertEquals(failure.message, vm.uiState.value.error); assertNull(vm.uiState.value.result)
+            assertTrue(vm.uiState.value.canImport)
+        }
+        engine.failure = null; vm.select(); advanceUntilIdle(); assertNotNull(vm.uiState.value.result)
+    }
+
 }

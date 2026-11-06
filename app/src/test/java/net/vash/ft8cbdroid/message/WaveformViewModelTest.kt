@@ -18,7 +18,7 @@ class WaveformViewModelTest {
     private class Engine : Ft8Engine {
         var calls = 0
         var gate: CompletableDeferred<Unit>? = null
-        override suspend fun decode(slot: Ft8PcmSlot) = error("Unexpected decode")
+        override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile) = error("Unexpected decode")
         override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot {
             calls++
             val currentGate = gate

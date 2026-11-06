@@ -17,9 +17,9 @@ static std::string bits(eightcb::Payload const& p) {
     for (int i=0;i<77;++i) result += ((p[i/8]>>(7-i%8))&1) ? '1':'0';
     return result;
 }
-static void decoded(std::vector<float> const& pcm) {
-    auto result=eightcb::decode_slot(pcm);
-    std::cout << "{\"candidates\":" << result.candidates << ",\"frames\":[";
+static void decoded(std::vector<float> const& pcm, int profile=1) {
+    auto result=eightcb::decode_slot(pcm,profile);
+    std::cout << "{\"candidates\":" << result.candidates << ",\"processed\":" << result.processed << ",\"frames\":[";
     bool first=true;
     for (auto const& frame:result.frames) {
         if (!first) std::cout << ',';
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
             decoded(eightcb::encode_slot(payload(argv[2]),1000));
         } else if (argc==2 && std::string(argv[1])=="silence") {
             decoded(std::vector<float>(eightcb::slot_samples,0));
-        } else if (argc==3 && std::string(argv[1])=="decode") {
+        } else if ((argc==3 || argc==4) && std::string(argv[1])=="decode") {
             std::ifstream in(argv[2],std::ios::binary);
             char header[44]; in.read(header,44);
             if (!in || std::memcmp(header,"RIFF",4) || std::memcmp(header+8,"WAVE",4)) throw std::runtime_error("Invalid fixture WAV");
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
             if (!in || in.peek()!=std::ifstream::traits_type::eof()) throw std::runtime_error("Invalid fixture sample count");
             std::vector<float> pcm;
             for (auto value:samples) pcm.push_back(value/32768.0f);
-            decoded(pcm);
+            decoded(pcm,argc==4?std::stoi(argv[3]):1);
         } else throw std::invalid_argument("Usage: engine_probe encode|roundtrip BITS, wave BITS HZ LEVEL FILE, decode WAV, or silence");
     } catch (std::exception const& e) {std::cerr << e.what() << '\n';return 1;}
 }
