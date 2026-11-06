@@ -3,9 +3,9 @@
 The **Audio → Microphone input** panel captures mono PCM16 through Android
 `AudioRecord`, meters the input and converts it to 12 kHz floating-point PCM.
 Optional [R11 UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
-NTP/GPS sync and retains complete slots. Capture does not call the FT8 decoder,
-play audio or operate PTT. R12 connects slots to live reception; R14 and R17 cover output
-and acoustic VOX. A microphone level meter is not yet a local FT8 receiver.
+NTP/GPS sync and retains complete slots. [R12 live reception](LIVE_RECEIVE.md)
+optionally decodes those slots in a separate bounded worker. Capture does not
+play audio or operate PTT; R14 and R17 cover output and acoustic VOX.
 
 ## Start, stop and permission
 

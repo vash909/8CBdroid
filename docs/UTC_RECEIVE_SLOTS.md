@@ -2,8 +2,9 @@
 
 The app can synchronize its receive clock through **NTP or GPS/GNSS**, timestamp
 microphone PCM and retain complete 15-second UTC windows. Android's system clock
-is never changed. There is no manual offset or unsynchronized fallback. Live
-decoding, playback, TX scheduling and radio operation remain later milestones.
+is never changed. There is no manual offset or unsynchronized fallback.
+[Live reception](LIVE_RECEIVE.md) optionally decodes these slots. Playback,
+TX scheduling and radio operation remain later milestones.
 
 ## Synchronize time
 
@@ -121,8 +122,9 @@ thread. A complete slot remains available after Stop even if the UI has not yet
 rendered its completion. Timing-guard failures log only numeric frame/clock
 metadata for diagnosis, without audio or station/location data.
 
-One working slot and the latest complete slot are retained; there is no unbounded
-queue or decoder call. Stop discards the unfinished window and retains the last
+Slot-only mode retains one working slot and the latest complete slot. Optional
+live decoding adds one active slot and one latest pending slot; neither mode has
+an unbounded queue. Stop discards the unfinished window and retains the last
 complete one for export. Input/mode changes, ordinary rotation/background or
 leaving Audio clear captured slots. A pending document export preserves the
 stopped snapshot through the picker, including cancellation/retry. Nothing rearms.

@@ -55,9 +55,9 @@ later estimates; do not promise a complete Android port in one PR.
   the S25 FE provided real GPS timing, including an offline measurement. The
   owner accepted the offline path after stopping the repeated UI test. See
   [evidence and limits](VALIDATION.md#r11-time-synchronization-and-utc-capture).
-  R12, live local decoding, is next.
+  R12, live local decoding, is now in development.
   Local operating sessions, playback, CAT/PTT, AutoSeq
-  and QSO logging remain pending; microphone capture does not yet feed live FT8.
+  and QSO logging remain pending. See [live reception](LIVE_RECEIVE.md) for R12 scope.
 
 ## Reference strategy: reuse the CB work
 
@@ -212,7 +212,8 @@ server accepting IP/hostname, and timestamped complete microphone slots are impl
 The owner explicitly excluded manual offsets and an unsynchronized fallback.
 See [behavior and qualification boundaries](UTC_RECEIVE_SLOTS.md) and
 [device validation](VALIDATION.md#r11-time-synchronization-and-utc-capture).
-R12 will connect these slots to live local decoding; that work has not started.
+R12 connects these slots to live local decoding and is under development;
+its current behavior and acceptance checks are in [live reception](LIVE_RECEIVE.md).
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

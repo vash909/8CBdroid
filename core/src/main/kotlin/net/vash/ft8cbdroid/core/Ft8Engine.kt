@@ -65,7 +65,7 @@ data class Ft8DecodeResult(
     val processedCandidates: Int? = null,
 )
 
-/** Offline channel operations only; no text codec, device audio or RF access. */
+/** Complete-slot channel operations; no text codec, device audio or RF access. */
 interface Ft8Engine {
     suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): Ft8DecodeResult
     suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float = .4f): Ft8PcmSlot

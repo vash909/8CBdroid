@@ -6,6 +6,10 @@ playback, live RX or RF transmission. The baseline device is **Samsung A51 /
 SM-A515F, Android 13, ARM64**. Hardware and wider reception qualification remain
 separate from the finite checks described here.
 
+[R12 live reception](LIVE_RECEIVE.md) reuses these engine profiles and adds a
+single latest pending microphone slot; its live profile choice is independent
+of the recorded-file profile.
+
 ## Admission and cancellation
 
 Every `NativeFt8Engine` instance uses one process-wide `Ft8WorkGate` for encode

@@ -236,6 +236,15 @@ The owner reports a possible pre-existing GPS software problem on this A51;
 the cause has not been diagnosed. The successful S25 FE measurements do not
 qualify the A51 receiver or guarantee acquisition on other devices or sky views.
 
+## R12 live local reception under review
+
+The feature branch connects complete timestamped microphone slots to the FT8
+decoder, with one active/one latest pending slot, 60 result rows and a distinct
+CB hash session per explicit run. JVM checks cover bounded work, cancellation,
+session learning and lifecycle invalidation. See [live reception](LIVE_RECEIVE.md).
+Physical desktop-speaker to phone-microphone reception and actual UI acceptance
+must be recorded against the matching CI APK before this milestone is complete.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive

@@ -6,12 +6,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 
 @Composable
-fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onSave: () -> Unit, onAssembleUtc: (Boolean) -> Unit = {}, onSaveSlot: () -> Unit = {}) {
+fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onSave: () -> Unit,
+    onAssembleUtc: (Boolean) -> Unit = {}, onSaveSlot: () -> Unit = {}, onDecodeLive: (Boolean) -> Unit = {},
+    onLiveProfile: (Ft8DecodeProfile) -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Microphone input", style = MaterialTheme.typography.titleLarge)
-        Text("Capture 12 kHz PCM and optionally assemble UTC slots after NTP/GPS synchronization. Live FT8 decoding and speaker output are pending.")
+        Text("Capture 12 kHz PCM, assemble UTC slots and optionally decode local FT8 after NTP/GPS synchronization. Speaker output is pending.")
         if (state.inputs.isEmpty()) Text("No supported audio input is available.")
         state.inputs.forEach { input ->
             FilterChip(selected = state.selectedId == input.id, onClick = { onSelect(input.id) },
@@ -20,6 +23,21 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         Row {
             Checkbox(checked = state.assembleUtc, onCheckedChange = onAssembleUtc, enabled = state.canConfigure)
             Text("Assemble UTC slots (requires NTP/GPS sync in Station)")
+        }
+        Row {
+            Checkbox(checked = state.decodeLive, onCheckedChange = onDecodeLive, enabled = state.canConfigure)
+            Text("Decode live local FT8")
+        }
+        if (state.decodeLive) {
+            Text("Uses complete microphone UTC slots. Synchronize time in Station, then press Start microphone.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Ft8DecodeProfile.entries.forEach { profile ->
+                    FilterChip(selected = state.liveProfile == profile, onClick = { onLiveProfile(profile) },
+                        enabled = state.canConfigure, label = { Text("Local ${profile.label}") })
+                }
+            }
+            Text(if (state.liveProfile == Ft8DecodeProfile.FAST) "Fast uses less work and can miss weaker signals."
+                else "Standard uses the default search budget.")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onStart, enabled = state.canStart) { Text("Start microphone") }

@@ -98,6 +98,7 @@ class WaveformPhoneChecks : Instrumentation() {
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); start() }
     override fun onStart() {
         scenario?.let {
+            if (it == "live") { LiveReceivePhoneChecks(this).run(); return }
             require(it == "ntp-audio" || it == "gps") { "Unknown time/capture scenario" }
             UtcPhoneChecks(this).run(it)
             return
