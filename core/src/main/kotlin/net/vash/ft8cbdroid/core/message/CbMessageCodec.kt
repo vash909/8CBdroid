@@ -16,15 +16,26 @@ data class CallsignHash(val width: Int, val value: Int) {
 
 sealed interface MessagePart {
     data class Text(val value: String) : MessagePart
+    sealed interface HashedCall : MessagePart { val hash: CallsignHash }
     /** A channel hash is not a resolved callsign or evidence of a QSO peer. */
-    data class UnresolvedCall(val hash: CallsignHash) : MessagePart
+    data class UnresolvedCall(
+        override val hash: CallsignHash,
+        val reason: UnresolvedReason = UnresolvedReason.UNKNOWN,
+    ) : HashedCall
+    /** One known candidate, not proof of identity or permission to advance a QSO. */
+    data class ResolvedCall(override val hash: CallsignHash, val callsign: String) : HashedCall
+    data class AmbiguousCall(override val hash: CallsignHash, val candidates: Set<String>) : HashedCall
 }
+
+enum class UnresolvedReason { UNKNOWN, CAPACITY_REACHED }
 
 data class DecodedMessage(val format: MessageFormat, val parts: List<MessagePart>) {
     val text: String get() = parts.joinToString(" ") {
         when (it) {
             is MessagePart.Text -> it.value
             is MessagePart.UnresolvedCall -> "<...>"
+            is MessagePart.ResolvedCall -> "<${it.callsign}>"
+            is MessagePart.AmbiguousCall -> "<...>"
         }
     }
 }
@@ -106,6 +117,8 @@ object CbMessageCodec {
                                 require(matches.size == 1) { "The supplied TX identities are ambiguous." }
                                 "<${matches.single()}>"
                             }
+                            is MessagePart.ResolvedCall -> error("Stateless unpack returned a learned call")
+                            is MessagePart.AmbiguousCall -> error("Stateless unpack returned an ambiguous call")
                         }
                     }
                     PackResult.Encoded(normalized, payload, decoded.message, preview, preview != normalized)

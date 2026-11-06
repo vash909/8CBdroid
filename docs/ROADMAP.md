@@ -36,7 +36,8 @@ later estimates; do not promise a complete Android port in one PR.
   A51 probe passed 154 message cases and four desktop WAVs. The CI APK was installed
   with verified settings restoration, and the owner approved merge on 2026-11-06.
 - Local operating sessions, microphone capture, playback, CAT/PTT and QSO logging are pending.
-  Learned callsign hash resolution remains R06 and has not started.
+  R06 in the current PR adds session-scoped hash learning and an offline receive
+  simulator; live local reception and AutoSeq remain pending.
 
 ## Reference strategy: reuse the CB work
 
@@ -110,7 +111,8 @@ scenarios, including hash collisions and lossy encodings. See
 [the QSO trace guide](../reference/wsjtcb/QSO.md) for adapter boundaries and known
 desktop edge cases. R04 is complete in PR #19: a source-built channel engine passes
 the offline host and ARM64 phone checks. R05 is complete in PR #20: offline packing/unpacking and visible
-message-loss previews. R06 is next, with scope prepared below and implementation not started. RF/audio and the
+message-loss previews. R06 is implemented in the current PR and awaits validation
+and owner review; R07 follows after merge. RF/audio and the
 full TX lifecycle remain later gates; R21/R22 must qualify ambiguous/wrong-peer and malformed-final
 behavior before Android automation. R01b/R02 resume when the real radio
 configuration is known.
@@ -129,21 +131,18 @@ and USB audio must remain separate capabilities.
 
 ## B. Reach useful standalone reception
 
-### Next: R06 preparation only
+### Current PR: R06 hash sessions
 
-- Start from merged R05 on `main`; use the `feat/cb-callsign-hashes` branch.
-- Add session-scoped learned-call storage behind the pure JVM message contracts.
-  Define explicit learning, reset and lookup behavior before connecting consumers.
-- Preserve typed unresolved hashes and expose ambiguity without inventing an
-  identity. Cover both type 4 orientations and collisions at 10, 12 and 22 bits.
-- Use the pinned cold/warm RX scenarios in
-  [the packing reference](../reference/wsjtcb/PACKING.md) as independent evidence.
-  Keep stateless R05 behavior covered while adding session-aware resolution.
-- Acceptance: desktop comparisons for cold, learned, ambiguous and reset sessions;
-  local checks, CI and phone deployment following `AGENTS.md`. No live RX/TX,
-  AutoSeq or persistent learned-call database is included in this milestone.
-
-This section records preparation only; no R06 implementation or PR is started.
+- Pure JVM session with pending/committed learning, explicit reset and bounded
+  storage. Hash results retain width/value and distinguish unknown, known-candidate
+  and ambiguous identities. Both type 4 orientations preserve local-call context.
+- The Messages tab simulates RX separately from the stateless TX preview. Its
+  ViewModel survives rotation; saved station changes reset learned calls.
+- All 96 pinned desktop RX scenarios run through a shared test-only JVM/phone
+  adapter. Known collisions deliberately remain ambiguous instead of selecting
+  the desktop's last writer. See [the session guide](CB_HASH_SESSIONS.md).
+- Acceptance still requires local checks, CI, phone deployment and owner review.
+  No live RX/TX, AutoSeq or persistent learned-call database is included.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

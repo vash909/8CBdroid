@@ -11,6 +11,7 @@ import net.vash.ft8cbdroid.core.message.CbMessageCodec
 import net.vash.ft8cbdroid.core.message.PackResult
 import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
+import net.vash.ft8cbdroid.reference.HashSessionReferenceChecks
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -44,6 +45,11 @@ class OfflineEngineProbe : Instrumentation() {
                     }
                 }
                 report.putInt("message_vectors", rows.size)
+                val hashScenarios = HashSessionReferenceChecks.scenarios(
+                    context.assets.open("wsjtcb/hash-sessions.tsv").bufferedReader().use { it.readLines() },
+                )
+                hashScenarios.values.forEach(HashSessionReferenceChecks::verify)
+                report.putInt("hash_session_scenarios", hashScenarios.size)
                 val engine = NativeFt8Engine()
                 val corpus = JSONObject(context.assets.open("channel.json").bufferedReader().use { it.readText() })
                 val waves = corpus.getJSONArray("waves")

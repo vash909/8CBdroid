@@ -62,7 +62,9 @@ live audio or radio interoperability. Offline DSP has separate
 
 For the offline **Messages** preview and message-codec phone checks, follow
 [the R05 guide](CB_MESSAGE_CODEC.md). The probe APK checks committed desktop text
-vectors as well as independent DSP audio fixtures.
+vectors as well as independent DSP audio fixtures. It also checks 96 desktop hash
+scenarios; follow [the R06 session guide](CB_HASH_SESSIONS.md) for commit/reset,
+collision and lifecycle checks in the Messages tab.
 
 ## Phone checks
 
@@ -112,8 +114,9 @@ python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 See [reference setup and source audit](../reference/wsjtcb/README.md) and the
 [CB difference inventory](WSJT_CB_COMPATIBILITY.md). The [QSO trace guide](../reference/wsjtcb/QSO.md)
 also describes the extracted local toolchain on this PC. A separate CI job compiles
-the pinned test-only routines and rejects stale fixtures at O0/O2. This does not enable a
-the CB text codec or AutoSeq in the app. The separate R04 channel backend
+the pinned test-only routines and rejects stale fixtures at O0/O2. These host checks
+do not enable AutoSeq or live operation. The app has a separate offline text codec
+and hash-session simulator. The R04 channel backend
 does require the pinned Android NDK. See [offline engine checks](FT8_ENGINE.md).
 
 ## Pull requests and CI

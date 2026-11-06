@@ -39,7 +39,8 @@ only identities explicitly supplied in that same input. This does not teach RX.
 with the original hash width/value. Unknown hashes render as `<...>` and never
 become invented calls. Static TX hash calculation is included; learned-call
 storage, collision resolution, local-station context and warm RX behavior are
-**R06**. Message parsing does not verify channel CRC/LDPC; later RX must use
+provided separately by [R06 hash sessions](CB_HASH_SESSIONS.md). The stateless
+codec remains cold and cannot learn from a TX preview. Message parsing does not verify channel CRC/LDPC; later RX must use
 integrity-checked DSP frames. A decoded string is not AutoSeq permission.
 
 ## Losses and desktop edge cases

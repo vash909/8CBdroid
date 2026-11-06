@@ -21,6 +21,7 @@ android {
     }
 }
 kotlin { jvmToolchain(17) }
+kotlin.sourceSets["main"].kotlin.srcDir("../core/src/testReference/kotlin")
 dependencies {
     implementation(project(":dsp:ft8"))
     implementation(libs.coroutines.android)
