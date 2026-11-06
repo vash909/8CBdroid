@@ -55,7 +55,9 @@ later estimates; do not promise a complete Android port in one PR.
   the S25 FE provided real GPS timing, including an offline measurement. The
   owner accepted the offline path after stopping the repeated UI test. See
   [evidence and limits](VALIDATION.md#r11-time-synchronization-and-utc-capture).
-  R12, live local decoding, is now in development.
+  R12 is qualified in [PR #28](https://github.com/vash909/8CBdroid/pull/28):
+  live local decoding passed desktop-speaker to A51-microphone reception,
+  CB session reset and actual UI/lifecycle checks. See [validation](VALIDATION.md).
   Local operating sessions, playback, CAT/PTT, AutoSeq
   and QSO logging remain pending. See [live reception](LIVE_RECEIVE.md) for R12 scope.
 
@@ -224,7 +226,7 @@ its current behavior and acceptance checks are in [live reception](LIVE_RECEIVE.
 | R09 — Bound decoder cost on a phone | Add cancellation, bounded work queues and measured decode profiles suitable for Android. Define a baseline phone and a minimum reception corpus. | Published latency, memory, sensitivity/false-positive and thermal measurements; no claim of desktop decoder parity without benchmarks. Depends on R08. |
 | R10 — Capture phone audio | Implement microphone permission, selected-device capture, levels/clipping, buffering and resampling to DSP PCM. Expose actual route and processing settings. | Recorded signal/reference-tone checks on a phone; permission denial, interruption and route-loss recovery. Does not yet transmit. |
 | R11 — Assemble UTC receive slots | Timestamp audio, assemble complete 15-second windows and handle missing samples, clock changes and drift. Use NTP or GPS/GNSS time correction, regional/custom NTP servers and no manual/system-clock fallback; never change Android time. | Deterministic clock/buffer tests and recordings across slot boundaries. Discard incomplete windows. Depends on R10. |
-| R12 — Display live local decodes | Connect capture, slot assembly and decoder; distinguish local reception from LAN data and prevent stale results after Stop/restart. | A phone decodes desktop-generated CB audio and resumes cleanly after interruption. Depends on R08–R11. |
+| R12 — Display live local decodes | Complete in PR #28: capture, UTC slot assembly and decoder are connected; local results are separate from LAN/files and cannot return after Stop/restart. | A51 / Android 13 decoded desktop-generated CB audio acoustically; cache reset, permission retry, rotation, background and navigation passed. See validation. Depends on R08–R11. |
 | R13 — Add spectrum and waterfall controls | Display levels, spectrum and waterfall with decoded-signal markers, bounded history, zoom and RX/TX offset selection. Keep display work separate from DSP. | Frequency-axis checks with reference tones, usable controls and sustained rendering on the baseline phone. Depends on R10/R12. |
 
 **Receive milestone:** the phone independently receives CB FT8 from recorded and
@@ -304,7 +306,8 @@ route, scheduler and stop behavior on the bench. Keep the client, docs, comments
 commits and PRs in English. Preserve GPL-3.0-only and
 [the commercial policy](COMMERCIAL_DISTRIBUTION.md).
 
-After each PR and build, wait for the owner's explicit OK before merge. Update
+After each PR and build, follow the conditional merge authorization in
+[AGENTS.md](../AGENTS.md); otherwise wait for the owner's explicit OK. Update
 this roadmap with verified milestone results; do not mark a feature complete
 because its UI or contract exists.
 

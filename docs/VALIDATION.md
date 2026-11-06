@@ -1,11 +1,11 @@
 # Implementation and validation record
 
-This record describes the repository through merged **PR #25 (R10)** on
-**2026-11-06**. It records observations at specific commits; it is not a release
+This record includes **PR #28 (R12)** on **2026-11-07**.
+It records observations at specific commits; it is not a release
 qualification or a statement that all planned checks passed. The
 [roadmap](ROADMAP.md) remains the delivery plan.
 
-## Merged capabilities
+## Implemented capabilities
 
 | Area | Implementation | Evidence / remaining boundary |
 | --- | --- | --- |
@@ -14,11 +14,13 @@ qualification or a statement that all planned checks passed. The
 | USB discovery | Device descriptors, recognized serial drivers and explicit Android permission requests. | Permission-state JVM coverage; actual OTG/CAT/radio interoperability remains unverified. |
 | CB codec and hash sessions | Stateless packing/unpacking plus isolated, bounded RX hash learning with explicit ambiguity. | Desktop-derived JVM/phone fixtures. Full decoder plausibility and QSO admission are separate concerns. |
 | Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
-| Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. No live decoding or complete desktop decoder parity. |
-| Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. No UTC slots or live FT8 decoding. |
+| Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. Complete desktop decoder parity remains unverified. |
+| Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
+| UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |
+| Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. Foreground RX only. |
 
 There is no implemented CAT/PTT,
-speaker output, live local RX/TX,
+speaker output, local TX,
 AutoSeq, QSO log or sustained background operating service.
 
 ## Reproducible coverage
@@ -236,14 +238,37 @@ The owner reports a possible pre-existing GPS software problem on this A51;
 the cause has not been diagnosed. The successful S25 FE measurements do not
 qualify the A51 receiver or guarantee acquisition on other devices or sky views.
 
-## R12 live local reception under review
+## R12 live local reception (PR #28)
 
-The feature branch connects complete timestamped microphone slots to the FT8
-decoder, with one active/one latest pending slot, 60 result rows and a distinct
-CB hash session per explicit run. JVM checks cover bounded work, cancellation,
-session learning and lifecycle invalidation. See [live reception](LIVE_RECEIVE.md).
-Physical desktop-speaker to phone-microphone reception and actual UI acceptance
-must be recorded against the matching CI APK before this milestone is complete.
+Device: **Samsung Galaxy A51 / SM-A515F, Android 13**. The tested CI APKs came
+from [run 42313349465](https://github.com/vash909/8CBdroid/actions/runs/42313349465),
+commit **`6d5357d0e6c36e91b640f633dc25549914300939`**. Local checks and CI passed
+813 JVM tests (709 core, 32 WSJT-CB, 5 NTP, 67 app), lint and debug builds.
+The desktop reference job passed. Artifact digests and installed APK hashes
+were verified; the owner approved the signing-conflict reinstall and private
+settings were restored byte for byte.
+
+The physical check used pinned desktop-generated WAVs, actual PC speakers and
+the built-in phone microphone, with applied NTP time from `time.cloudflare.com`.
+It supplied no PCM or decoder results to the phone and sent no LAN messages.
+
+| Check | Observation |
+| --- | --- |
+| Consecutive complete slots | `CQ 1AT106`, then `<1AT106> 26AT101`; the second slot resolved the identity learned from the first. |
+| Timing/work | Two complete UTC slots; last decode 157 ms. This is one measurement, not sustained-performance qualification. |
+| Actual UI | The local-source heading and directed message were visible in the Audio screen. |
+| Stop/restart | Results and learned calls cleared; the same directed fixture became `<...> 26AT101` after an explicit cold restart. Zero native calls remained after Stop. |
+| Permission retry | Denied the real Android microphone prompt, verified the error, then granted it on retry and opened the actual recorder. |
+| Profiles/mode | Fast/Standard controls, real Fast microphone capture, and disabling UTC assembly also disabling live mode passed. |
+| Lifecycle | Rotation, background/reopen and leaving Audio stopped capture, cleared local results/cache and did not restart reception. |
+
+The bounded physical helper finished in 78 seconds; the separate UI sequence
+finished in 396 seconds. Temporary power/rotation settings were restored.
+JVM tests also cover slow DSP/latest-slot replacement, 60-row history, unknown
+and staged hashes, busy/deadline recovery, and cancellation with late results.
+See [live reception](LIVE_RECEIVE.md) for reproduction and interpretation limits.
+These checks establish acoustic foreground RX on this device, not RF/VOX, USB,
+speaker TX, calibrated weak-signal performance or a complete QSO.
 
 ## Checks still pending
 
