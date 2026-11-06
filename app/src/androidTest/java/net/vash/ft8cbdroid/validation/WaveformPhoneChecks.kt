@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.validation
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -35,8 +36,17 @@ class WaveformPhoneChecks : Instrumentation() {
             SystemClock.sleep(10)
         }
     }
-    private fun node(text: String): AccessibilityNodeInfo? = uiAutomation.rootInActiveWindow
-        ?.findAccessibilityNodeInfosByText(text)?.firstOrNull { it.text?.toString() == text && it.isVisibleToUser }
+    // Compose exposes virtual descendants through traversal; a provider's text-search API
+    // need not return those descendants. Navigation labels can also have empty bounds.
+    private fun findNode(root: AccessibilityNodeInfo?, predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+        if (root == null) return null
+        if (predicate(root)) return root
+        repeat(root.childCount) { findNode(root.getChild(it), predicate)?.let { return it } }
+        return null
+    }
+    private fun node(text: String): AccessibilityNodeInfo? = findNode(uiAutomation.rootInActiveWindow) {
+        it.text?.toString() == text
+    }
     private fun button(text: String): AccessibilityNodeInfo? {
         var current = node(text)
         while (current != null) {
@@ -72,6 +82,10 @@ class WaveformPhoneChecks : Instrumentation() {
         var model: WaveformViewModel? = null
         var code = Activity.RESULT_CANCELED
         try {
+            uiAutomation.serviceInfo = uiAutomation.serviceInfo.apply {
+                flags = flags or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
+                    AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+            }
             activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             val vm = main { ViewModelProvider(activity)[WaveformViewModel::class.java] }
@@ -140,8 +154,9 @@ class WaveformPhoneChecks : Instrumentation() {
             report.put("generation_retry_after_cancel", true)
 
             show("Message")
-            val field = uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByText("CQ 1AT106")
-                .first { it.isEditable }
+            val field = requireNotNull(findNode(uiAutomation.rootInActiveWindow) {
+                it.isEditable && it.text?.toString() == "CQ 1AT106"
+            })
             check(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "<...> 26AT101")
             }))
