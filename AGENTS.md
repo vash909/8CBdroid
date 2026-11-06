@@ -32,13 +32,38 @@
   State the resulting behavior and the relevant validation; avoid implementation diaries.
 - Before requesting review, run local tests, lint and the debug build, then check
   the GitHub Actions result. Include concrete steps for testing on a phone when relevant.
-- After creating the PR and its build, wait for the user's explicit OK before
-  merging. Never merge or enable auto-merge without that approval. Passing checks
-  alone are not permission to merge.
+- The owner grants standing approval for the agent to merge focused PRs without
+  another OK only when every condition in "Conditional merge authorization"
+  below is met. Otherwise, wait for the owner's explicit OK. Passing CI or
+  connecting a phone alone never authorizes a merge.
 - Use JVM tests for domain/protocol rules and persistence/ViewModel tests for
   saved settings. Use a real phone for USB OTG, audio, VOX and radio interoperability.
 - Keep the initial development sequence focused: persistent station settings,
   LAN heartbeat/status, LAN decodes, then a first documented radio/cable backend.
+
+## Conditional merge authorization
+
+- An authorized Samsung Galaxy A51 or another suitable Android phone must be
+  connected via ADB. Install the successful CI APK matching the current PR head,
+  verify its identity, and complete all relevant phone checks before merging.
+- Local tests, lint, debug builds and required GitHub Actions checks must pass.
+  The tested code must match the code being merged; changes after testing
+  require the affected checks to be repeated.
+- Perform the phone checks the owner would otherwise perform: relevant UI flows,
+  permissions, actual backend behavior, persistence, cancellation/retry and
+  lifecycle/recovery cases, plus the milestone's acceptance checks. Use actual
+  audio, USB or radio hardware when the changed behavior requires it; mocks,
+  deployment and an offline probe cannot substitute for those checks.
+- Record the tested commit, CI run, device/Android version, checks and results
+  in the PR before merging. No required check may be failed, skipped, blocked or
+  still awaiting the owner's assessment. Unrelated future hardware capabilities
+  remain outside the PR's scope and must not be presented as verified.
+- If the phone is absent, unauthorized, locked when needed, unsuitable for a
+  required check, or the agent cannot complete the owner's relevant checks,
+  report what remains and wait for explicit merge approval. Follow any explicit
+  instruction from the owner to hold a PR even if the conditions above pass.
+- This authorizes an agent-executed merge after device validation. Do not enable
+  unattended GitHub auto-merge based only on CI; notify the owner after merging.
 
 ## Debug phone deployment
 
@@ -53,7 +78,9 @@
 - Use bounded ADB commands and preserve existing app data. Never uninstall the
   app or clear its data to resolve a signing conflict without explicit approval.
   If the phone is disconnected or unauthorized, report deployment as pending.
-- Deployment does not replace phone testing or the owner's explicit merge approval.
+- Deployment alone does not authorize merging. Apply the conditional merge
+  authorization above or obtain the owner's explicit OK. This does not waive
+  the separate approval required for uninstalling or clearing app data.
 
 ## Local resource limits
 

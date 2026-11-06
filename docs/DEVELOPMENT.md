@@ -159,7 +159,9 @@ successful code-PR CI run:
    must be unlocked. Keep the screen awake during UI checks and restore any
    temporary test setting. Report disconnected/unauthorized/locked tests as pending.
 5. Record commit, CI run, device/Android, actual checks and limitations. Deployment
-   does not replace phone testing or the owner's explicit merge approval.
+   alone does not authorize merging. Follow the conditional merge authorization
+   in [AGENTS.md](../AGENTS.md#conditional-merge-authorization); otherwise obtain
+   the owner's explicit merge approval.
 
 For a developer-owned local build with the same installed signing key:
 
@@ -217,9 +219,13 @@ the system language. No current test establishes VOX, USB audio, PTT or RF suppo
 ## Pull requests, CI and release boundary
 
 Use focused branches and short English PR titles/descriptions. Code PRs require
-local tests/lint/debug build, successful CI and relevant phone checks. Wait for
-explicit owner approval before merge; do not enable auto-merge. Direct-main
-work remains limited to documentation changes explicitly authorized by the owner.
+local tests/lint/debug build, successful CI and relevant phone checks. The agent
+may merge without another OK only when every condition in
+[AGENTS.md](../AGENTS.md#conditional-merge-authorization) passes, including all
+relevant checks the owner would otherwise perform on a connected Android phone.
+Otherwise wait for explicit owner approval. Do not enable unattended GitHub
+auto-merge based only on CI. Direct-main work remains limited to documentation
+changes explicitly authorized by the owner.
 
 The existing GitHub workflow runs on main pushes, PRs and manual dispatch:
 

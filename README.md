@@ -113,8 +113,10 @@ The [roadmap](docs/ROADMAP.md) describes planned work; verified capability and
 review outcomes are recorded in [validation](docs/VALIDATION.md).
 
 Use focused branches and short English PR descriptions. Run relevant local
-checks and CI, deploy/test on the available debug phone, then wait for the
-owner's explicit merge approval. Repository instructions are in [AGENTS.md](AGENTS.md).
+checks and CI, then deploy/test on the available debug phone. The agent may merge
+without another OK only after completing all relevant owner phone checks under
+the conditional authorization in [AGENTS.md](AGENTS.md); otherwise explicit
+owner approval is required.
 
 ## License and commercial use
 
