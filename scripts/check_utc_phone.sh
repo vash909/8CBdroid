@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 timeout 10 adb shell svc power stayon usb
 timeout 110 adb shell am instrument --user 0 -w -r -e scenario "$scenario" \
-    net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.UtcPhoneChecks > ".tooling/utc-$scenario-output.txt"
+    net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.WaveformPhoneChecks > ".tooling/utc-$scenario-output.txt"
 cat ".tooling/utc-$scenario-output.txt"
 python3 - "$scenario" <<'PY'
 import json,subprocess,sys

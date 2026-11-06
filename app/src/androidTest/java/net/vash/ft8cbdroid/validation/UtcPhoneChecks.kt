@@ -20,12 +20,12 @@ import net.vash.ft8cbdroid.time.TimeViewModel
 import org.json.JSONObject
 
 /** Real time-source and microphone checks; GPS needs a real satellite solution, not a supplied location. */
-class UtcPhoneChecks : Instrumentation() {
-    private var scenario = "ntp-audio"
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario") ?: scenario; start() }
+class UtcPhoneChecks(private val instrumentation: Instrumentation) {
+    private val targetContext get() = instrumentation.targetContext
+    private val uiAutomation get() = instrumentation.uiAutomation
     private fun <T> main(block: () -> T): T {
         var result: Result<T>? = null
-        runOnMainSync { result = runCatching(block) }
+        instrumentation.runOnMainSync { result = runCatching(block) }
         return requireNotNull(result).getOrThrow()
     }
     private fun await(description: String, seconds: Long = 5, condition: () -> Boolean) {
@@ -38,7 +38,7 @@ class UtcPhoneChecks : Instrumentation() {
         repeat(root.childCount) { find(root.getChild(it), text)?.let { return it } }
         return null
     }
-    override fun onStart() {
+    fun run(scenario: String) {
         val result = Bundle(); val report = JSONObject().put("scenario", scenario)
         var code = Activity.RESULT_CANCELED
         var activity: MainActivity? = null
@@ -50,7 +50,7 @@ class UtcPhoneChecks : Instrumentation() {
                 flags = flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
                     android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
             }
-            activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
+            activity = instrumentation.startActivitySync(Intent(targetContext, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             val timing = main { ViewModelProvider(activity)[TimeViewModel::class.java] }; time = timing
             val audio = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = audio
@@ -138,6 +138,6 @@ class UtcPhoneChecks : Instrumentation() {
             capture?.let { runCatching { main { it.stop(clear = true) } } }
             activity?.let { runCatching { main { it.finish() } } }
         }
-        finish(code, result)
+        instrumentation.finish(code, result)
     }
 }
