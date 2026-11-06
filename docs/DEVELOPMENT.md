@@ -72,6 +72,7 @@ does need the selected Android NDK/CMake.
 | --- | --- |
 | Main app | `app/build/outputs/apk/debug/app-debug.apk` |
 | Development instrumentation probes | `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk` |
+| App device checks | `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk` |
 | JVM test reports | `core/build/reports/tests/`, `protocol/wsjtcb/build/reports/tests/`, `app/build/reports/tests/` |
 | Lint reports | Each Android module's `build/reports/lint-results-debug.*` |
 
@@ -264,8 +265,8 @@ ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/check_waveform_phone.sh
 This test uses the real Activity, ViewModel, native encoder and document exporter.
 Its test-only provider deliberately fails a write, then accepts the retry into
 its own private file. It allows only the debuggable target app UID. The main
-APK contains neither this provider nor the instrumentation. No saved station
-setting, microphone, speaker, USB or radio is used.
+APK contains neither this provider nor the instrumentation. Saved station
+settings are preserved; capture, playback and radio interfaces remain idle.
 
 To exercise the actual Cancel button reliably, the test briefly parks Default
 workers on bounded latches without CPU spinning. It checks cancellation before

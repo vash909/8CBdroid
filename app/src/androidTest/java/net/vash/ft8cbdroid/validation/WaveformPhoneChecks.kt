@@ -4,8 +4,10 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.lifecycle.ViewModelProvider
@@ -36,6 +38,12 @@ class WaveformPhoneChecks : Instrumentation() {
             SystemClock.sleep(10)
         }
     }
+    private fun root(): AccessibilityNodeInfo? {
+        // Samsung's virtual tree can remain cached after scrolling without fresh events.
+        if (android.os.Build.VERSION.SDK_INT >= 34) uiAutomation.clearCache()
+        else uiAutomation.serviceInfo = uiAutomation.serviceInfo
+        return uiAutomation.rootInActiveWindow?.also { it.refresh() }
+    }
     // Compose exposes virtual descendants through traversal; a provider's text-search API
     // need not return those descendants. Navigation labels can also have empty bounds.
     private fun findNode(root: AccessibilityNodeInfo?, predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
@@ -44,7 +52,7 @@ class WaveformPhoneChecks : Instrumentation() {
         repeat(root.childCount) { findNode(root.getChild(it), predicate)?.let { return it } }
         return null
     }
-    private fun node(text: String): AccessibilityNodeInfo? = findNode(uiAutomation.rootInActiveWindow) {
+    private fun node(text: String): AccessibilityNodeInfo? = findNode(root()) {
         it.text?.toString() == text
     }
     private fun button(text: String): AccessibilityNodeInfo? {
@@ -62,13 +70,25 @@ class WaveformPhoneChecks : Instrumentation() {
     }
     private fun show(text: String) {
         for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
-            repeat(7) {
+            repeat(8) {
                 if (node(text) != null) return
-                scrollable(uiAutomation.rootInActiveWindow)?.performAction(direction)
-                SystemClock.sleep(100)
+                swipe(direction == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
             }
         }
         check(node(text) != null) { "UI text is not visible: $text" }
+    }
+    private fun swipe(forward: Boolean, fraction: Float = 0.55f) {
+        val bounds = Rect()
+        requireNotNull(scrollable(root())).getBoundsInScreen(bounds)
+        val start = bounds.top + bounds.height() * if (forward) 0.8f else 0.2f
+        val end = start + bounds.height() * fraction * if (forward) -1 else 1
+        // Use Android's input command, which selects a consistent virtual touch device.
+        // Samsung can reject mixed-device MotionEvent streams injected individually.
+        val x = bounds.centerX()
+        ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand(
+            "timeout 3 input touchscreen swipe $x ${start.toInt()} $x ${end.toInt()} 250"
+        )).use { check(it.readBytes().isEmpty()) { "Touch command failed" } }
+        SystemClock.sleep(150)
     }
     private fun click(text: String) {
         show(text)
@@ -92,6 +112,7 @@ class WaveformPhoneChecks : Instrumentation() {
             model = vm
             await("Messages navigation") { button("Messages") != null }
             click("Messages")
+            await("Messages screen") { node("Message preview") != null }
             click("Generate offline WAV")
             await("first native waveform") { main { vm.uiState.value.canSave } }
             val success = Uri.parse("content://net.vash.ft8cbdroid.test.r07/success")
@@ -115,6 +136,9 @@ class WaveformPhoneChecks : Instrumentation() {
             // exercised deterministically before a 38 ms encode finishes. Every wait is bounded.
             main { vm.changeFrequency("1250"); vm.changeFrequency("1000") }
             show("Generate offline WAV")
+            val generateBounds = Rect()
+            requireNotNull(button("Generate offline WAV")).getBoundsInScreen(generateBounds)
+            if (generateBounds.centerY() > targetContext.resources.displayMetrics.heightPixels * 0.65f) swipe(true, 0.25f)
             val count = Runtime.getRuntime().availableProcessors().coerceIn(2, 16)
             val ready = CountDownLatch(count)
             val release = CountDownLatch(1)
@@ -154,7 +178,7 @@ class WaveformPhoneChecks : Instrumentation() {
             report.put("generation_retry_after_cancel", true)
 
             show("Message")
-            val field = requireNotNull(findNode(uiAutomation.rootInActiveWindow) {
+            val field = requireNotNull(findNode(root()) {
                 it.isEditable && it.text?.toString() == "CQ 1AT106"
             })
             check(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
@@ -173,7 +197,17 @@ class WaveformPhoneChecks : Instrumentation() {
             result.putString("waveform_result", "PASS")
             code = Activity.RESULT_OK
         } catch (error: Throwable) {
-            result.putString("waveform_failure", "${error.javaClass.simpleName}: ${error.message}")
+            result.putString("waveform_failure", "${error.javaClass.simpleName}: ${error.message}; ${error.stackTrace.firstOrNull()}")
+            runCatching {
+                val nodes = StringBuilder()
+                fun record(node: AccessibilityNodeInfo?, depth: Int = 0) {
+                    if (node == null || depth > 30) return
+                    nodes.appendLine("${" ".repeat(depth)}${node.className}: ${node.text} clickable=${node.isClickable} scrollable=${node.isScrollable}")
+                    repeat(node.childCount) { record(node.getChild(it), depth + 1) }
+                }
+                record(root())
+                File(targetContext.cacheDir, "r07-failure-tree.txt").writeText(nodes.toString())
+            }
         } finally {
             model?.let { vm -> runCatching { main { vm.cancel() } } }
             activity?.let { runCatching { main { it.finish() } } }

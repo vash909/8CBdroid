@@ -2,7 +2,9 @@
 
 The **Messages** tab generates a WAV from a supported CB FT8 message, using the
 R05 codec and the source-built native channel engine. This is file generation
-only: there is no playback, microphone capture, radio output, PTT or UTC scheduler.
+only: this feature does not play audio, operate PTT or schedule TX. The separate
+[R10 microphone panel](MICROPHONE_CAPTURE.md) captures diagnostic audio; it does
+not provide live FT8 decoding.
 
 ## Behavior and format
 
@@ -63,9 +65,9 @@ must fail. Native encode/decode round trips supplement the independent check.
 
 This is a clean-channel qualification with supplied synchronization, **not** the
 full desktop candidate search, weak-signal demodulator, acceptance filters or
-RF interoperability. Loading an actual phone-exported WAV into WSJT-CB remains
-a separate integration check. No noisy sensitivity or desktop decoder parity is
-claimed. [Recorded reception](RECORDED_SLOTS.md) now covers a small fixed noisy corpus;
+RF interoperability. Actual phone exports have also passed the separate full
+WSJT-CB GUI file-import check described in [validation](VALIDATION.md#r07-closure-checks-pr-26).
+No noisy sensitivity or desktop decoder parity is claimed. [Recorded reception](RECORDED_SLOTS.md) now covers a small fixed noisy corpus;
 broader decoder cost/quality qualification is still pending.
 
 ```bash
@@ -75,16 +77,21 @@ bash scripts/controlled.sh 600 bash scripts/check.sh
 bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
 ```
 
-CI runs the independent channel checks and builds both APKs. The phone probe
+CI runs the independent channel checks and builds the app, engine probe and
+app device-check APKs. The phone probe
 additionally generates 12 message waveforms across the three frequency/level
 pairs and saves `files/r07-generated.wav` in its private test package. That file
 can be copied via `adb exec-out run-as` and checked with `wsjtcb_pcm.py --wave`,
 supplying its expected payload, frequency and level. [Validation](VALIDATION.md#r07-export-evidence)
 records the tested R07 commit/CI run, A51 checks and exact exported-file hash.
 Generation/export, invalid settings, consent/reset, invalidation on edits and
-reopening passed. Full desktop GUI import and remaining generation/export
-rotation, cancellation and retry checks are still pending. R08 import tests do
-not establish those separate generation/export paths.
+reopening passed. R07 closure adds generation/export rotation, picker cancellation,
+actual provider failure/retry, queued UI and active native cancellation, unresolved
+input rejection and full desktop GUI decoding of CQ/both hash orientations.
+[scripts/check_waveform_phone.sh](../scripts/check_waveform_phone.sh) reproduces
+the test-only instrumentation subset after verified app/test APK deployment;
+[development](DEVELOPMENT.md#r07-device-checks) explains its scope.
+R08 recorded-file tests remain separate evidence.
 
 <a id="deferred-phone-and-desktop-checklist"></a>
 
