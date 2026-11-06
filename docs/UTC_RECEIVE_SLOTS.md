@@ -139,7 +139,13 @@ ADB_LIBUSB=1 bash scripts/controlled.sh 130 bash scripts/check_utc_phone.sh ntp-
 ADB_LIBUSB=1 bash scripts/controlled.sh 130 bash scripts/check_utc_phone.sh gps
 ```
 
-The helpers do not install APKs or grant permissions. They restore temporary
+For capture-timing investigations, `bash scripts/capture_timestamps_phone.sh`
+collects ten seconds of boot/monotonic timestamp and frame-counter metadata using
+the matching CI development probe. It grants that probe microphone permission,
+saves no audio and plays no tone. Collection alone is not a UTC-slot qualification
+pass; use the actual slot/export checks above.
+
+The UTC helpers do not install APKs or grant permissions. They restore temporary
 USB stay-awake settings, stop only the app on exit, require explicit PASS and
 verify the private JSON report against instrumentation output. Audio remains in
 private phone cache unless explicitly copied/exported. Also exercise the actual
