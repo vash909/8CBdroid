@@ -152,8 +152,9 @@ the matching CI development probe. It grants that probe microphone permission,
 saves no audio and plays no tone. Collection alone is not a UTC-slot qualification
 pass; use the actual slot/export checks above.
 
-The UTC helpers do not install APKs or grant permissions. They restore temporary
-USB stay-awake settings, stop only the app on exit, require explicit PASS and
+The UTC helpers do not install APKs or grant permissions. They temporarily keep
+the screen awake while charging, including USB-C connections reported as AC,
+then restore the original stay-awake setting. They stop only the app on exit, require explicit PASS and
 verify the private JSON report against instrumentation output. Audio remains in
 private phone cache unless explicitly copied/exported. Also exercise the actual
 UI: presets/custom host validation, save/reopen, permission denial/allow,

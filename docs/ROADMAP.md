@@ -50,9 +50,12 @@ later estimates; do not promise a complete Android port in one PR.
   [PR #25](https://github.com/vash909/8CBdroid/pull/25) are merged: recorded slots
   (R08), bounded decoder profiles (R09) and foreground microphone capture (R10).
   A51 evidence and limitations are recorded in [validation](VALIDATION.md).
-- R11 is under review: NTP/GPS synchronization and UTC receive slots. A51 GPS
-  acquisition also timed out outdoors; GPS remains unverified. See
-  [validation](VALIDATION.md#r11-time-and-utc-capture-under-review).
+- [PR #27](https://github.com/vash909/8CBdroid/pull/27) completes R11: NTP/GPS
+  synchronization and UTC receive slots. NTP/audio/UI checks passed on the A51;
+  the S25 FE provided real GPS timing, including an offline measurement. The
+  owner accepted the offline path after stopping the repeated UI test. See
+  [evidence and limits](VALIDATION.md#r11-time-synchronization-and-utc-capture).
+  R12, live local decoding, is next.
   Local operating sessions, playback, CAT/PTT, AutoSeq
   and QSO logging remain pending; microphone capture does not yet feed live FT8.
 
@@ -202,13 +205,14 @@ and USB audio must remain separate capabilities.
   microphone and physical PC/phone tone checks passed. External input detach
   and radio audio remain unverified. See [capture](MICROPHONE_CAPTURE.md).
 
-### Current: R11 UTC receive slots
+### Completed: R11 UTC receive slots
 
-Implement NTP/GPS-only app time correction, regional NTP presets, a persistent
-custom server accepting IP/hostname, and timestamped complete microphone slots.
+NTP/GPS-only app time correction, regional NTP presets, a persistent custom
+server accepting IP/hostname, and timestamped complete microphone slots are implemented.
 The owner explicitly excluded manual offsets and an unsynchronized fallback.
-See [behavior and qualification boundaries](UTC_RECEIVE_SLOTS.md). Local/CI and
-actual NTP, GNSS, audio and UI evidence are required before declaring it complete.
+See [behavior and qualification boundaries](UTC_RECEIVE_SLOTS.md) and
+[device validation](VALIDATION.md#r11-time-synchronization-and-utc-capture).
+R12 will connect these slots to live local decoding; that work has not started.
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
 | --- | --- | --- |

@@ -194,9 +194,9 @@ The owner had no wired headset for physical detach testing; external inputs,
 USB/wired interoperability, sustained capture and live decoding remain unqualified.
 See [microphone capture](MICROPHONE_CAPTURE.md).
 
-## R11 time and UTC capture under review
+## R11 time synchronization and UTC capture
 
-The feature branch adds NTP/GPS-only time correction, regional/custom NTP server
+R11 adds NTP/GPS-only time correction, regional/custom NTP server
 preferences and timestamped complete microphone slots. Manual offsets and an
 unsynchronized fallback are excluded. See [UTC slots](UTC_RECEIVE_SLOTS.md).
 Review builds on the Galaxy A51 (SM-A515F, Android 13) have exercised actual NTP
@@ -208,16 +208,33 @@ Stop and document-picker cancellation/retry. Timestamp startup and UI handoff
 faults found during review have regression tests; the audio timing guard now
 allows a declared 10 ms budget, also included in slot uncertainty.
 
-Qualification must match the final CI APK. The tested commits, CI runs, current
-results and remaining checks are recorded in
+The Galaxy S25 FE (SM-S731B, Android 17) passed real GPS measurement,
+cancellation/retry and explicit application of the correction. With Wi-Fi and
+mobile data disabled and no active default network, the actual UI also completed
+a fresh GPS measurement/apply and the disabled-Location error/recovery flow.
+GPS timing uncertainty remains unavailable rather than inferred from position
+accuracy. These checks do not calibrate absolute satellite timing accuracy.
+
+The S25 FE separately passed hostname NTP synchronization and physical
+speaker-to-microphone capture across two complete UTC slots, reference-tone
+recovery, 360,044-byte export and the unchanged-Android-clock check.
+
+The automated offline GPS slot/export UI sequence did not finish: the driver
+could not find the idle state after its Stop tap. The owner accepted the offline
+path and explicitly instructed the agent to stop repeating that test. This is
+owner acceptance, not an automated offline slot/export pass. Complete-slot audio,
+export and lifecycle evidence from the matching A51 build remains applicable;
+the additional S25 FE capture/export probe used NTP.
+
+Qualification must match the final CI APK. The tested commits, CI runs, device
+results and owner acceptance are recorded in
 [PR #27](https://github.com/vash909/8CBdroid/pull/27). Previous-build evidence
 does not qualify a changed backend.
 
 GPS acquisition timed out near a window and during the owner's outdoor tests.
 The owner reports a possible pre-existing GPS software problem on this A51;
-the cause has not been diagnosed. A real GPS timing solution and offline GPS
-slot capture remain **unverified**, and R11 is not fully hardware-qualified.
-Another suitable receiver is needed for those checks; no mock replaces them.
+the cause has not been diagnosed. The successful S25 FE measurements do not
+qualify the A51 receiver or guarantee acquisition on other devices or sky views.
 
 ## Checks still pending
 

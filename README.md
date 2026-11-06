@@ -49,8 +49,8 @@ settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a
    measurement, then enable **Assemble UTC slots** in Audio. Stop before exporting
    the latest complete 15-second WAV. [UTC slots](docs/UTC_RECEIVE_SLOTS.md) describes
    expiry, device requirements and timing limits. There is no manual offset.
-   GPS remains unverified on the A51 after outdoor acquisition timeouts; see
-   [current validation](docs/VALIDATION.md#r11-time-and-utc-capture-under-review).
+   GPS timing was verified on the S25 FE; the A51 did not obtain a fix. See
+   [device evidence and limits](docs/VALIDATION.md#r11-time-synchronization-and-utc-capture).
 6. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
    send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
    [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
