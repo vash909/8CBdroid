@@ -13,7 +13,7 @@ desktop DSP engine or Hamlib.
   required legacy packing/include and module dependencies, are
   vendored under `reference/wsjtcb/source/` for host-side tests only. Upstream
   paths, revision and SHA-256 values are recorded in `sources.json` and
-  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` in the reference directory. These sources and generated
+  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` / `pcm-sources.json` in the reference directory. These sources and generated
   text fixtures are not in the main APK. The offline native backend is described below.
 - Selected WSJT-CB text packing, unpacking and callsign-hash algorithms are
   ported into `core/.../message/CbMessageCodec.kt` under GPL-3.0-only. These
@@ -61,3 +61,7 @@ native libraries and their transitive dependencies.
   headers are a host-only dependency (Boost Software License 1.0); Boost and
   Fortran/Qt runtimes are not packaged in the app. The separate probe APK includes
   generated desktop WAVs for tests; the main APK excludes these fixtures.
+- R07 adds four unchanged desktop LDPC/CRC/parity/helper files under
+  `reference/wsjtcb/source/pcm/`, pinned by `pcm-sources.json`. They are GPLv3
+  host-only verification sources, never part of the Android native library.
+  See `docs/OFFLINE_WAVEFORM.md` for adapter boundaries and verification limits.

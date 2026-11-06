@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,9 +33,19 @@ fun MessagePreviewPanel(
     onReceive: (Ft8Payload77) -> Unit,
     onCommit: () -> Unit,
     onReset: () -> Unit,
+    waveform: WaveformUiState,
+    onWaveformInput: (String, EncodingMode) -> Unit,
+    onFrequency: (String) -> Unit,
+    onLevel: (String) -> Unit,
+    onAcceptChanges: (Boolean) -> Unit,
+    onGenerate: (String, EncodingMode) -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf("CQ 1AT106") }
     var freeText by rememberSaveable { mutableStateOf(false) }
+    val mode = if (freeText) EncodingMode.FREE_TEXT else EncodingMode.AUTOMATIC
+    LaunchedEffect(text, mode) { onWaveformInput(text, mode) }
     val result = remember(text, freeText) {
         CbMessageCodec.pack(text, if (freeText) EncodingMode.FREE_TEXT else EncodingMode.AUTOMATIC)
     }
@@ -42,12 +53,16 @@ fun MessagePreviewPanel(
         Text("Message preview", style = MaterialTheme.typography.titleLarge)
         Text("Check how WSJT-CB encodes your message. This preview runs offline; live transmission is pending.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = !freeText, onClick = { freeText = false }, label = { Text("Automatic") })
-            FilterChip(selected = freeText, onClick = { freeText = true }, label = { Text("Free text") })
+            FilterChip(selected = !freeText, onClick = {
+                freeText = false; onWaveformInput(text, EncodingMode.AUTOMATIC)
+            }, label = { Text("Automatic") })
+            FilterChip(selected = freeText, onClick = {
+                freeText = true; onWaveformInput(text, EncodingMode.FREE_TEXT)
+            }, label = { Text("Free text") })
         }
         OutlinedTextField(
             value = text,
-            onValueChange = { if (it.length <= 37) text = it },
+            onValueChange = { if (it.length <= 37) { text = it; onWaveformInput(it, mode) } },
             label = { Text("Message") },
             placeholder = { Text("<1AT106> 26AT101 R-10") },
             supportingText = { Text("${text.length}/37 characters; free text carries at most 13") },
@@ -77,6 +92,9 @@ fun MessagePreviewPanel(
                 }
             }
         }
+        WaveformPanel(waveform, (result as? PackResult.Encoded)?.contentChanged == true,
+            result is PackResult.Encoded, onFrequency, onLevel, onAcceptChanges,
+            { onGenerate(text, mode) }, onCancel, onSave)
         Text("Offline receive session", style = MaterialTheme.typography.titleLarge)
         Text("Simulate reception of the encoded payload. Editing or previewing a message does not teach this receiver.")
         Text("Local station: ${session.stationCall ?: "Not set"}")

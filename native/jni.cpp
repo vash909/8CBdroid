@@ -14,9 +14,9 @@ void failure(JNIEnv* env, std::exception const& error) {
 }
 }
 extern "C" JNIEXPORT jfloatArray JNICALL
-Java_net_vash_ft8cbdroid_dsp_NativeBridge_encode(JNIEnv* env, jobject, jbyteArray bytes, jfloat frequency) {
+Java_net_vash_ft8cbdroid_dsp_NativeBridge_encode(JNIEnv* env, jobject, jbyteArray bytes, jfloat frequency, jfloat peak_amplitude) {
     try {
-        auto pcm=eightcb::encode_slot(payload(env,bytes),frequency);
+        auto pcm=eightcb::encode_slot(payload(env,bytes),frequency,peak_amplitude);
         auto result=env->NewFloatArray(pcm.size());
         if (result) env->SetFloatArrayRegion(result,0,pcm.size(),pcm.data());
         return result;

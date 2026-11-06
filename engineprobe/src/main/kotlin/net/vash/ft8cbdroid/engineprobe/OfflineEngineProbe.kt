@@ -10,6 +10,10 @@ import net.vash.ft8cbdroid.core.Ft8PcmSlot
 import net.vash.ft8cbdroid.core.message.CbMessageCodec
 import net.vash.ft8cbdroid.core.message.PackResult
 import net.vash.ft8cbdroid.core.message.UnpackResult
+import net.vash.ft8cbdroid.core.message.OfflineFt8Generator
+import net.vash.ft8cbdroid.core.message.Ft8GenerationSettings
+import net.vash.ft8cbdroid.core.message.EncodingMode
+import net.vash.ft8cbdroid.core.message.WaveformGenerationResult
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import net.vash.ft8cbdroid.reference.HashSessionReferenceChecks
 import org.json.JSONObject
@@ -51,6 +55,29 @@ class OfflineEngineProbe : Instrumentation() {
                 hashScenarios.values.forEach(HashSessionReferenceChecks::verify)
                 report.putInt("hash_session_scenarios", hashScenarios.size)
                 val engine = NativeFt8Engine()
+                val generator = OfflineFt8Generator(engine)
+                var generatedCount = 0
+                for (text in listOf("CQ 1AT106", "<1AT106> 26AT101", "26AT101 <1AT106>", "26AT101 R-10")) {
+                    val expected = CbMessageCodec.pack(text) as PackResult.Encoded
+                    for ((frequency, level) in listOf(200f to .01f, 1000f to .4f, 2900f to 1f)) {
+                        val result = generator.generate(text, EncodingMode.AUTOMATIC,
+                            Ft8GenerationSettings(frequency, level), true) as WaveformGenerationResult.Generated
+                        check(result.waveform.message.payload == expected.payload)
+                        val wav = result.waveform.wavBytes()
+                        check(wav.size == 360044)
+                        val header = ByteBuffer.wrap(wav).order(ByteOrder.LITTLE_ENDIAN)
+                        check(header.getInt(24) == 12000 && header.getShort(22).toInt() == 1)
+                        check(result.waveform.pcm.toFloatArray().maxOf { abs(it) } <= level + .00001f)
+                        check(engine.decode(result.waveform.pcm).frames.map { it.payload } == listOf(expected.payload))
+                        if (text == "CQ 1AT106" && frequency == 1000f) {
+                            java.io.File(context.filesDir, "r07-generated.wav").writeBytes(wav)
+                            report.putString("generated_wav_sha256", MessageDigest.getInstance("SHA-256")
+                                .digest(wav).joinToString("") { "%02x".format(it) })
+                        }
+                        generatedCount++
+                    }
+                }
+                report.putInt("generated_waveforms", generatedCount)
                 val corpus = JSONObject(context.assets.open("channel.json").bufferedReader().use { it.readText() })
                 val waves = corpus.getJSONArray("waves")
                 val timings = mutableListOf<Long>()

@@ -54,5 +54,5 @@ data class Ft8DecodeResult(val frames: List<Ft8DecodedFrame>, val candidateCount
 /** Offline channel operations only; no text codec, device audio or RF access. */
 interface Ft8Engine {
     suspend fun decode(slot: Ft8PcmSlot): Ft8DecodeResult
-    suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float): Ft8PcmSlot
+    suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float = .4f): Ft8PcmSlot
 }

@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
 import net.vash.ft8cbdroid.message.HashSessionUiState
+import net.vash.ft8cbdroid.message.WaveformViewModel
+import net.vash.ft8cbdroid.message.WaveformUiState
+import net.vash.ft8cbdroid.core.message.EncodingMode
 import net.vash.ft8cbdroid.core.Ft8Payload77
 import net.vash.ft8cbdroid.core.CbCallsign
 import net.vash.ft8cbdroid.core.MaidenheadLocator
@@ -38,6 +42,10 @@ import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
     private lateinit var lanViewModel: LanViewModel
+    private lateinit var waveformViewModel: WaveformViewModel
+    private val wavDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        waveformViewModel.export(it?.toString())
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -50,11 +58,13 @@ class MainActivity : ComponentActivity() {
         lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
+        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
+            val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(station.saved?.callsign) { hashViewModel.changeStation(station.saved?.callsign) }
             EightCbApp(
                 station = station,
@@ -76,6 +86,14 @@ class MainActivity : ComponentActivity() {
                 onSimulateReceive = hashViewModel::receive,
                 onCommitHashes = hashViewModel::commit,
                 onResetHashes = hashViewModel::reset,
+                waveform = waveform,
+                onWaveformInput = waveformViewModel::changeInput,
+                onWaveformFrequency = waveformViewModel::changeFrequency,
+                onWaveformLevel = waveformViewModel::changeLevel,
+                onWaveformConsent = waveformViewModel::acceptChanges,
+                onGenerateWaveform = waveformViewModel::generate,
+                onCancelWaveform = waveformViewModel::cancel,
+                onSaveWaveform = { if (waveformViewModel.prepareExport()) wavDestination.launch("8CBdroid-FT8.wav") },
             )
         }
     }
@@ -114,6 +132,14 @@ fun EightCbApp(
     onSimulateReceive: (Ft8Payload77) -> Unit = {},
     onCommitHashes: () -> Unit = {},
     onResetHashes: () -> Unit = {},
+    waveform: WaveformUiState = WaveformUiState(),
+    onWaveformInput: (String, EncodingMode) -> Unit = { _, _ -> },
+    onWaveformFrequency: (String) -> Unit = {},
+    onWaveformLevel: (String) -> Unit = {},
+    onWaveformConsent: (Boolean) -> Unit = {},
+    onGenerateWaveform: (String, EncodingMode) -> Unit = { _, _ -> },
+    onCancelWaveform: () -> Unit = {},
+    onSaveWaveform: () -> Unit = {},
 ) {
     var section by rememberSaveable { mutableIntStateOf(0) }
     var connection by rememberSaveable { mutableStateOf("Phone VOX") }
@@ -215,7 +241,9 @@ fun EightCbApp(
                         }
                         OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
                     }
-                    4 -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes)
+                    4 -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
+                        waveform, onWaveformInput, onWaveformFrequency, onWaveformLevel, onWaveformConsent,
+                        onGenerateWaveform, onCancelWaveform, onSaveWaveform)
                     3 -> {
                         LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan, onReplayLan, onClearLan)
                     }

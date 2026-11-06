@@ -12,9 +12,9 @@ import net.vash.ft8cbdroid.core.Ft8PcmSlot
 
 /** Experimental bounded channel backend. Cancellation is observed between native calls. */
 class NativeFt8Engine : Ft8Engine {
-    override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float): Ft8PcmSlot =
+    override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot =
         withContext(Dispatchers.Default) {
-            gate.withLock { Ft8PcmSlot.fromSamples(NativeBridge.encode(payload.toByteArray(), audioFrequencyHz)) }
+            gate.withLock { Ft8PcmSlot.fromSamples(NativeBridge.encode(payload.toByteArray(), audioFrequencyHz, peakAmplitude)) }
         }
 
     override suspend fun decode(slot: Ft8PcmSlot): Ft8DecodeResult = withContext(Dispatchers.Default) {
@@ -40,6 +40,6 @@ internal class NativeResult(
 
 internal object NativeBridge {
     init { System.loadLibrary("eightcbdroid_ft8") }
-    external fun encode(payload: ByteArray, frequency: Float): FloatArray
+    external fun encode(payload: ByteArray, frequency: Float, peakAmplitude: Float): FloatArray
     external fun decode(pcm: FloatArray): NativeResult
 }

@@ -19,6 +19,6 @@ struct DecodeResult {
     int candidates;
 };
 Tones encode_tones(Payload const& payload);
-std::vector<float> encode_slot(Payload const& payload, float frequency_hz);
+std::vector<float> encode_slot(Payload const& payload, float frequency_hz, float peak_amplitude = 0.4f);
 DecodeResult decode_slot(std::vector<float> const& pcm);
 }

@@ -65,6 +65,10 @@ For the offline **Messages** preview and message-codec phone checks, follow
 vectors as well as independent DSP audio fixtures. It also checks 96 desktop hash
 scenarios; follow [the R06 session guide](CB_HASH_SESSIONS.md) for commit/reset,
 collision and lifecycle checks in the Messages tab.
+For **Generate offline WAV** and document export, follow
+[the R07 checklist](OFFLINE_WAVEFORM.md#deferred-phone-and-desktop-checklist).
+Its host qualification invokes pinned desktop LDPC/CRC with known time/frequency;
+the A51 probe and actual desktop import are pending until the phone is available.
 
 ## Phone checks
 

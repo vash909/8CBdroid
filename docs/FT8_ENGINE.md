@@ -2,7 +2,8 @@
 
 R04 selects a source-built channel backend for offline experiments. It does not
 add local RX/TX controls to the app. The separate [R05 text codec](CB_MESSAGE_CODEC.md) adds offline packing/unpacking.
-Hash learning, AutoSeq, live audio and radio operation remain later milestones.
+[R06 hash learning](CB_HASH_SESSIONS.md) and [R07 offline WAV generation](OFFLINE_WAVEFORM.md)
+are separate layers. AutoSeq, live audio and radio operation remain later milestones.
 
 ## Decision and dependencies
 
@@ -24,8 +25,8 @@ At R04 selection, the unmodified ft8_lib amateur text codec differed from the
 pinned WSJT-CB production packer on **63 of 66** R03b inputs, including rejection and different
 payloads. `codec_probe` reports the exact cases; `message.c` and `text.c` are
 **excluded from Android**. Do not use their callsign/message policy for CB.
-The selected layer accepts raw 77-bit payloads only. R05 implements the separate text codec; R06 must add learned RX hash behavior
-before the later live-operation milestones.
+The selected layer accepts raw 77-bit payloads only. R05 implements the separate
+text codec and R06 adds learned RX hash behavior before live-operation milestones.
 
 ## Contracts and bounded work
 
@@ -35,10 +36,11 @@ score. Buffers own defensive copies; malformed bit lengths/padding, incomplete
 slots and non-finite/out-of-range PCM are rejected. DSP PCM is mono float at
 12 kHz, normalized to [-1, 1], exactly 180,000 samples (15 seconds).
 
-The experimental encoder fixes waveform gain to 0.4 and onset to 0.8 seconds;
-base frequency is explicitly 200–2900 Hz. These are smoke-test parameters, not
-TX scheduling or output calibration. R07 will qualify waveform/spectral behavior
-and desktop decoding of Android-generated audio.
+The encoder exposes a peak amplitude of 0.01–1 (default 0.4), onset fixed at
+0.8 seconds and base frequency 200–2900 Hz. R07 adds message-level orchestration,
+WAV export and independent clean-waveform checks through pinned desktop LDPC/CRC.
+Phone-exported WAV validation remains pending; see [the R07 evidence and limits](OFFLINE_WAVEFORM.md).
+These settings do not establish TX scheduling or hardware output calibration.
 
 `dsp:ft8` runs JNI on `Dispatchers.Default`, with one process-wide mutex. Native
 calls own their buffers and have no shared message/hash state. Decoder search is
