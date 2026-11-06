@@ -13,6 +13,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0-dev"
+        testInstrumentationRunner = "net.vash.ft8cbdroid.validation.WaveformPhoneChecks"
     }
     androidResources { localeFilters += "en" }
     buildFeatures { compose = true }

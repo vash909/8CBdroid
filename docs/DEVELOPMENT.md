@@ -64,7 +64,7 @@ bash scripts/controlled.sh 600 bash scripts/check.sh
 ```
 
 The check runs `:core:test`, `:protocol:wsjtcb:test`, app JVM tests, app/audio/DSP/probe
-lint, and both debug APK builds. It uses `--no-daemon`. JVM tests read committed
+lint, the app/probe debug APK builds and the Android device-check APK. It uses `--no-daemon`. JVM tests read committed
 reference data and need no host Fortran/Qt compiler; building the JNI dependency
 does need the selected Android NDK/CMake.
 
@@ -232,9 +232,10 @@ The existing GitHub workflow runs on main pushes, PRs and manual dispatch:
 | Job/artifact | Contents |
 | --- | --- |
 | `reference` job | Host source/fixture reproduction, native channel/PCM/recording checks and Python tests. |
-| `build` job | JVM tests, app/DSP/probe lint and both APK builds. No physical device test. |
+| `build` job | JVM tests, app/audio/DSP/probe lint and all development APK builds. No physical device test. |
 | `8CBdroid-debug` | Main debug APK. |
-| `8CBdroid-engine-probe` | Offline instrumentation debug APK with test corpora. |
+| `8CBdroid-engine-probe` | Offline/acoustic instrumentation APK with test corpora. |
+| `8CBdroid-device-checks` | Test-only APK targeting the debug app: R07 provider-failure/retry, UI cancellation and real encoder checks. |
 | `validation-reports` | JVM test and app lint reports; uploaded even after failure when available. |
 
 Artifacts are retained for 14 days; long-lived evidence should link the run and
@@ -248,3 +249,27 @@ synthetic/reference WAVs are intentional test fixtures with documented provenanc
 R10 adds a separate, opt-in acoustic probe that records a short speaker reference
 tone on an unlocked phone. Its microphone permission does not change the ordinary
 offline probe behavior. See [capture procedure and limitations](MICROPHONE_CAPTURE.md#verification).
+
+## R07 device checks
+
+Install the successful CI main app and `8CBdroid-device-checks` APK from the
+same run/head, preserving app data. The test APK must have the matching debug
+signature. Unlock the phone before running:
+
+```bash
+source scripts/env.sh
+ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/check_waveform_phone.sh
+```
+
+This test uses the real Activity, ViewModel, native encoder and document exporter.
+Its test-only provider deliberately fails a write, then accepts the retry into
+its own private file. It allows only the debuggable target app UID. The main
+APK contains neither this provider nor the instrumentation. No saved station
+setting, microphone, speaker, USB or radio is used.
+
+To exercise the actual Cancel button reliably, the test briefly parks Default
+workers on bounded latches without CPU spinning. It checks cancellation before
+encoding starts and, separately, after observing active JNI encoding. This does
+not measure ordinary generation latency. Failed tests are reported as failures.
+The helper restores its temporary USB stay-awake setting and stops only the
+target app on exit. Reports remain in ignored `.tooling/`.
