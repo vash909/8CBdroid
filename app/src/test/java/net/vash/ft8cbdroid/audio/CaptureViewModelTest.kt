@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.audio
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.*
 import net.vash.ft8cbdroid.core.audio.*
 import org.junit.After
@@ -53,7 +54,11 @@ class CaptureViewModelTest {
         vm.requestStart(true); runCurrent(); start.countDown()
         // Deliberately keep the main test dispatcher busy while the hardware publishes.
         assertTrue(emitted.await(2, java.util.concurrent.TimeUnit.SECONDS))
-        vm.stop(); assertTrue(cleaned.await(2, java.util.concurrent.TimeUnit.SECONDS)); runCurrent()
+        vm.stop(); assertTrue(cleaned.await(2, java.util.concurrent.TimeUnit.SECONDS))
+        // Hardware cleanup precedes dispatching completion back to Main; await both.
+        withContext(Dispatchers.Default) {
+            withTimeout(2_000) { vm.uiState.first { it.phase == CapturePhase.IDLE } }
+        }
         assertEquals(100L, vm.uiState.value.metrics!!.inputSamples)
         assertEquals(CapturePhase.IDLE, vm.uiState.value.phase)
     }
