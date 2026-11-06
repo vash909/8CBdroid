@@ -40,6 +40,32 @@ class CaptureTimeline(private val rate: Int, private val bufferFrames: Int) {
     }
 }
 
+/** Discard startup audio until timestamps remain consistent for 500 ms and at least three observations. */
+class CaptureTimestampSettler(private val rate: Int, private val bufferFrames: Int) {
+    private var timeline = CaptureTimeline(rate, bufferFrames)
+    private var first: CaptureTimestamp? = null
+    private var last: CaptureTimestamp? = null
+    private var observations = 0
+    var ready = false
+        private set
+    val driftPpm get() = timeline.driftPpm
+    fun reset() {
+        check(!ready)
+        timeline = CaptureTimeline(rate, bufferFrames); first = null; last = null; observations = 0
+    }
+    fun stamp(value: CaptureTimestamp, readFrames: Long, nowNanos: Long): Long? {
+        val zero = try { timeline.stamp(value, readFrames, nowNanos) }
+        catch (error: CaptureException) { if (ready) throw error; reset(); return null }
+        if (!ready) {
+            if (first == null) first = value
+            if (value != last) observations++
+            last = value
+            ready = observations >= 3 && value.monotonicNanos - requireNotNull(first).monotonicNanos >= 500_000_000
+        }
+        return zero.takeIf { ready }
+    }
+}
+
 data class CompletedUtcSlot(val utcStartMillis: Long, val pcm: Ft8PcmSlot, val source: String, val uncertaintyMillis: Double?)
 data class UtcSlotProgress(val completed: Long, val collected: Int, val discarded: Long, val lastUtcMillis: Long?, val driftPpm: Double?)
 

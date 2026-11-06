@@ -56,6 +56,24 @@ class UtcSlotsTest {
             assertEquals(0.0, timeline.driftPpm!!, .0001)
         }
     }
+    @Test fun coldStartTimestampsMustSettleBeforeAnySampleIsAccepted() {
+        val settling = CaptureTimestampSettler(48000, 9600)
+        val boot = 10_000_000_000L
+        assertNull(settling.stamp(CaptureTimestamp(48000, boot), 48000, boot))
+        // A51 cold capture: 958 frames advanced while its timestamp moved by 59.39 ms.
+        assertNull(settling.stamp(CaptureTimestamp(48958, boot + 59_389_461), 48958, boot + 59_389_461))
+        for (step in 0..24) {
+            val time = boot + 100_000_000 + step * 20_000_000L
+            val frames = 50000L + step * 960
+            assertNull(settling.stamp(CaptureTimestamp(frames, time), frames, time))
+        }
+        val zero = settling.stamp(CaptureTimestamp(74000, boot + 600_000_000), 74000, boot + 600_000_000)
+        assertNotNull(zero); assertTrue(settling.ready)
+        try {
+            settling.stamp(CaptureTimestamp(74960, boot + 624_000_000), 74960, boot + 624_000_000)
+            fail("An active timestamp jump must not silently restart settling")
+        } catch (_: CaptureException) { }
+    }
     @Test fun timestampResetOverrunStalenessAndExcessDriftFailClosed() {
         for (kind in 0..3) {
             val t = CaptureTimeline(48000, 9600); t.stamp(CaptureTimestamp(48000, 10_000_000_000), 48000, 10_000_000_000)

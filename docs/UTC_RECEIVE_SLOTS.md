@@ -96,8 +96,11 @@ service is used.
    embedded UTC metadata. Import later with that UTC in the recorded-slot decoder.
 
 Capture requests `AudioRecord` timestamps in `TIMEBASE_BOOTTIME`, matching
-`elapsedRealtimeNanos`. The first 500 ms are excluded from UTC assembly while
-the recording pipeline settles. DSP sample times account for cumulative sample
+`elapsedRealtimeNanos`. Startup audio is excluded until at least three distinct timestamps remain
+consistent for 500 ms, after the initial 500 ms warmup. Startup clock shifts reset
+only this candidate timeline; if it cannot settle within three seconds, capture
+stops. Once confirmed, timestamp faults stop capture rather than resetting its
+mapping. DSP sample times account for cumulative sample
 positions and subtract the resampler's 64-input-frame delay at both input rates.
 Receipt/poll time is not used as the sample's capture time.
 

@@ -96,7 +96,7 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture 
             effect("Echo cancellation", AcousticEchoCanceler.isAvailable()) { AcousticEchoCanceler.create(recorder.audioSessionId) }
             val resampler = CaptureResampler(recorder.sampleRate)
             val input = ShortArray(recorder.sampleRate / 50)
-            val timeline = CaptureTimeline(recorder.sampleRate, recorder.bufferSizeInFrames)
+            val timeline = CaptureTimestampSettler(recorder.sampleRate, recorder.bufferSizeInFrames)
             val timestamp = AudioTimestamp()
             var timestampConfirmed = false
             var inputSamples = 0L; var outputSamples = 0L; var clipped = 0L
@@ -123,11 +123,15 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture 
                         if (recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_BOOTTIME) == AudioRecord.SUCCESS && timestamp.nanoTime > 0) {
                             val zero = timeline.stamp(CaptureTimestamp(timestamp.framePosition, timestamp.nanoTime), inputSamples,
                                 SystemClock.elapsedRealtimeNanos())
-                            timestampConfirmed = true
-                            chunk(TimedCaptureChunk(outputSamples, zero + outputSamples * 1_000_000_000L / 12000, pcm, timeline.driftPpm))
-                        } else if (timestampConfirmed || now - started > 2000) {
+                            if (zero != null) {
+                                timestampConfirmed = true
+                                chunk(TimedCaptureChunk(outputSamples, zero + outputSamples * 1_000_000_000L / 12000, pcm, timeline.driftPpm))
+                            }
+                        } else if (timestampConfirmed) {
                             throw CaptureException("Android did not provide audio timestamps. UTC slots were discarded; restart capture.")
-                        }
+                        } else timeline.reset()
+                        if (!timestampConfirmed && now - started > 3000)
+                            throw CaptureException("Audio timestamps did not stabilize within three seconds. UTC slots were discarded; restart capture.")
                     }
                     outputSamples += pcm.size; buffer.append(pcm)
                 }
