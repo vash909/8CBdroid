@@ -20,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -262,6 +264,9 @@ fun EightCbApp(
                 NavigationBar(containerColor = RadioColors.background, tonalElevation = 0.dp) {
                     listOf(AppDestination.OPERATE, AppDestination.SETTINGS, AppDestination.CHAT).forEach { tab ->
                         NavigationBarItem(selected = destination.tab == tab, onClick = { navigate(tab) },
+                            modifier = if (destination.tab == tab && destination != tab) Modifier.semantics {
+                                onClick(label = "Open ${tab.title}") { navigate(tab); true }
+                            } else Modifier,
                             icon = { NavigationGlyph(tab) }, label = { Text(tab.title) })
                     }
                 }
