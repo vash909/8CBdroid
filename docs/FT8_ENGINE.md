@@ -110,9 +110,9 @@ After building `.tooling/native-host` and configuring the host compilers as in
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 120 python3 scripts/check_native.py .tooling/native-host
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
+timeout 120 python3 scripts/check_native.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
 ```
 
 These adapter checks do not run the full WSJT-CB desktop search/plausibility
@@ -134,7 +134,7 @@ For local-build smoke testing, after the regular build:
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/probe_phone.sh
+timeout 120 bash scripts/probe_phone.sh
 ```
 
 This helper installs the **local** probe APK and force-stops only that package

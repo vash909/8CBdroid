@@ -58,9 +58,9 @@ wrapper, for example:
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_reference.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check
+timeout 180 python3 scripts/wsjtcb_reference.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check
+timeout 180 python3 scripts/wsjtcb_qso.py --check
 ```
 
 Run the Python commands from the repository root. To intentionally update
@@ -87,7 +87,7 @@ archive by SHA-256 and records the checked initial CB import/V1.0 commits. The
 audited v3.0.0 comparison is a later release and does not replace that archive. With explicit network access:
 
 ```bash
-bash scripts/controlled.sh 300 python3 scripts/wsjtcb_reference.py --check --audit-sources
+timeout 300 python3 scripts/wsjtcb_reference.py --check --audit-sources
 ```
 
 This verifies the predicate fixture and downloads all 37 distinct source files
@@ -116,7 +116,7 @@ With a local WSJT-CB Git repository containing the first import and V1.0 commits
 curl -fL --connect-timeout 15 --max-time 600 \
   -o .tooling/wsjtx-3.0.0-rc1.tgz \
   https://downloads.sourceforge.net/project/wsjt/wsjtx-3.0.0-rc1/wsjtx-3.0.0-rc1.tgz
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_snapshot.py \
+timeout 180 python3 scripts/wsjtcb_snapshot.py \
   --archive .tooling/wsjtx-3.0.0-rc1.tgz \
   --repository /path/to/WSJT-CB
 ```

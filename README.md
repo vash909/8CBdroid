@@ -29,10 +29,10 @@ packets carry desktop status/messages, not audio.
 
 Download **8CBdroid-debug** from a successful
 [GitHub Actions run](https://github.com/vash909/8CBdroid/actions/workflows/android.yml).
-These are development APKs, not release builds. The agent deploys the matching
-CI APK through ADB to the authorized debug phone and asks when it needs unlocking.
-A debug-signature conflict requires approval before reinstalling and restoring
-settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone).
+These are development APKs, not release builds. Download the APK artifact from
+that run and install it on a compatible Android phone. See
+[deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone) for ADB
+commands and debug-signature limitations.
 
 1. In **Station**, save a complete CB callsign and a 4- or 6-character locator,
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
@@ -73,12 +73,12 @@ See [spectrum and waterfall](docs/SPECTRUM.md) for zoom, markers, cursor selecti
 ## Build from source
 
 Supported automated setup: Linux x86_64, Python 3.12+, Git, `curl`, `unzip`,
-Internet access and a systemd user session for controlled builds.
+Internet access and the standard Linux `timeout` command.
 
 ```bash
 python3 scripts/bootstrap.py
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 600 bash scripts/check.sh
 ```
 
 Bootstrap installs project-local JDK/Android tooling in ignored `.tooling/`,
@@ -89,8 +89,7 @@ tests/lint; the separate desktop-reference checks need host compilers.
 - App: `app/build/outputs/apk/debug/app-debug.apk`
 - Development test probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
 
-On this PC, heavy jobs use **one job, two CPU cores, 16 GiB maximum RAM, no swap
-and a finite deadline**. Use `--no-daemon` for additional Gradle commands.
+Use `--no-daemon` for additional Gradle commands.
 [Development setup](docs/DEVELOPMENT.md) covers Android Studio, other systems,
 reference compilers, CI artifacts and safe phone deployment.
 [Decoder profiles](docs/DECODER_PROFILES.md) describe bounded admission,
@@ -125,14 +124,13 @@ also passed file decoding in the complete WSJT-CB desktop GUI; see the
 
 Start with the [documentation index](docs/README.md),
 [architecture](docs/ARCHITECTURE.md) and [development guide](docs/DEVELOPMENT.md).
-The [roadmap](docs/ROADMAP.md) describes planned work; verified capability and
-review outcomes are recorded in [validation](docs/VALIDATION.md).
+Verified capabilities, tested revisions and limitations are recorded in
+[validation](docs/VALIDATION.md).
 
-Use focused branches and short English PR descriptions. Run relevant local
-checks and CI, then deploy/test on the available debug phone. The agent may merge
-without another OK only after completing all relevant owner phone checks under
-the conditional authorization in [AGENTS.md](AGENTS.md); otherwise explicit
-owner approval is required.
+Contributions should describe one verifiable behavior, include relevant tests
+and update the affected English documentation. Hardware-dependent changes need
+results from an actual Android device and the relevant audio, USB or radio setup;
+CI alone does not establish hardware support.
 
 ## License and commercial use
 

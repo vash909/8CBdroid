@@ -1,4 +1,4 @@
-# Offline CB waveform generation (R07)
+# Offline CB waveform generation
 
 The **Messages** tab generates a WAV from a supported CB FT8 message, using the
 R05 codec and the source-built native channel engine. This is file generation
@@ -72,9 +72,9 @@ broader decoder cost/quality qualification is still pending.
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 600 bash scripts/check.sh
 # Host tools: gfortran, C++17/Boost, CMake and Ninja, as in FT8_ENGINE.md.
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
 ```
 
 CI runs the independent channel checks and builds the app, engine probe and
@@ -100,7 +100,7 @@ R08 recorded-file tests remain separate evidence.
 This is a reusable checklist, not a claim that every step passed. Check the
 [validation record](VALIDATION.md#checks-still-pending) for outstanding items.
 
-1. Let the agent deploy the successful PR CI APK via ADB, preserving station data.
+1. Install the successful CI APK via ADB, preserving station data.
 2. Generate `CQ 1AT106` at 1000 Hz / 40%, save it and verify the metadata/size.
    Load it in WSJT-CB's FT8 desktop decoder; require `CQ 1AT106`.
 3. Repeat both directed hash orientations. A cold receiver may display `<...>`;

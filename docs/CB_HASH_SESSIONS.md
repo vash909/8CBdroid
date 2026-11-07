@@ -1,4 +1,4 @@
-# CB callsign hash sessions (R06)
+# CB callsign hash sessions
 
 `core.message.CbMessageSession` adds learned-call resolution to the stateless
 R05 codec. The **Messages** tab exposes an offline receiver simulation. It does
@@ -68,9 +68,9 @@ session isolation, invalid input, rejected-frame learning and bounded storage.
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
-bash scripts/controlled.sh 600 bash scripts/check.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/probe_phone.sh
+timeout 60 python3 scripts/wsjtcb_codec.py --check
+timeout 600 bash scripts/check.sh
+timeout 120 bash scripts/probe_phone.sh
 ```
 
 The probe reports `hash_session_scenarios=96` alongside the existing 154 text

@@ -22,7 +22,7 @@ source file is pinned with a checksum in
 | `x32` | WSJT-X v3.2.0-rc1, `567ad29ce6abf3d4a44f181cdbc7ceba0d73e5f4` | Fixed comparison release for the later decoder backport. |
 
 The initial WSJT-CB source snapshot is **WSJT-X 3.0.0-rc1**. This is now verified
-against the official source release, in addition to the owner's identification.
+against the official source release.
 The release named **WSJT-CB V1.0** uses tag `WSJT-CB`, commit
 [`615d079949f5d4c50df9db05fbdc12ccb5c9df99`](https://github.com/vash909/WSJT-CB/commit/615d079949f5d4c50df9db05fbdc12ccb5c9df99).
 The first import is the parentless commit
@@ -74,7 +74,7 @@ status column distinguishes today's test coverage from future runtime work.
 | Area and source | Inspected difference / required behavior | Evidence and remaining work |
 | --- | --- | --- |
 | Complete calls: [Radio.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Radio.cpp#L45) and [cb_callsigns.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/cb_callsigns.f90) | CB adds numeric-prefix forms and a complete-call predicate absent from the inspected upstream Radio files. Preserve complete versus partial identity. | R03a: 240 ASCII desktop results compared with the existing Kotlin validator. Qt/Unicode normalization is not executed by this harness. |
-| Partial calls and prefix lookup: [Radio.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Radio.cpp#L67) | Prefix lookup can accept an incomplete CB stem; `is_cb_callsign` therefore has a broader purpose than `is_complete_cb_callsign`. | Never use the broader predicate as evidence of a complete QSO peer. Kotlin currently validates complete station identity only. Prefix/country behavior remains R24 work. |
+| Partial calls and prefix lookup: [Radio.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Radio.cpp#L67) | Prefix lookup can accept an incomplete CB stem; `is_cb_callsign` therefore has a broader purpose than `is_complete_cb_callsign`. | Never use the broader predicate as evidence of a complete QSO peer. Kotlin currently validates complete station identity only. Prefix/country lookup remains unimplemented. |
 | Type 4 text admission: [cb_callsigns.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/cb_callsigns.f90#L64) | CB-specific recognition covers CQ with a complete CB call, or one full call plus one hashed call in either orientation, with the supported final tokens. | R03a: 75 generated predicate cases. R05 applies CB complete-call checks in its supported binary codec paths; R06 adds separate session learning. General QSO admission remains later work. |
 | Type 4 unpack checks: [packjt77var.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/packjt77var.f90#L688) | CB permits valid numeric-prefix calls through relevant amateur plausibility checks and handles the trailing-hash orientation with the CB predicate. | R03b: real pack77/pack77var payloads and unpack77var RX results in both orientations, including successful packing followed by failed unpacking. |
 | Hash learning: [fillhashvar.f90](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/lib/ft8var/fillhashvar.f90) | Received complete calls are queued per worker before merging into RX hash tables. Local identity has orientation-specific lookup behavior; collisions can replace an identity. | R03b: 10/12/22-bit vectors, cold/pending/committed state, CQ learning and real collisions. A resolved hash is not proof of a unique QSO peer. R06 adds a bounded Android session with explicit commit/reset and collision ambiguity; see [the session guide](CB_HASH_SESSIONS.md). |
@@ -148,9 +148,10 @@ the current corpus has 131 channel vectors and four original desktop WAVs. R07
 adds generated-waveform qualification, and R08 adds recorded-file decoding with
 a small noisy/corrupt-frame corpus. See [engine limits](FT8_ENGINE.md) and the
 [verified outcomes](VALIDATION.md). Broader sensitivity/false-positive testing,
-live audio, radio interoperability and the full TX lifecycle remain later gates.
+radio interoperability and the full TX lifecycle remain unqualified. Foreground
+microphone RX is documented in [live reception](LIVE_RECEIVE.md).
 Recorded desktop outcomes include unrelated finals advancing a QSO, malformed
-manual reports and out-of-order regressions; R21/R22 must qualify those cases and
+manual reports and out-of-order regressions; an Android QSO state machine must qualify those cases and
 document deliberate Android differences before enabling automation.
 
 The historical R03a/R03b/R03c PRs changed reference infrastructure only. Their

@@ -1,6 +1,6 @@
 # USB CAT integration
 
-## R01a: discovery and permission
+## Discovery and permission
 
 The **Radio** screen can enumerate attached USB devices, show VID/PID and device
 ID, identify serial drivers/port counts and request Android access to a recognized
@@ -8,7 +8,7 @@ serial interface. Attach/detach updates the list while the app process is alive.
 Tap **Find USB devices** for an initial or manual refresh. Permission requests
 are explicit, one at a time, and can be retried after denial.
 
-This is the first part of roadmap R01. It opens no USB device or serial port,
+Discovery opens no USB device or serial port,
 changes no baud rate or control line, and sends no CAT/PTT command. Access granted
 means Android permission only; it does not mean that a radio is connected. Unknown
 USB devices remain visible but cannot be selected for a serial permission request.
@@ -66,7 +66,7 @@ When a data/OTG adapter and serial interface are available:
    request. Rotate during a prompt and verify the result reaches the retained owner.
 4. If available, attach two adapters with the same VID/PID and verify permission
    state belongs to the selected device only. Test a non-serial USB device as well.
-5. No serial output, RTS/DTR changes or CAT/PTT commands should occur. R01a never
+5. No serial output, RTS/DTR changes or CAT/PTT commands should occur. Discovery never
    opens a serial port.
 
 Automated JVM tests cover permission-state isolation, retry, duplicate-request
@@ -75,12 +75,10 @@ the Android system dialog or physical USB interoperability. No phone/interface
 combination is certified by the discovery feature; physical OTG/CAT tests remain
 pending. Current accepted checks are recorded in [validation](VALIDATION.md).
 
-## R01b: first real radio connection
+## CAT support boundary
 
-The debug phone is a Samsung A51, but no radio/OTG-cable combination has been
-qualified. The owner previously reported that an OTG adapter was unavailable;
-select and record the actual hardware before implementing the first CAT backend.
-Keep R01 incomplete until those details and physical results are recorded. Required follow-up:
+No radio/OTG-cable combination is qualified. CAT support requires a separate
+backend and physical validation with a documented phone/radio/cable setup:
 
 - Pin the first radio's CAT documentation and serial settings; choose its exact
   interface and port. Define identity/frequency read fixtures from that protocol.

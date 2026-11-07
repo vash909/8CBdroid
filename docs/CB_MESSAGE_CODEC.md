@@ -1,4 +1,4 @@
-# Offline CB message codec (R05)
+# Offline CB message codec
 
 The **Messages** tab previews FT8 text packing without audio or radio access.
 Automatic mode selects free text (0.0), standard messages (1), portable standard
@@ -79,10 +79,10 @@ See [recorded-slot limits](RECORDED_SLOTS.md) and [validation](VALIDATION.md).
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
-bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 180 python3 scripts/wsjtcb_packing.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+timeout 60 python3 scripts/wsjtcb_codec.py --check
+timeout 600 bash scripts/check.sh
 ```
 
 Host compiler setup and verified-CI phone deployment are described in
@@ -91,13 +91,13 @@ use CI artifacts when recording PR device evidence.
 
 The separate probe APK also checks all 154 text cases on Android before its
 existing four-WAV DSP smoke. CI regenerates desktop results and verifies the
-TSV adapter, then builds both APKs. Keep all local heavy commands inside the
-controlled wrapper. Do not reinstall over a signing conflict or clear station
-data without owner approval; CI-phone deployment may remain pending for that reason.
+TSV adapter, then builds both APKs. Preserve station data during APK updates;
+see the [deployment guide](DEVELOPMENT.md#deploy-and-test-on-a-phone) for signing
+conflicts and test-device setup.
 
 ## Phone verification
 
-After the agent installs the verified CI APK and the phone is unlocked:
+Install the verified CI APK and unlock the test phone:
 
 1. Open **Messages**; `CQ 1AT106` should show the same encoded text.
 2. Enter `<1AT106> 26AT101 R-10`; verify the lost-report warning and preview.

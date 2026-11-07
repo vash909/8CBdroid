@@ -9,7 +9,7 @@ implemented behavior, device evidence and checks still pending.
 
 | Guide | Purpose |
 | --- | --- |
-| [Station, build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
+| [Build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
@@ -26,7 +26,7 @@ implemented behavior, device evidence and checks still pending.
 | Guide | Purpose |
 | --- | --- |
 | [Architecture](ARCHITECTURE.md) | Module boundaries, state ownership, persistence and Android I/O. |
-| [Development environment](DEVELOPMENT.md) | Tool versions, controlled commands, CI and phone workflow. |
+| [Development environment](DEVELOPMENT.md) | Tool versions, build/check commands, CI artifacts and device testing. |
 | [Decoder profiles and work bounds](DECODER_PROFILES.md) | Fast/Standard budgets, native cancellation, admission limits and finite device measurements. |
 | [FT8 channel engine](FT8_ENGINE.md) | Native dependency pin, ABI/contracts, search limits and reference checks. |
 | [Validation evidence](VALIDATION.md) | Tested revisions, corpus sizes, A51 observations and remaining verification gaps. |
@@ -34,10 +34,6 @@ implemented behavior, device evidence and checks still pending.
 | [Reference infrastructure](../reference/wsjtcb/README.md) | Fixture manifests, reproduction commands and source audits. |
 | [Payload/hash fixtures](../reference/wsjtcb/PACKING.md) | Original desktop packing/unpacking behavior and known edge cases. |
 | [QSO decision traces](../reference/wsjtcb/QSO.md) | Host-only parser/generation/AutoSeq adapters; no Android automation. |
-
-[AGENTS.md](../AGENTS.md) defines repository work rules. The
-[roadmap](ROADMAP.md) is the delivery plan; its R identifiers are planning IDs,
-not GitHub PR numbers or a substitute for the current validation record.
 
 ## Distribution and upkeep
 

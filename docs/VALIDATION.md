@@ -1,16 +1,15 @@
 # Implementation and validation record
 
-This record includes **PR #28 (R12)** on **2026-11-07**.
+This record includes **PR #29 (spectrum/waterfall)** on **2026-11-07**.
 It records observations at specific commits; it is not a release
-qualification or a statement that all planned checks passed. The
-[roadmap](ROADMAP.md) remains the delivery plan.
+qualification or a statement that all possible checks passed.
 
 ## Implemented capabilities
 
 | Area | Implementation | Evidence / remaining boundary |
 | --- | --- | --- |
 | Station settings | Persistent callsign and locator, explicit save/read errors. | JVM persistence tests and phone reopening. Other operating settings remain placeholders. |
-| LAN | Heartbeat/status, live/replayed decodes, bounded history and explicit Replay/Clear. | Wire/loopback/ViewModel tests; owner accepted the LAN PRs. Full desktop log/command integration is absent. |
+| LAN | Heartbeat/status, live/replayed decodes, bounded history and explicit Replay/Clear. | Wire/loopback/ViewModel tests and accepted LAN changes. Full desktop log/command integration is absent. |
 | USB discovery | Device descriptors, recognized serial drivers and explicit Android permission requests. | Permission-state JVM coverage; actual OTG/CAT/radio interoperability remains unverified. |
 | CB codec and hash sessions | Stateless packing/unpacking plus isolated, bounded RX hash learning with explicit ambiguity. | Desktop-derived JVM/phone fixtures. Full decoder plausibility and QSO admission are separate concerns. |
 | Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
@@ -18,6 +17,7 @@ qualification or a statement that all planned checks passed. The
 | Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
 | UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |
 | Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. Foreground RX only. |
+| Spectrum and waterfall | 2 Hz microphone display, 96-row history, zoom/pan, independent RX/TX selection and decoded-frequency markers. | A51 physical-tone, acoustic FT8 and UI checks below. Cursors do not filter, tune or transmit. |
 
 There is no implemented CAT/PTT,
 speaker output, local TX,
@@ -52,10 +52,10 @@ hardware was connected. The tested APKs came from
 [CI run 42235684450](https://github.com/vash909/8CBdroid/actions/runs/42235684450),
 PR head **`d2634e03ce36a6060dfc5c52c572bac8fc1e629d`**.
 [PR #23](https://github.com/vash909/8CBdroid/pull/23) was merged as
-`9744a2e1b86a82483eb9c4d1aeaa8c205c165cd5` after owner approval.
+`9744a2e1b86a82483eb9c4d1aeaa8c205c165cd5` after review.
 
 Artifact ZIP digests, PR/run commit and installed APK hashes were verified.
-A signing conflict required an explicitly approved reinstall; persistent app
+A signing conflict required a reinstall; persistent app
 files were backed up and restored byte for byte before launch.
 
 | Probe result | Observation |
@@ -146,7 +146,7 @@ RF interoperability, playback or a complete QSO.
 ## Samsung A51 result: R09
 
 [PR #24](https://github.com/vash909/8CBdroid/pull/24) was merged as
-`d9d797ec911c295f345151fdebc3be846f072881` after owner approval. Its tested head
+`d9d797ec911c295f345151fdebc3be846f072881` after review. Its tested head
 `66698752061e2198f73ec81652a6dd63d36b4864` came from successful
 [CI run 42248909556](https://github.com/vash909/8CBdroid/actions/runs/42248909556).
 The matching CI APKs were verified/installed on the same A51, preserving settings.
@@ -173,7 +173,7 @@ native/reference regression checks. See [decoder bounds](DECODER_PROFILES.md).
 ## Samsung A51 result: R10
 
 [PR #25](https://github.com/vash909/8CBdroid/pull/25) was merged as
-`7cefb71c4cb4f3a5d2368ed57c99784df01f9abe` after owner approval. Tested head
+`7cefb71c4cb4f3a5d2368ed57c99784df01f9abe` after review. Tested head
 `eacb2d4a6a30b07ac9719c50ff4f44b5657e0c5a` used successful
 [CI run 42258964880](https://github.com/vash909/8CBdroid/actions/runs/42258964880).
 Local checks passed 774 JVM tests (689 core, 32 protocol, 53 app), lint and APK
@@ -192,7 +192,7 @@ These are reference tones, not bidirectional FT8 or a radio QSO.
 Main UI checks passed permission denial/retry, actual route and levels, bounded
 buffer, stop/export, navigation away, rotation and background/reopening without
 automatic restart. Rotation settings and saved station data were preserved.
-The owner had no wired headset for physical detach testing; external inputs,
+Physical wired-headset detach testing was not performed; external inputs,
 USB/wired interoperability, sustained capture and live decoding remain unqualified.
 See [microphone capture](MICROPHONE_CAPTURE.md).
 
@@ -221,21 +221,19 @@ The S25 FE separately passed hostname NTP synchronization and physical
 speaker-to-microphone capture across two complete UTC slots, reference-tone
 recovery, 360,044-byte export and the unchanged-Android-clock check.
 
-The automated offline GPS slot/export UI sequence did not finish: the driver
-could not find the idle state after its Stop tap. The owner accepted the offline
-path and explicitly instructed the agent to stop repeating that test. This is
-owner acceptance, not an automated offline slot/export pass. Complete-slot audio,
-export and lifecycle evidence from the matching A51 build remains applicable;
-the additional S25 FE capture/export probe used NTP.
+The automated offline GPS slot/export UI sequence did not finish because its UI
+driver could not find the idle state after Stop. An automated complete offline
+GPS slot/export pass is therefore not established. Complete-slot audio, export
+and lifecycle evidence from the matching A51 build remains applicable; the
+additional S25 FE capture/export probe used NTP.
 
 Qualification must match the final CI APK. The tested commits, CI runs, device
-results and owner acceptance are recorded in
+results and qualification limits are recorded in
 [PR #27](https://github.com/vash909/8CBdroid/pull/27). Previous-build evidence
 does not qualify a changed backend.
 
-GPS acquisition timed out near a window and during the owner's outdoor tests.
-The owner reports a possible pre-existing GPS software problem on this A51;
-the cause has not been diagnosed. The successful S25 FE measurements do not
+GPS acquisition timed out on this A51, including outdoors. The cause has not
+been diagnosed. The successful S25 FE measurements do not
 qualify the A51 receiver or guarantee acquisition on other devices or sky views.
 
 ## R12 live local reception (PR #28)
@@ -245,8 +243,8 @@ from [run 42313349465](https://github.com/vash909/8CBdroid/actions/runs/42313349
 commit **`6d5357d0e6c36e91b640f633dc25549914300939`**. Local checks and CI passed
 813 JVM tests (709 core, 32 WSJT-CB, 5 NTP, 67 app), lint and debug builds.
 The desktop reference job passed. Artifact digests and installed APK hashes
-were verified; the owner approved the signing-conflict reinstall and private
-settings were restored byte for byte.
+were verified; settings were restored byte for byte after the signing-conflict
+reinstall.
 
 The physical check used pinned desktop-generated WAVs, actual PC speakers and
 the built-in phone microphone, with applied NTP time from `time.cloudflare.com`.
@@ -277,12 +275,12 @@ instrumentation came from successful [CI run 42384811302](https://github.com/vas
 commit **`c4ab82cc8969765f767df60890f2d8fdbe43b2cc`**. Local checks and CI passed
 824 JVM tests (717 core, 32 WSJT-CB, 5 NTP, 70 app), lint, debug builds and the
 desktop reference check. Artifact digests and installed APK hashes matched;
-private settings were backed up and restored with the owner's reinstall approval.
+settings were backed up and restored after the signing-conflict reinstall.
 
 The physical spectrum helper used independent 700/1900 Hz tones from actual PC
 speakers into the built-in microphone, with the whole plot visible. It injected
 neither PCM nor analyzer results. Plain spectrum capture required no time sync.
-The owner selected a fixed **2 Hz** cadence; 96 rows span about 48 seconds.
+The display uses a fixed **2 Hz** cadence; 96 rows span about 48 seconds.
 
 | Check | Observation |
 | --- | --- |

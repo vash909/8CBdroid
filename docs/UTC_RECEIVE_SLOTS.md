@@ -1,4 +1,4 @@
-# UTC receive slots (R11)
+# UTC receive slots
 
 The app can synchronize its receive clock through **NTP or GPS/GNSS**, timestamp
 microphone PCM and retain complete 15-second UTC windows. Android's system clock
@@ -144,8 +144,8 @@ satellite timing solution; it does not accept an injected fix as proof.
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 130 bash scripts/check_utc_phone.sh ntp-audio
-ADB_LIBUSB=1 bash scripts/controlled.sh 130 bash scripts/check_utc_phone.sh gps
+timeout 130 bash scripts/check_utc_phone.sh ntp-audio
+timeout 130 bash scripts/check_utc_phone.sh gps
 ```
 
 For capture-timing investigations, `bash scripts/capture_timestamps_phone.sh`

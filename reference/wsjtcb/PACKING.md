@@ -24,9 +24,9 @@ Use Linux with Python 3 and GNU Fortran (`gfortran`, or `FC` and optional
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
-bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+timeout 180 python3 scripts/wsjtcb_packing.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+timeout 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 Run without `--check` to intentionally regenerate `packing.json`, then review

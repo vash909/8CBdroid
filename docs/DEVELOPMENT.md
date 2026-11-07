@@ -6,13 +6,12 @@ are in [validation](VALIDATION.md). Commands below run from the repository root.
 
 ## Linux x86_64 setup
 
-Requirements: Python 3.12+, Git, `curl`, `unzip` and Internet access. Controlled
-jobs additionally require cgroup v2, a systemd user session, `flock` and `timeout`.
+Requirements: Python 3.12+, Git, `curl`, `unzip`, `timeout` and Internet access.
 
 ```bash
 python3 scripts/bootstrap.py
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 600 bash scripts/check.sh
 ```
 
 Bootstrap uses official Adoptium/Google metadata, verifies published checksums,
@@ -48,19 +47,19 @@ sdk.dir=/absolute/path/to/Android/Sdk
 ```
 
 Open the repository root in Android Studio, select Gradle JDK 17 and wait for
-sync. No global Gradle installation is needed. The bootstrap and controlled
-wrapper target Linux; on another system use the installed toolchain and run
+sync. No global Gradle installation is needed. The bootstrap targets Linux; on
+another system use the installed toolchain and run
 `bash scripts/check.sh`, or the same tasks with `gradlew.bat --no-daemon` on
-Windows. The two-worker Gradle configuration still applies; equivalent CPU/RAM
-and deadline limits must come from that system's tooling.
+Windows. Gradle limits worker concurrency to two; adapt command timeouts to your
+hardware when needed.
 
 ## Build and check
 
-On this Linux PC:
+From the repository root:
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 600 bash scripts/check.sh
 ```
 
 The check runs `:core:test`, `:protocol:wsjtcb:test`, `:protocol:ntp:test`, app JVM tests, app/audio/DSP/probe
@@ -76,59 +75,37 @@ does need the selected Android NDK/CMake.
 | JVM test reports | `core/build/reports/tests/`, `protocol/wsjtcb/build/reports/tests/`, `app/build/reports/tests/` |
 | Lint reports | Each Android module's `build/reports/lint-results-debug.*` |
 
-Run additional Gradle commands with `--no-daemon` inside the controlled wrapper.
-Do not run a second heavy job while one is active. A documentation-only edit
-needs document/link/command review rather than rebuilding or redeploying the
-unchanged application; GitHub's current workflow still runs for main pushes.
-
-## Controlled jobs on this PC
-
-`bash scripts/controlled.sh SECONDS COMMAND ...` limits the whole process tree:
-CPU quota 200% (two cores total), memory high 12 GiB, hard maximum **16 GiB**, no
-swap and a TERM/KILL deadline. It also caps CMake/OpenMP/BLAS concurrency and
-Java's visible CPU count. Gradle disables parallel projects and allows two workers;
-16 GiB is the process-tree ceiling, not the configured JVM heap size.
-
-An exclusive project lock prevents concurrent controlled jobs. Scopes are stopped
-on completion/timeout so build daemons cannot remain. Timeout returns 124;
-check progress at least once per minute and investigate before retrying. If the
-wrapper cannot apply limits, fix the systemd user session instead of bypassing
-it. Do not kill unrelated editor processes or delete user settings to recover.
-
-Editor responsiveness should be diagnosed separately: inspect extension-host
-logs and locally exclude `.tooling`, `.gradle` and generated `build` trees from
-watchers/search. Local IDE settings are not shared build configuration.
+Use `--no-daemon` for additional Gradle commands. The Linux examples use
+`timeout` to bound long-running commands; adjust deadlines to the build host.
+Documentation-only changes need document/link/command review rather than
+rebuilding or redeploying the unchanged application. The GitHub workflow also
+runs for main pushes.
 
 ## Desktop reference and native checks
 
 These are separate from `scripts/check.sh`. Use host GNU Fortran, a C++17
 compiler, Boost headers, CMake/Ninja, `pkg-config` and Qt 5 Core/Network development
 packages. With system packages, no compiler environment overrides are needed.
-On this existing PC, ignored `.tooling/qso-env.sh` selects extracted compiler/Qt
-packages; `BOOST_INCLUDEDIR` must point to the extracted Boost include directory.
-Those local helpers are not a clean-checkout dependency or a substitute for
-installing the host prerequisites.
-
 Run the following sequentially on Linux. For system-installed CMake, replace
 its SDK path with `cmake`:
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_reference.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
-bash scripts/controlled.sh 60 python3 scripts/wsjtcb_codec.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_channel.py --check
-bash scripts/controlled.sh 60 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
-bash scripts/controlled.sh 120 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" --build .tooling/native-host --parallel 2
-bash scripts/controlled.sh 120 .tooling/native-host/control_checks
-bash scripts/controlled.sh 120 python3 scripts/check_native.py .tooling/native-host
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
-bash scripts/controlled.sh 240 python3 scripts/ft8_benchmark.py .tooling/native-host
-bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+timeout 180 python3 scripts/wsjtcb_reference.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+timeout 180 python3 scripts/wsjtcb_qso.py --check
+timeout 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
+timeout 60 python3 scripts/wsjtcb_codec.py --check
+timeout 180 python3 scripts/wsjtcb_channel.py --check
+timeout 60 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
+timeout 120 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" --build .tooling/native-host --parallel 2
+timeout 120 .tooling/native-host/control_checks
+timeout 120 python3 scripts/check_native.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_pcm.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
+timeout 240 python3 scripts/ft8_benchmark.py .tooling/native-host
+timeout 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 `FC`/`FFLAGS`, `CXX` and relevant Qt/pkg-config/linker variables select existing
@@ -141,30 +118,23 @@ the complete desktop decoder or an RF test.
 
 ## Deploy and test on a phone
 
-The agent owns deployment to the connected, authorized debug phone. After a
-successful code-PR CI run:
+Use a phone with USB debugging enabled and authorize the development computer.
+Download artifacts from a successful CI run, verify that the run matches the
+revision being tested, and use app/probe/test APKs from the same run so their
+debug signatures match. Record the revision, CI run, device, Android version,
+checks and limitations with test results.
 
-1. Verify that the run and artifact metadata match the current PR head. Download
-   **8CBdroid-debug** and, for engine changes, **8CBdroid-engine-probe**; verify
-   artifact digests and installed APK hashes.
-2. Use bounded ADB commands. For the A51 on this PC, `ADB_LIBUSB=1` has been used;
-   it is an environment workaround, not an app requirement. Specify `-s SERIAL`
-   when multiple devices are connected and select Android user 0 where necessary.
-3. Attempt an in-place update that preserves data. Different CI/local runs may
-   have different debug signing keys. On `INSTALL_FAILED_UPDATE_INCOMPATIBLE`,
-   keep the installed app/data intact and request explicit approval before
-   uninstalling or clearing anything. A source update or passing CI is not that
-   approval. If approved, make a verified private backup and restore persistent
-   files byte for byte before launch; do not commit backups or settings.
-4. Launch the app, run the relevant probe and notify the owner when the phone
-   must be unlocked. Keep the screen awake during UI checks and restore any
-   temporary test setting. Report disconnected/unauthorized/locked tests as pending.
-5. Record commit, CI run, device/Android, actual checks and limitations. Deployment
-   alone does not authorize merging. Follow the conditional merge authorization
-   in [AGENTS.md](../AGENTS.md#conditional-merge-authorization); otherwise obtain
-   the owner's explicit merge approval.
+Use `adb -s SERIAL` to select a device when several are connected. Attempt an
+in-place update first to preserve app data. Different CI/local builds can use
+different debug keys: `INSTALL_FAILED_UPDATE_INCOMPATIBLE` means Android cannot
+update the installed package with that signer. Keep existing data intact; use a
+separate test device or deliberately back up data before any destructive
+reinstallation. Never publish settings, backups or device serial numbers.
 
-For a developer-owned local build with the same installed signing key:
+Keep the phone unlocked for UI checks. Restore temporary device settings after
+testing. A disconnected, unauthorized or locked device is not a completed test.
+
+For a local build with the same installed signing key:
 
 ```bash
 source scripts/env.sh
@@ -178,7 +148,7 @@ artifacts and not the main app. It stops only its probe package on exit:
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/probe_phone.sh
+timeout 120 bash scripts/probe_phone.sh
 ```
 
 It also refuses a failed ADB update through `set -e`; do not resolve its signing
@@ -193,15 +163,15 @@ timeout 90 adb shell am instrument --user 0 -w -r net.vash.ft8cbdroid.engineprob
 There is no launcher icon for the probe. Inspect its explicit `PASS` and
 `INSTRUMENTATION_CODE: -1`; a shell exit code alone is insufficient.
 The [validation record](VALIDATION.md) shows the latest accepted A51 results.
-For R09, use the installed verified CI probe with
-`ADB_LIBUSB=1 bash scripts/controlled.sh 240 bash scripts/profile_phone.sh`;
+For decoder benchmarks, use the installed verified CI probe with
+`timeout 240 bash scripts/profile_phone.sh`;
 [the profile guide](DECODER_PROFILES.md) defines the finite corpus, sampling,
 thermal scope and private local report. This helper does not install APKs.
 
 ## Phone checks
 
 Use a dedicated test identity or record the current station before editing it;
-restore the owner's settings after tests.
+restore the original settings after tests.
 
 | Area | Review steps |
 | --- | --- |
@@ -217,16 +187,7 @@ it does not replace a real WSJT-CB desktop test. Test the app with a non-English
 phone locale: app text remains English, while Android system dialogs may use
 the system language. No current test establishes VOX, USB audio, PTT or RF support.
 
-## Pull requests, CI and release boundary
-
-Use focused branches and short English PR titles/descriptions. Code PRs require
-local tests/lint/debug build, successful CI and relevant phone checks. The agent
-may merge without another OK only when every condition in
-[AGENTS.md](../AGENTS.md#conditional-merge-authorization) passes, including all
-relevant checks the owner would otherwise perform on a connected Android phone.
-Otherwise wait for explicit owner approval. Do not enable unattended GitHub
-auto-merge based only on CI. Direct-main work remains limited to documentation
-changes explicitly authorized by the owner.
+## CI artifacts and release boundary
 
 The existing GitHub workflow runs on main pushes, PRs and manual dispatch:
 
@@ -259,7 +220,7 @@ signature. Unlock the phone before running:
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 120 bash scripts/check_waveform_phone.sh
+timeout 120 bash scripts/check_waveform_phone.sh
 ```
 
 This test uses the real Activity, ViewModel, native encoder and document exporter.
@@ -293,9 +254,9 @@ microphone slots. It requires an unlocked phone with microphone permission,
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 210 bash scripts/check_live_phone.sh
+timeout 210 bash scripts/check_live_phone.sh
 ```
 
 Publish `.tooling/live-phone-report.json` findings with the tested CI commit and
 device. Keep the private report itself out of Git, and separately complete actual
-UI/permission/lifecycle checks before applying conditional merge authorization.
+UI/permission/lifecycle checks when recording device qualification.

@@ -1,4 +1,4 @@
-# Live local reception (R12)
+# Live local reception
 
 The Audio screen can decode complete microphone UTC slots automatically. Local
 results are labeled **Local microphone** and kept apart from LAN messages and
@@ -73,7 +73,7 @@ It does not supply PCM to the phone, synthesize decoder results or send LAN deco
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 210 bash scripts/check_live_phone.sh
+timeout 210 bash scripts/check_live_phone.sh
 ```
 
 The phone must decode `CQ 1AT106`, resolve the later `<1AT106> 26AT101`, Stop

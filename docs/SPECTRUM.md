@@ -1,4 +1,4 @@
-# Local spectrum and waterfall (R13)
+# Local spectrum and waterfall
 
 The Audio screen displays the selected microphone's resampled 12 kHz PCM.
 It works with plain capture; time synchronization is only required when UTC
@@ -69,7 +69,7 @@ minutes. No samples or analyzer results are injected into the phone.
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 240 bash scripts/check_spectrum_phone.sh
+timeout 240 bash scripts/check_spectrum_phone.sh
 ```
 
 The probe checks frequency error within 6 Hz, stable tone reception, at least
@@ -89,4 +89,4 @@ Global audio volume stays unchanged; temporary charging stay-awake is restored.
 Also run `scripts/check_live_phone.sh` under the documented controlled limit to
 verify actual FT8 reception alongside visualization and decoded-marker selection.
 Exercise real zoom/pan, tap/slider/buttons, permission denial/retry and lifecycle
-controls on the matching CI APK. Record actual results before marking R13 complete.
+controls on the matching CI APK. Record the tested revision and actual results.

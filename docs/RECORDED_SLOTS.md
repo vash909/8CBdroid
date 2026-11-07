@@ -1,4 +1,4 @@
-# Recorded FT8 slots (R08)
+# Recorded FT8 slots
 
 The **Audio** tab selects Fast or Standard and imports a recorded WAV through Android's document picker and
 runs the offline native decoder. No microphone, playback, radio access, live RX,
@@ -79,15 +79,15 @@ the complete desktop candidate search or acceptance filters.
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 600 bash scripts/check.sh
+timeout 600 bash scripts/check.sh
 # Requires the reference compiler/Boost setup described in FT8_ENGINE.md.
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
+timeout 180 python3 scripts/wsjtcb_recordings.py .tooling/native-host
 ```
 
 The separate phone probe reads the same recordings through the production JVM
 WAV reader and recorded-slot decoder, checking payloads, cold text, onset/offset,
 SNR tolerance and rejection. The A51 probe and UI checks passed for PR #23,
-merged after owner approval on 2026-11-06. [Validation](VALIDATION.md#samsung-a51-result-r08) records the
+merged on 2026-11-06. [Validation](VALIDATION.md#samsung-a51-result-r08) records the
 exact commit/run, per-case times and checked UI paths. CI alone does not establish
 an Android device pass.
 
@@ -103,8 +103,8 @@ into a dedicated Download folder, leaving existing documents alone. Some Android
 file pickers need media indexing before they display files copied through ADB;
 refresh/index only the test files, or select them through internal storage.
 
-1. Let the agent deploy the CI APK and copy test WAVs to the authorized debug
-   phone. Unlock it when notified and keep it awake for the UI checks.
+1. Install the CI APK and copy test WAVs to the test phone, preserving its data.
+   Keep it unlocked and awake for the UI checks.
 2. Open **Audio**, select Standard, enter the UTC boundary above, then
    **Open WAV and decode**. Repeat with Fast and confirm the result profile/time.
    Select `cq.wav`: expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.

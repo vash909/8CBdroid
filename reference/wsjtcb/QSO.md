@@ -25,9 +25,9 @@ the Android build and APK do not depend on Qt or Fortran.
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check
-bash scripts/controlled.sh 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
-bash scripts/controlled.sh 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+timeout 180 python3 scripts/wsjtcb_qso.py --check
+timeout 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
+timeout 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 Run without `--check` to regenerate `qso.json` and review the diff. CI checks O0
@@ -35,10 +35,8 @@ and O2 against the same committed data. As with R03b, integer hash overflow wrap
 and Fortran runtime checks are enabled. `FC`, `FFLAGS`, `CXX`, `CXXFLAGS`,
 `PKG_CONFIG` and `LDFLAGS` support existing host toolchains. A locally extracted
 Qt installation may need pkg-config search/sysroot settings, `-L`/`rpath-link`
-flags and a runtime library path. On the current development PC, the ignored
-`.tooling/qso-env.sh` selects the extracted compiler and Qt packages; source it
-before these commands. This helper contains machine-specific paths and is not
-needed with system-installed development packages.
+flags and a runtime library path. System-installed development packages usually
+need no such overrides.
 
 ## Corpus and format
 
@@ -116,7 +114,7 @@ GUI interactions or actual PTT. Tests must not infer those capabilities.
   ROGERS back to ROGER_REPORT. The two-digit CB report path also accepts `+99`.
   Manual and automatic paths and numeric report bounds need separate checks.
 
-R21/R22 must qualify peer identity, report/final admission and progression before
+An Android QSO state machine must qualify peer identity, report/final admission and progression before
 automating a QSO, and document deliberate differences from these desktop outcomes.
 Successful reference regeneration is compatibility evidence, not permission to
 implement every observed outcome as an Android rule.

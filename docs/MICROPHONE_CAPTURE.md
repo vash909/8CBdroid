@@ -1,11 +1,11 @@
-# Microphone capture (R10)
+# Microphone capture
 
 The **Audio → Microphone input** panel captures mono PCM16 through Android
 `AudioRecord`, meters the input and converts it to 12 kHz floating-point PCM.
-Optional [R11 UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
-NTP/GPS sync and retains complete slots. [R12 live reception](LIVE_RECEIVE.md)
+Optional [UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
+NTP/GPS sync and retains complete slots. [Live reception](LIVE_RECEIVE.md)
 optionally decodes those slots in a separate bounded worker. Capture does not
-play audio or operate PTT; R14 and R17 cover output and acoustic VOX.
+play audio or operate PTT; audio output and acoustic VOX are unimplemented.
 
 ## Start, stop and permission
 
@@ -85,7 +85,7 @@ no audio devices; only the explicit audio entry point uses the declared permissi
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 90 bash scripts/capture_phone.sh
+timeout 90 bash scripts/capture_phone.sh
 ```
 
 The helper grants microphone permission only to the installed development probe,
@@ -102,7 +102,7 @@ and save, repeat start/stop, navigate away, rotate and background/reopen. Confir
 idle state with no automatic restart and persistent station settings. Test actual
 wired/USB removal when that hardware is available. The built-in A51 path does not
 qualify external inputs, radio coupling, drift, sustained operation or live FT8.
-Device/CI results are recorded in the feature PR before owner merge approval.
+Record the tested revision, device, CI run and actual observations with test results.
 
 ## Android references
 

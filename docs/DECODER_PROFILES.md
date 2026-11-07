@@ -1,4 +1,4 @@
-# Decoder work bounds and profiles (R09)
+# Decoder work bounds and profiles
 
 R09 bounds offline engine admission, adds cooperative cancellation inside native
 work, and exposes two recorded-slot profiles. It does not enable a microphone,
@@ -97,25 +97,25 @@ After [host/native setup](DEVELOPMENT.md#desktop-reference-and-native-checks):
 
 ```bash
 source scripts/env.sh
-bash scripts/controlled.sh 120 .tooling/native-host/control_checks
-bash scripts/controlled.sh 240 python3 scripts/ft8_benchmark.py .tooling/native-host --report .tooling/host-profile.json
+timeout 120 .tooling/native-host/control_checks
+timeout 240 python3 scripts/ft8_benchmark.py .tooling/native-host --report .tooling/host-profile.json
 ```
 
 The control check cancels after work has started in each phase, verifies cleanup,
 deadline expiry and profile bounds. JVM tests cover FIFO admission, rejection,
 cancelled waiters, failure cleanup and profile/input snapshots. To deliberately
-regenerate the manifest, add `--generate` to the controlled benchmark command
+regenerate the manifest, add `--generate` to the benchmark command
 and review the hash/case changes. CI checks the committed manifest without regeneration.
 
 ## Device procedure and limits
 
 Deploy the verified successful CI app/probe APKs, preserving station data as in
-[development](DEVELOPMENT.md#deploy-and-test-on-a-phone). The agent notifies the
-owner before UI checks need an unlocked screen. Then run:
+[development](DEVELOPMENT.md#deploy-and-test-on-a-phone). Keep the test phone
+unlocked for UI checks, then run:
 
 ```bash
 source scripts/env.sh
-ADB_LIBUSB=1 bash scripts/controlled.sh 240 bash scripts/profile_phone.sh
+timeout 240 bash scripts/profile_phone.sh
 ```
 
 This helper uses the installed probe; it does not install or uninstall anything.
@@ -142,4 +142,4 @@ scope in PR validation. Keep personal data and device serial numbers out of repo
 For UI review, switch Fast/Standard, import the same known WAV and confirm
 the result's profile/time. Change profile after a result, cancel/retry an import,
 rotate, and reopen. Old results must not reappear; saved station settings persist.
-A successful benchmark does not replace these UI checks or owner merge approval.
+A successful benchmark does not replace these UI checks or qualify radio operation.
