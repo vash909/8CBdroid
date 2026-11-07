@@ -43,6 +43,8 @@ object PhoneNavigation {
         error("Visible control not found: $text")
     }
     fun open(instrumentation: Instrumentation, page: String) {
+        // Compose does not expose accessibility clicks for an already selected tab.
+        if (clickable(root(instrumentation), "Settings") == null) click(instrumentation, "Operate")
         click(instrumentation, "Settings")
         click(instrumentation, page)
     }
