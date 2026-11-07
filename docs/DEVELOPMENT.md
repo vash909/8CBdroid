@@ -28,7 +28,7 @@ install a host Fortran/Qt toolchain or change global shell configuration.
 | Component | Repository setting / location |
 | --- | --- |
 | JDK | 17; local `.tooling/jdk-17` |
-| Gradle / AGP / Kotlin | Wrapper 8.13 / 8.13.2 / 2.2.21 |
+| Gradle / AGP / Kotlin | Wrapper 8.14.6 / 8.13.2 / 2.4.21 |
 | Android SDK | compile/target 36; Build Tools 35.0.0; minimum API 26 |
 | Native tools | NDK 28.2.13676358, CMake 3.22.1 |
 | Packaged native ABIs | `arm64-v8a`, `x86_64`; ARM32 is absent |
