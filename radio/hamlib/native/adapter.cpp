@@ -26,12 +26,12 @@ int collect(const rig_caps* caps, rig_ptr_t data) {
     auto& result = *static_cast<Collection*>(data);
     if (result.rows.size() >= 4096) { result.overflow = true; return 0; }
     try {
-    // Upstream static metadata; keep it as metadata rather than opening a rig.
-    result.rows.push_back({static_cast<int>(caps->rig_model), caps->mfg_name ? caps->mfg_name : "Unknown",
-        caps->model_name ? caps->model_name : "Unknown", rig_strstatus(caps->status),
-        static_cast<int>(caps->port_type), caps->serial_rate_min, caps->serial_rate_max,
-        caps->get_freq != nullptr, caps->get_mode != nullptr, caps->get_ptt != nullptr});
-    return 1;
+        // Upstream static metadata; keep it as metadata rather than opening a rig.
+        result.rows.push_back({static_cast<int>(caps->rig_model), caps->mfg_name ? caps->mfg_name : "Unknown",
+            caps->model_name ? caps->model_name : "Unknown", rig_strstatus(caps->status),
+            static_cast<int>(caps->port_type), caps->serial_rate_min, caps->serial_rate_max,
+            caps->get_freq != nullptr, caps->get_mode != nullptr, caps->get_ptt != nullptr});
+        return 1;
     } catch (...) { result.failure = std::current_exception(); return 0; }
 }
 struct RigDeleter { void operator()(RIG* rig) const { if (rig) { rig_close(rig); rig_cleanup(rig); } } };
@@ -67,6 +67,8 @@ Dummy check_dummy() {
     require_ok(rig_get_ptt(rig.get(), RIG_VFO_A, &ptt));
     if (!std::isfinite(frequency) || frequency != 27265000.0 || mode != RIG_MODE_USB || ptt != RIG_PTT_OFF)
         throw std::runtime_error("Hamlib Dummy round trip failed");
+    require_ok(rig_close(rig.get()));
+    require_ok(rig_cleanup(rig.release()));
     return {static_cast<int64_t>(frequency), true, true};
 }
 }
