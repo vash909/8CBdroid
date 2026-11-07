@@ -18,7 +18,7 @@ import net.vash.ft8cbdroid.core.audio.*
 import kotlin.math.pow
 
 /** Foreground-only input. No playback, audio-focus changes, persisted recording or decoder calls. */
-class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture {
+class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture, PcmMicrophoneCapture {
     private val app = context.applicationContext
     private val manager = app.getSystemService(AudioManager::class.java)
     private val devices = MutableStateFlow<List<AudioInput>>(emptyList())
@@ -50,11 +50,13 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture 
             throw CaptureException("Microphone permission is required. Allow it in Android app settings, then retry.")
     }
     @SuppressLint("MissingPermission") // Checked before construction and throughout the read loop.
-    override suspend fun capture(inputId: Int, update: suspend (CaptureMetrics) -> Unit) = captureInternal(inputId, update, null)
+    override suspend fun capture(inputId: Int, update: suspend (CaptureMetrics) -> Unit) = captureInternal(inputId, update, null, null)
     override suspend fun captureTimed(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: (TimedCaptureChunk) -> Unit) =
-        captureInternal(inputId, update, chunk)
+        captureInternal(inputId, update, chunk, null)
+    override suspend fun capturePcm(inputId: Int, update: suspend (CaptureMetrics) -> Unit,
+        pcm: (FloatArray) -> Unit, timed: ((TimedCaptureChunk) -> Unit)?) = captureInternal(inputId, update, timed, pcm)
     @SuppressLint("MissingPermission")
-    private suspend fun captureInternal(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: ((TimedCaptureChunk) -> Unit)?) = withContext(Dispatchers.IO) {
+    private suspend fun captureInternal(inputId: Int, update: suspend (CaptureMetrics) -> Unit, chunk: ((TimedCaptureChunk) -> Unit)?, observe: ((FloatArray) -> Unit)?) = withContext(Dispatchers.IO) {
         check(mutex.tryLock()) { "Microphone capture is already running." }
         var record: AudioRecord? = null
         val effects = mutableListOf<AudioEffect>()
@@ -119,6 +121,7 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture 
                     energy += 10.0.pow(level.rmsDbfs / 10) * count
                     metered += count; clipped += level.clipped; inputSamples += count
                     val pcm = resampler.process(input, count)
+                    observe?.invoke(pcm)
                     if (chunk != null && pcm.isNotEmpty() && now - started >= 500) {
                         if (recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_BOOTTIME) == AudioRecord.SUCCESS && timestamp.nanoTime > 0) {
                             val zero = timeline.stamp(CaptureTimestamp(timestamp.framePosition, timestamp.nanoTime), inputSamples,

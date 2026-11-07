@@ -270,6 +270,14 @@ See [live reception](LIVE_RECEIVE.md) for reproduction and interpretation limits
 These checks establish acoustic foreground RX on this device, not RF/VOX, USB,
 speaker TX, calibrated weak-signal performance or a complete QSO.
 
+## R13 spectrum/waterfall under review
+
+The feature branch adds a bounded 4096-point Hann analyzer, microphone spectrum
+and 96-row waterfall, zoom/pan, independent display-only RX/TX selection and
+latest local decoded-frequency markers. Physical two-tone frequency checks,
+sustained visible rendering and matching-CI phone/UI acceptance are pending.
+See [the spectrum guide](SPECTRUM.md).
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive

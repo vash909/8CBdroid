@@ -35,6 +35,8 @@ data class CaptureUiState(
     val decodeLive: Boolean = false,
     val liveProfile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD,
     val live: LiveReceiveState = LiveReceiveState(),
+    val spectrum: SpectrumState = SpectrumState(),
+    val spectrumView: SpectrumView = SpectrumView(),
 ) {
     val canConfigure get() = phase == CapturePhase.IDLE && !awaitingPermission && !exporting
     val canStart get() = canConfigure && inputs.any { it.id == selectedId }
@@ -63,18 +65,19 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         if (!state.value.canConfigure || clock == null) return
         latestSlot = null
         state.value = state.value.copy(assembleUtc = enabled, decodeLive = state.value.decodeLive && enabled,
-            live = LiveReceiveState(), slots = null, latestSlotUtcMillis = null)
+            live = LiveReceiveState(), spectrum = SpectrumState(), slots = null, latestSlotUtcMillis = null)
     }
     fun decodeLive(enabled: Boolean) {
         if (!state.value.canConfigure || clock == null || engine == null) return
         latestSlot = null
         state.value = state.value.copy(decodeLive = enabled, assembleUtc = state.value.assembleUtc || enabled,
-            live = LiveReceiveState(), slots = null, latestSlotUtcMillis = null, error = null, notice = null)
+            live = LiveReceiveState(), spectrum = SpectrumState(), slots = null, latestSlotUtcMillis = null, error = null, notice = null)
     }
     fun liveProfile(profile: Ft8DecodeProfile) {
         if (!state.value.canConfigure) return
-        state.value = state.value.copy(liveProfile = profile, live = LiveReceiveState())
+        state.value = state.value.copy(liveProfile = profile, live = LiveReceiveState(), spectrum = SpectrumState())
     }
+    fun spectrumView(value: SpectrumView) { state.value = state.value.copy(spectrumView = value) }
     fun changeStation(call: String?) {
         val normalized = call?.takeIf { it.isNotBlank() }
         if (normalized == stationCall) return
@@ -92,7 +95,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         if (!state.value.canConfigure || state.value.inputs.none { it.id == id } || state.value.selectedId == id) return
         capture.clear(); pendingExport = null; latestSlot = null
         state.value = state.value.copy(selectedId = id, metrics = null, slots = null, latestSlotUtcMillis = null,
-            live = LiveReceiveState(), error = null, notice = null)
+            live = LiveReceiveState(), spectrum = SpectrumState(), error = null, notice = null)
     }
     /** Return true only when the Activity must launch Android's permission request. */
     fun requestStart(permissionGranted: Boolean): Boolean {
@@ -118,7 +121,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         val ticket = ++generation
         discard = false; capture.clear(); latestSlot = null
         state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null,
-            live = LiveReceiveState())
+            live = LiveReceiveState(), spectrum = SpectrumState())
         val liveEnabled = state.value.decodeLive
         val profile = state.value.liveProfile
         val call = stationCall
@@ -129,6 +132,8 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             var receiver: LiveSlotReceiver? = null
             var liveRender: Job? = null
+            var spectrum: SpectrumMonitor? = null
+            var spectrumRender: Job? = null
             val render = launch {
                 updates.collect { publication ->
                     if (publication != null && ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
@@ -161,7 +166,18 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                     }
                 }
                 val slotBuilder = assembler
-                if (slotBuilder != null) {
+                if (capture is PcmMicrophoneCapture) {
+                    val monitor = SpectrumMonitor(this, worker); spectrum = monitor
+                    spectrumRender = launch {
+                        monitor.uiState.collect { value ->
+                            if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING))
+                                state.value = state.value.copy(spectrum = value)
+                        }
+                    }
+                    capture.capturePcm(id, update, { monitor.offer(it) }, slotBuilder?.let { builder ->
+                        { chunk -> if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) builder.push(chunk) }
+                    })
+                } else if (slotBuilder != null) {
                     val timed = capture as? TimestampedMicrophoneCapture ?: throw CaptureException("This audio backend does not provide timestamps.")
                     timed.captureTimed(id, update) {
                         if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) slotBuilder.push(it)
@@ -171,10 +187,10 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
                 capture.clear(); latestSlot = null; completedSlot.set(null); updates.value = null
-                state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null, live = LiveReceiveState(),
+                state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null, live = LiveReceiveState(), spectrum = SpectrumState(),
                     error = if (error is CaptureException || error is TimeException) error.message
                     else "Could not capture the microphone. Check permission and the input, then retry.")
-            } finally { render.cancel(); liveRender?.cancel(); receiver?.cancel(); assembler?.clear() }
+            } finally { spectrumRender?.cancel(); spectrum?.cancel(); render.cancel(); liveRender?.cancel(); receiver?.cancel(); assembler?.clear() }
         }
         job = next
         // Completion also runs if Stop cancels before the coroutine body ever starts.
@@ -196,7 +212,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     fun stop(reason: String = "Microphone stopped.", clear: Boolean = false) {
         discard = discard || clear
         val wasPending = state.value.awaitingPermission
-        state.value = state.value.copy(awaitingPermission = false, live = LiveReceiveState())
+        state.value = state.value.copy(awaitingPermission = false, live = LiveReceiveState(), spectrum = SpectrumState())
         if (job != null) {
             state.value = state.value.copy(phase = CapturePhase.STOPPING, notice = reason)
             job?.cancel()

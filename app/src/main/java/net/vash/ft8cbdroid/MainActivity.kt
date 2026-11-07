@@ -26,6 +26,9 @@ import net.vash.ft8cbdroid.recording.RecordedSlotPanel
 import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePanel
+import net.vash.ft8cbdroid.core.audio.SpectrumView
+import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
+import net.vash.ft8cbdroid.audio.SpectrumPanel
 import net.vash.ft8cbdroid.audio.LiveReceivePanel
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
@@ -139,6 +142,7 @@ class MainActivity : ComponentActivity() {
                 onAssembleUtc = captureViewModel::assembleUtc,
                 onDecodeLive = captureViewModel::decodeLive,
                 onLiveProfile = captureViewModel::liveProfile,
+                onSpectrumView = captureViewModel::spectrumView,
                 onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
                     val utc = captureViewModel.uiState.value.latestSlotUtcMillis
                     val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
@@ -215,6 +219,7 @@ fun EightCbApp(
     onAssembleUtc: (Boolean) -> Unit = {},
     onDecodeLive: (Boolean) -> Unit = {},
     onLiveProfile: (Ft8DecodeProfile) -> Unit = {},
+    onSpectrumView: (SpectrumView) -> Unit = {},
     onSaveUtcSlot: () -> Unit = {},
     onSelectInput: (Int) -> Unit = {},
     onStartCapture: () -> Unit = {},
@@ -326,7 +331,9 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile)
+                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile) {
+                            SpectrumPanel(capture.spectrum, capture.spectrumView, localSpectrumMarkers(capture.live.rows), onSpectrumView)
+                        }
                         Text("UTC time: ${time.sourceDescription}")
                         if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
                         HorizontalDivider()

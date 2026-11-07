@@ -11,7 +11,8 @@ import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 @Composable
 fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onSave: () -> Unit,
     onAssembleUtc: (Boolean) -> Unit = {}, onSaveSlot: () -> Unit = {}, onDecodeLive: (Boolean) -> Unit = {},
-    onLiveProfile: (Ft8DecodeProfile) -> Unit = {}) {
+    onLiveProfile: (Ft8DecodeProfile) -> Unit = {},
+    visualization: @Composable () -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Microphone input", style = MaterialTheme.typography.titleLarge)
         Text("Capture 12 kHz PCM, assemble UTC slots and optionally decode local FT8 after NTP/GPS synchronization. Speaker output is pending.")
@@ -49,6 +50,7 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
             CapturePhase.CAPTURING -> "Microphone active"
             CapturePhase.STOPPING -> "Releasing microphone…"
         })
+        visualization()
         state.metrics?.let { metrics ->
             Text("Actual input: ${metrics.route.input.label}")
             Text("Capture: ${metrics.route.clientRate} Hz mono PCM16 → 12,000 Hz DSP PCM")
