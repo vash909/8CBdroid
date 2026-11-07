@@ -18,7 +18,7 @@ system language. No connection or microphone session starts on launch.
   local decoded frequency, not a QSO peer. **Sent** is empty because no transmit
   backend exists.
 - **RX Hz** and **TX Hz** edit the existing local display cursors within
-  200–2950 Hz. Invalid drafts do not change the cursor. They do not tune a radio,
+  200–2950 Hz. Invalid drafts do not change the cursor. Unavailable LAN audio offsets show a dash. They do not tune a radio,
   filter decoder searches or configure the separate offline waveform editor.
 - **Start RX** starts local FT8 reception with measured NTP/GPS time, or the
   desktop UDP listener for the LAN source. **Monitor** starts local visualization
@@ -52,7 +52,7 @@ ordinary settings navigation preserves a foreground LAN connection.
 
 Station and NTP server preferences retain their existing persistence. Source,
 period and custom-message choices survive navigation/rotation within the saved
-UI session; they are not durable station settings and default on a fresh process.
+UI session; they are not durable station settings and default when no saved UI state is restored.
 No TX state is restored or armed.
 
 ## Chat

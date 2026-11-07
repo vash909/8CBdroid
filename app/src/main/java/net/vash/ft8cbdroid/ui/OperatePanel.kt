@@ -52,7 +52,7 @@ fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanU
         val time = row.utcMillisOfDay?.let { String.format(Locale.ROOT, "%02d:%02d:%02d", it / 3_600_000, it / 60_000 % 60, it / 1000 % 60) } ?: "—"
         ActivityMessage(time, row.message.ifEmpty { "(empty message)" }, String.format(Locale.ROOT, "%+d", row.snr),
             row.deltaFrequencyHz.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt(),
-            listOfNotNull(if (row.isNew) "Desktop · live" else "Desktop · replay", if (row.offAir) "Off air" else null,
+            listOfNotNull(if (row.isNew) "Desktop · live · ${row.mode}" else "Desktop · replay · ${row.mode}", if (row.offAir) "Off air" else null,
                 if (row.lowConfidence) "Low confidence" else null).joinToString(" · "))
     }
 
@@ -85,7 +85,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                     } ?: "—"
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(dial, fontSize = 28.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
-                        Text("MHz / FT8", Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                        Text("MHz / ${if (source == OperatingSource.LOCAL) "FT8" else lan.connection.status?.mode?.ifBlank { "—" } ?: "—"}", Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
                     }
                     Text(if (source == OperatingSource.LOCAL) "REFERENCE DIAL · 11 METRES" else "DESKTOP DIAL · READ ONLY",
                         style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
@@ -159,9 +159,9 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
 @Composable
 private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: Modifier, onValue: (Int) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(value = text, onValueChange = { next ->
+    OutlinedTextField(value = if (enabled) text else "—", onValueChange = { next ->
         if (next.length <= 4 && next.all { it in '0'..'9' }) { text = next; audioOffset(next)?.let(onValue) }
-    }, label = { Text(label) }, enabled = enabled, isError = audioOffset(text) == null, singleLine = true,
+    }, label = { Text(label) }, enabled = enabled, isError = enabled && audioOffset(text) == null, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = modifier,
         textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
 }
