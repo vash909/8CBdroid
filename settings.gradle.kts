@@ -17,4 +17,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "8CBdroid"
-include(":app", ":core", ":protocol:wsjtcb", ":protocol:ntp", ":dsp:ft8", ":audio", ":engineprobe")
+include(":app", ":core", ":protocol:wsjtcb", ":protocol:ntp", ":dsp:ft8", ":audio", ":engineprobe", ":radio:hamlib")
