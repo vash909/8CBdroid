@@ -137,9 +137,9 @@ The selected transport direction follows FT8CN's Java USB-serial approach.
 `RadioController` currently has an unavailable implementation with no advertised
 capabilities. A real backend still needs the first radio/cable, manufacturer
 protocol, baud/port settings, bounded I/O, detach behavior and PTT release tests.
-Hamlib/JNI is an alternative requiring separate Android file-descriptor access
-and license/build review; it is not included. CAT and USB audio are separate
-capabilities. See [USB scope and verification](USB_CAT.md).
+The source-built Hamlib/JNI catalog is included, but is not connected to the
+Java USB transport. That bridge remains separate work behind `RadioController`;
+no physical CAT operation is enabled. CAT and USB audio are separate capabilities. See [USB scope and verification](USB_CAT.md).
 
 ## Microphone input and future playback/VOX
 

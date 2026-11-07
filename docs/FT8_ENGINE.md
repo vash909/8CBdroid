@@ -17,7 +17,9 @@ adapter follows the upstream GFSK demo. No native binary is downloaded.
 
 Build settings are NDK **28.2.13676358**, CMake **3.22.1**, C99/C++17, minimum API
 26, and **arm64-v8a/x86_64**. ARM32 is absent. LLVM libc++ is statically linked;
-there is no Hamlib, Qt, Fortran or Boost runtime in the Android library.
+the FT8 DSP library links no Hamlib, Qt, Fortran or Boost runtime. The app
+packages its separate [Hamlib catalog library](HAMLIB.md) for radio metadata
+and software-only Dummy checks.
 [Third-party notices](../THIRD_PARTY_NOTICES.md) describe the packaged licenses.
 
 The inspected FT8CN tree at `a98fbfaec379a0c7a07d2a50c27be223aef948d8` served as
