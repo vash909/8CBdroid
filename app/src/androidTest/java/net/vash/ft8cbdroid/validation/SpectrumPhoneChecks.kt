@@ -106,7 +106,9 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
                 check(value.metrics?.route?.input?.id == mic.id)
                 if (matches()) matched++
                 maxCompute = maxOf(maxCompute, value.spectrum.computeMicros)
-                if (second == 29) warmPss = Debug.getPss()
+                if (second == 29) {
+                    warmPss = Debug.getPss(); shell("dumpsys gfxinfo net.vash.ft8cbdroid reset")
+                }
             }
             val end = main { audio.uiState.value.spectrum }; val elapsed = SystemClock.elapsedRealtime() - started
             val pss = Debug.getPss(); val cpuMs = android.os.Process.getElapsedCpuTime() - cpu
@@ -117,6 +119,9 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             File(context.cacheDir, "r13-gfxinfo.txt").writeText(gfx)
             val rendered = Regex("Total frames rendered: (\\d+)").find(gfx)?.groupValues?.get(1)?.toInt() ?: error("No render statistics")
             check(rendered >= 100) { "The visible plot did not render continuously" }
+            val p90 = Regex("""90th percentile: (\d+)ms""").find(gfx)?.groupValues?.get(1)?.toInt() ?: error("No frame latency statistics")
+            val jank = Regex("""Janky frames: \d+ \(([\d.]+)%\)""").find(gfx)?.groupValues?.get(1)?.toDouble() ?: error("No jank statistics")
+            check(p90 <= 32 && jank <= 25) { "Rendering too slow: p90=$p90 ms, jank=$jank%" }
             val values = end.frames.first().dbfs
             reveal("Select TX"); click("Select TX"); reveal("+25 Hz"); click("+25 Hz")
             check(main { audio.uiState.value.spectrumView.txHz == 1525 })
@@ -153,6 +158,7 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
                 .put("tone_700_hz", peak(values, 700f).first).put("tone_1900_hz", peak(values, 1900f).first)
                 .put("warm_pss_kib", warmPss).put("final_pss_kib", pss).put("process_cpu_ms", cpuMs)
                 .put("actual_zoom_pan_cursor_tap_controls", true).put("navigation_and_cold_restart", true)
+                .put("render_p90_ms", p90).put("janky_frames_percent", jank)
                 .put("rendered_frames", rendered).put("plot_visible", true).put("no_ntp_required", true).put("stop_clears_history", true)
             File(context.cacheDir, "r13-spectrum-report.json").writeText(report.toString(2))
             output.putString("spectrum_report", report.toString()); output.putString("spectrum_result", "PASS"); code = Activity.RESULT_OK

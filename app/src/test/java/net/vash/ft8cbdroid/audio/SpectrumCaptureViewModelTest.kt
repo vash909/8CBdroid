@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.audio
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.*
 import net.vash.ft8cbdroid.core.audio.*
 import org.junit.After
@@ -47,4 +48,16 @@ class SpectrumCaptureViewModelTest {
         val fresh = CaptureViewModel(Capture(), CaptureWriter { _, _ -> }, worker = dispatcher); runCurrent()
         assertEquals(SpectrumView(), fresh.uiState.value.spectrumView); assertTrue(fresh.uiState.value.spectrum.frames.isEmpty())
     }
+    @Test fun fastObservationsDoNotInvalidateControlsButStopEnablesExport() = runTest(dispatcher) {
+        val capture = Capture(); val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }, worker = dispatcher); runCurrent()
+        val controls = mutableListOf<CaptureUiState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.controls.collect { controls += it } }
+        vm.requestStart(true); runCurrent(); val active = controls.size
+        repeat(10) { capture.feed(FloatArray(2400)); runCurrent() }
+        assertTrue(vm.uiState.value.spectrum.processed > 0)
+        assertEquals(active, controls.size); assertFalse(controls.last().canExport)
+        vm.stop(); advanceUntilIdle()
+        assertEquals(CapturePhase.IDLE, controls.last().phase); assertTrue(controls.last().canExport)
+    }
+
 }

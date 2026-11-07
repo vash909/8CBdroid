@@ -114,3 +114,7 @@ Device/CI results are recorded in the feature PR before owner merge approval.
   reported format, source, effects and API-29 silencing information.
 - [Audio sources](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource):
   unprocessed and voice-recognition source behavior.
+
+Route, peak/RMS and clipping remain visible during capture. Open **Show audio
+diagnostics** for hardware format, processing and sample counters. These fast
+observations update independently of the application controls.

@@ -11,6 +11,7 @@ import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.time.*
 import net.vash.ft8cbdroid.core.Ft8Engine
@@ -53,6 +54,10 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default) : ViewModel() {
     private val state = MutableStateFlow(CaptureUiState())
     val uiState = state.asStateFlow()
+    // Fast observations have their own UI subscribers; only controls invalidate the app shell.
+    val controls = uiState.distinctUntilChangedBy {
+        it.copy(metrics = null, slots = null, spectrum = SpectrumState()) to it.canExport
+    }
     private var job: Job? = null
     @Volatile private var generation = 0L
     private var stationCall: String? = null

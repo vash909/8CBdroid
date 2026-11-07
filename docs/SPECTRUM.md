@@ -50,7 +50,9 @@ playback or arm transmission. Those actions belong to later milestones.
   are not a UTC grid and are not padded to hide missing display updates.
 - Color/bitmap preparation runs on a display worker. Compose draws the latest
   matching image and spectrum path; cancelled/old history cannot be republished
-  after Stop. The FT8 decoder retains its own work gate and slot queue.
+  after Stop. Fast meter and spectrum observations have separate UI collectors and do not
+  invalidate the app shell. Detailed format/effect/sample counters are available
+  under **Show audio diagnostics**. The FT8 decoder retains its own work gate and slot queue.
 
 ## Reproduce
 
@@ -75,6 +77,11 @@ The probe checks frequency error within 6 Hz, stable tone reception, at least
 post-warmup memory growth and Stop cleanup. It records measured PSS, process CPU,
 observed analysis times and Android graphics statistics under ignored `.tooling/`.
 These short measurements are not a thermal/battery or long-session qualification.
+The graphics gate, measured after 30 seconds of warmup, requires a 90th-percentile
+frame time no greater than 32 ms and at most 25% janky frames on the baseline
+debug device. This gate supplements actual control checks; a rendered-frame
+count alone does not establish responsiveness.
+
 Global audio volume stays unchanged; temporary charging stay-awake is restored.
 
 Also run `scripts/check_live_phone.sh` under the documented controlled limit to
