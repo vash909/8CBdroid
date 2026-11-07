@@ -16,6 +16,7 @@ import net.vash.ft8cbdroid.settings.StationSettingsViewModel
 import org.json.JSONObject
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Actual microphone and visible UI; the host must play independent 700/1900 Hz reference tones. */
 class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
@@ -42,13 +43,13 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
         check(requireNotNull(node) { "Control not found: $text" }.performAction(AccessibilityNodeInfo.ACTION_CLICK))
     }
     private fun reveal(text: String, down: Boolean = false) {
-        repeat(10) {
+        for (forward in listOf(down, !down)) repeat(10) {
             val root = requireNotNull(root()); val screen = Rect(); root.getBoundsInScreen(screen)
             val node = find(root) { it.text?.toString() == text }; val bounds = Rect(); node?.getBoundsInScreen(bounds)
             if (node?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && screen.contains(bounds)) return
-            val upper = screen.top + screen.height() / 3; val lower = screen.top + screen.height() * 3 / 4
-            shell("input touchscreen swipe ${screen.centerX()} ${if (down) lower else upper} ${screen.centerX()} ${if (down) upper else lower} 180")
-            SystemClock.sleep(100)
+            val middle = screen.centerY(); val step = screen.height() / 5
+            shell("input touchscreen swipe ${screen.centerX()} $middle ${screen.centerX()} ${middle + if (forward) -step else step} 600")
+            SystemClock.sleep(250)
         }
         error("Control not visible: $text")
     }
@@ -59,8 +60,12 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             val root = requireNotNull(root()); val screen = Rect(); root.getBoundsInScreen(screen)
             val node = find(root) { it.contentDescription?.toString()?.startsWith("Local audio spectrum and waterfall.") == true }
             val bounds = Rect(); node?.getBoundsInScreen(bounds)
-            if (node?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && screen.contains(bounds)) return
-            shell("input touchscreen swipe ${screen.centerX()} ${screen.top + screen.height() * 3 / 4} ${screen.centerX()} ${screen.top + screen.height() / 3} 200")
+            val expectedHeight = (196 * instrumentation.targetContext.resources.displayMetrics.density).roundToInt()
+            if (node?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() >= expectedHeight - 2 && screen.contains(bounds)) return
+            // Accessibility bounds may be clipped to the viewport: containment alone is insufficient.
+            val towardTop = node != null && bounds.top < screen.centerY() && bounds.height() < expectedHeight - 2
+            val middle = screen.centerY(); val step = screen.height() / 5
+            shell("input touchscreen swipe ${screen.centerX()} $middle ${screen.centerX()} ${middle + if (towardTop) step else -step} 600")
             SystemClock.sleep(120)
         }
         error("Spectrum plot is not fully visible")
@@ -97,12 +102,14 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             await("physical 700/1900 Hz tones", 20, ::matches)
             val started = SystemClock.elapsedRealtime(); val cpu = android.os.Process.getElapsedCpuTime()
             val first = main { audio.uiState.value.spectrum.processed }
-            var maxCompute = 0L; var warmPss = 0L; var matched = 0
+            var maxCompute = 0L; var warmPss = 0L; var matched = 0; var previous = first
             repeat(120) { second ->
                 SystemClock.sleep(1000)
                 val value = main { audio.uiState.value }
                 check(value.phase == CapturePhase.CAPTURING && value.error == null && value.spectrum.error == null)
                 check(value.spectrum.frames.size <= SpectrumMonitor.HISTORY)
+                check(value.spectrum.processed > previous) { "Spectrum stopped updating during capture" }
+                previous = value.spectrum.processed
                 check(value.metrics?.route?.input?.id == mic.id)
                 if (matches()) matched++
                 maxCompute = maxOf(maxCompute, value.spectrum.computeMicros)

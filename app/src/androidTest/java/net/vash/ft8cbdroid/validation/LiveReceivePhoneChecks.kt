@@ -47,18 +47,18 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
     }
     private fun show(text: String) {
         val automation = instrumentation.uiAutomation
-        repeat(12) {
+        for (forward in listOf(true, false)) repeat(14) {
             if (android.os.Build.VERSION.SDK_INT >= 34) automation.clearCache() else automation.serviceInfo = automation.serviceInfo
             val root = requireNotNull(automation.rootInActiveWindow)
             val screen = Rect(); root.getBoundsInScreen(screen)
             val found = find(root, text); val bounds = Rect(); found?.getBoundsInScreen(bounds)
             if (found?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && Rect.intersects(screen, bounds)) return
-            val x = screen.centerX(); val start = screen.top + screen.height() * 3 / 4
-            val end = screen.top + screen.height() / 3
+            val x = screen.centerX(); val start = screen.centerY()
+            val end = start + if (forward) -screen.height() / 5 else screen.height() / 5
             ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(
-                "timeout 3 input touchscreen swipe $x $start $x $end 200"
+                "timeout 3 input touchscreen swipe $x $start $x $end 600"
             )).use { check(it.readBytes().isEmpty()) }
-            SystemClock.sleep(150)
+            SystemClock.sleep(250)
         }
         error("Live UI text is not visible: $text")
     }
