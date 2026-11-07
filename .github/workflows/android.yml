@@ -15,20 +15,30 @@ concurrency:
 
 jobs:
   reference:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Install reference compiler
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
+          for apt_source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i -E 's@https?://azure\.archive\.ubuntu\.com/ubuntu@https://archive.ubuntu.com/ubuntu@g' "$apt_source"
+            fi
+          done
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
       - name: Check pinned desktop compatibility fixtures
         run: |
+          python3 scripts/wsjtcb_codec.py --check
           python3 scripts/wsjtcb_channel.py --check
           cmake -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build .tooling/native-host --parallel 2
+          .tooling/native-host/control_checks
           python3 scripts/check_native.py .tooling/native-host
+          python3 scripts/wsjtcb_pcm.py .tooling/native-host
+          python3 scripts/wsjtcb_recordings.py .tooling/native-host
+          python3 scripts/ft8_benchmark.py .tooling/native-host
           python3 scripts/wsjtcb_reference.py --check
           python3 scripts/wsjtcb_packing.py --check
           python3 scripts/wsjtcb_packing.py --check --optimization O2
@@ -67,12 +77,19 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4
+        with:
+          name: 8CBdroid-device-checks
+          path: app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: validation-reports
           path: |
             core/build/reports/tests/
             protocol/wsjtcb/build/reports/tests/
+            protocol/ntp/build/reports/tests/
             app/build/reports/tests/
             app/build/reports/lint-results-debug.*
           if-no-files-found: ignore

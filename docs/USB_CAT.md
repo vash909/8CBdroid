@@ -1,14 +1,14 @@
 # USB CAT integration
 
-## R01a: discovery and permission
+## Discovery and permission
 
-The **Radio** screen can enumerate attached USB devices, show VID/PID and device
+The **Settings → USB / CAT** page can enumerate attached USB devices, show VID/PID and device
 ID, identify serial drivers/port counts and request Android access to a recognized
 serial interface. Attach/detach updates the list while the app process is alive.
 Tap **Find USB devices** for an initial or manual refresh. Permission requests
 are explicit, one at a time, and can be retried after denial.
 
-This is the first part of roadmap R01. It opens no USB device or serial port,
+Discovery opens no USB device or serial port,
 changes no baud rate or control line, and sends no CAT/PTT command. Access granted
 means Android permission only; it does not mean that a radio is connected. Unknown
 USB devices remain visible but cannot be selected for a serial permission request.
@@ -26,7 +26,8 @@ Dependency: `com.github.mik3y:usb-serial-for-android:3.11.0`, MIT license, from
 [JitPack](https://github.com/mik3y/usb-serial-for-android/tree/3.11.0). The Gradle
 repository filter allows only this module from JitPack. The upstream license is
 included in APK assets and linked in [third-party notices](../THIRD_PARTY_NOTICES.md).
-No Hamlib, JNI or NDK is needed for descriptor discovery and permission handling.
+Descriptor discovery and permission handling use no Hamlib or native driver.
+The app still needs the NDK for its separate offline FT8 channel library.
 This selects the Java transport direction; a particular radio's CAT command set
 and settings still need a separate implementation and test.
 
@@ -46,7 +47,7 @@ for enumeration, permission and device lifetime.
 
 Without OTG hardware:
 
-1. Install the debug APK, open **Radio** and tap **Find USB devices**.
+1. Install the debug APK, open **Settings → USB / CAT** and tap **Find USB devices**.
 2. An OTG-capable phone with nothing attached should report **No USB devices
    found**; a device without host support should explain that host mode is unavailable.
 3. Rotate, switch tabs and reopen the app. There should be no automatic permission
@@ -65,19 +66,19 @@ When a data/OTG adapter and serial interface are available:
    request. Rotate during a prompt and verify the result reaches the retained owner.
 4. If available, attach two adapters with the same VID/PID and verify permission
    state belongs to the selected device only. Test a non-serial USB device as well.
-5. No serial output, RTS/DTR changes or CAT/PTT commands should occur. R01a never
+5. No serial output, RTS/DTR changes or CAT/PTT commands should occur. Discovery never
    opens a serial port.
 
 Automated JVM tests cover permission-state isolation, retry, duplicate-request
 blocking, removal, replacement, revocation and ViewModel cleanup. They do not test
 the Android system dialog or physical USB interoperability. No phone/interface
-combination is certified by this PR; hardware tests remain pending.
+combination is certified by the discovery feature; physical OTG/CAT tests remain
+pending. Current accepted checks are recorded in [validation](VALIDATION.md).
 
-## R01b: first real radio connection
+## CAT support boundary
 
-The owner currently has no USB OTG adapter; no test radio model, interface or phone
-has been selected. Keep R01 incomplete until those details and physical results
-are recorded. Required follow-up:
+No radio/OTG-cable combination is qualified. CAT support requires a separate
+backend and physical validation with a documented phone/radio/cable setup:
 
 - Pin the first radio's CAT documentation and serial settings; choose its exact
   interface and port. Define identity/frequency read fixtures from that protocol.

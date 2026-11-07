@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:label="8CBdroid offline engine probe" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@android:drawable/ic_menu_info_details" android:supportsRtl="true" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <application android:label="8CBdroid development probes" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@android:drawable/ic_menu_info_details" android:supportsRtl="true">
+        <activity android:name=".TimestampProbeActivity" android:exported="false" />
+        <activity android:name=".AudioProbeActivity" android:exported="false" />
+    </application>
     <instrumentation android:name=".OfflineEngineProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="Offline FT8 channel checks" />
+    <instrumentation android:name=".AudioCaptureProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="R10 microphone reference-tone check" />
+    <instrumentation android:name=".AudioTimestampProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="Capture timestamp diagnostic" />
 </manifest>

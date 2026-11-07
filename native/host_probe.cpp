@@ -1,5 +1,6 @@
 #include "engine.hpp"
 #include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -16,15 +17,18 @@ static std::string bits(eightcb::Payload const& p) {
     for (int i=0;i<77;++i) result += ((p[i/8]>>(7-i%8))&1) ? '1':'0';
     return result;
 }
-static void decoded(std::vector<float> const& pcm) {
-    auto result=eightcb::decode_slot(pcm);
-    std::cout << "{\"candidates\":" << result.candidates << ",\"frames\":[";
+static void decoded(std::vector<float> const& pcm, int profile=1) {
+    auto result=eightcb::decode_slot(pcm,profile);
+    std::cout << "{\"candidates\":" << result.candidates << ",\"processed\":" << result.processed << ",\"frames\":[";
     bool first=true;
     for (auto const& frame:result.frames) {
         if (!first) std::cout << ',';
         first=false;
         std::cout << "{\"payload77\":\"" << bits(frame.payload) << "\",\"time\":" << frame.time_seconds
-                  << ",\"frequency\":" << frame.frequency_hz << ",\"score\":" << frame.sync_score << '}';
+                  << ",\"frequency\":" << frame.frequency_hz << ",\"score\":" << frame.sync_score << ",\"snr\":";
+        if (std::isfinite(frame.estimated_snr_db)) std::cout << frame.estimated_snr_db;
+        else std::cout << "null";
+        std::cout << '}';
     }
     std::cout << "]}\n";
 }
@@ -33,11 +37,16 @@ int main(int argc, char** argv) {
         if (argc==3 && std::string(argv[1])=="encode") {
             for (auto tone:eightcb::encode_tones(payload(argv[2]))) std::cout << int(tone);
             std::cout << '\n';
+        } else if (argc==6 && std::string(argv[1])=="wave") {
+            auto pcm=eightcb::encode_slot(payload(argv[2]),std::stof(argv[3]),std::stof(argv[4]));
+            std::ofstream out(argv[5],std::ios::binary);
+            out.write(reinterpret_cast<char const*>(pcm.data()),pcm.size()*sizeof(float));
+            if (!out) throw std::runtime_error("Could not write generated PCM");
         } else if (argc==3 && std::string(argv[1])=="roundtrip") {
             decoded(eightcb::encode_slot(payload(argv[2]),1000));
         } else if (argc==2 && std::string(argv[1])=="silence") {
             decoded(std::vector<float>(eightcb::slot_samples,0));
-        } else if (argc==3 && std::string(argv[1])=="decode") {
+        } else if ((argc==3 || argc==4) && std::string(argv[1])=="decode") {
             std::ifstream in(argv[2],std::ios::binary);
             char header[44]; in.read(header,44);
             if (!in || std::memcmp(header,"RIFF",4) || std::memcmp(header+8,"WAVE",4)) throw std::runtime_error("Invalid fixture WAV");
@@ -46,7 +55,7 @@ int main(int argc, char** argv) {
             if (!in || in.peek()!=std::ifstream::traits_type::eof()) throw std::runtime_error("Invalid fixture sample count");
             std::vector<float> pcm;
             for (auto value:samples) pcm.push_back(value/32768.0f);
-            decoded(pcm);
-        } else throw std::invalid_argument("Usage: engine_probe encode|roundtrip BITS, decode WAV, or silence");
+            decoded(pcm,argc==4?std::stoi(argv[3]):1);
+        } else throw std::invalid_argument("Usage: engine_probe encode|roundtrip BITS, wave BITS HZ LEVEL FILE, decode WAV, or silence");
     } catch (std::exception const& e) {std::cerr << e.what() << '\n';return 1;}
 }

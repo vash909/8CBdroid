@@ -2,7 +2,7 @@ package net.vash.ft8cbdroid
 
 import net.vash.ft8cbdroid.core.*
 
-/** Radio and audio placeholders; neither opens hardware. */
+/** Radio and combined RX/TX placeholders; R10 microphone capture uses MicrophoneCapture. */
 class PendingRadioController : RadioController {
     override val capabilities = RadioCapabilities(frequencyControl = false, ptt = false)
     override suspend fun connect(config: UsbRadioConfig) = pending()
@@ -16,5 +16,5 @@ class PendingAudioEngine : AudioEngine {
     override suspend fun startReceive(route: AudioRoute) = pending()
     override suspend fun playTransmit(pcm: ShortArray, sampleRateHz: Int) = pending()
     override suspend fun stop() = Unit
-    private fun pending() = BackendResult.Unavailable("AudioRecord/AudioTrack and routing are not implemented")
+    private fun pending() = BackendResult.Unavailable("Combined audio RX/TX is pending; microphone capture uses MicrophoneCapture")
 }

@@ -264,6 +264,70 @@
     {
       "id": "collision-type1",
       "input": "<5AT179> K1ABC -10"
+    },
+    {
+      "id": "standard-no-final",
+      "input": "K1ABC W9XYZ"
+    },
+    {
+      "id": "standard-portable",
+      "input": "K1ABC/P W9XYZ/P R FN42"
+    },
+    {
+      "id": "standard-roger-grid",
+      "input": "K1ABC W9XYZ R FN42"
+    },
+    {
+      "id": "standard-cq-dx",
+      "input": "CQ DX K1ABC FN42"
+    },
+    {
+      "id": "standard-cq-numeric",
+      "input": "CQ 123 K1ABC FN42"
+    },
+    {
+      "id": "standard-short-suffix",
+      "input": "F4A W9XYZ +00"
+    },
+    {
+      "id": "standard-minus50",
+      "input": "K1ABC W9XYZ -50"
+    },
+    {
+      "id": "standard-minus31",
+      "input": "K1ABC W9XYZ -31"
+    },
+    {
+      "id": "standard-minus30",
+      "input": "K1ABC W9XYZ -30"
+    },
+    {
+      "id": "standard-plus49",
+      "input": "K1ABC W9XYZ +49"
+    },
+    {
+      "id": "text-alphabet",
+      "input": "HELLO +-./?"
+    },
+    {
+      "id": "standard-plus50",
+      "input": "K1ABC W9XYZ +50"
+    },
+    {
+      "id": "standard-plus51-alias",
+      "input": "K1ABC W9XYZ +51"
+    },
+    {
+      "id": "standard-plus99-alias",
+      "input": "K1ABC W9XYZ +99"
+    },
+    {
+      "id": "standard-locator6",
+      "input": "CQ K1ABC FN42AB"
+    },
+    {
+      "id": "standard-cq-prefix-call",
+      "input": "CQ1AA W9XYZ R-10"
     }
   ],
   "hash_calls": [
@@ -1278,6 +1342,159 @@
         {
           "op": "raw",
           "payload77": "00000000000000000000000000000000000000000000000000000000000000000000000000111"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-no-final",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-no-final"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-portable",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-portable"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-roger-grid",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-roger-grid"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-dx",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-dx"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-numeric",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-numeric"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-short-suffix",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-short-suffix"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus50",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus50"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus31",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus31"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-minus30",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-minus30"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus49",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus49"
+        }
+      ]
+    },
+    {
+      "id": "cold-text-alphabet",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "text-alphabet"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus50",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus50"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus51-alias",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus51-alias"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-plus99-alias",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-plus99-alias"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-locator6",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-locator6"
+        }
+      ]
+    },
+    {
+      "id": "cold-standard-cq-prefix-call",
+      "steps": [
+        {
+          "op": "decode",
+          "case": "standard-cq-prefix-call"
+        }
+      ]
+    },
+    {
+      "id": "raw-hashed-rover-grid",
+      "steps": [
+        {
+          "op": "raw",
+          "payload77": "00000100000101110010110101110000010011011110111100011010110000010011010010001"
         }
       ]
     }

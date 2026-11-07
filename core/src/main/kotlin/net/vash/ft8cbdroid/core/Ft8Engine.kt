@@ -47,12 +47,26 @@ data class Ft8DecodedFrame(
     val startSecondsInSlot: Float,
     val audioFrequencyHz: Float,
     val syncScore: Int,
+    /** Experimental 2500 Hz estimate; null when the noise floor cannot be measured. */
+    val estimatedSnrDb: Float? = null,
 )
 
-data class Ft8DecodeResult(val frames: List<Ft8DecodedFrame>, val candidateCount: Int)
+/** Budgets are mirrored and checked in the native profile table; Standard preserves R08 limits. */
+enum class Ft8DecodeProfile(val label: String, val maxCandidates: Int, val maxIterations: Int, val deadlineMillis: Long) {
+    FAST("Fast", 24, 12, 2_000),
+    STANDARD("Standard", 60, 25, 4_000),
+}
 
-/** Offline channel operations only; no text codec, device audio or RF access. */
+data class Ft8DecodeResult(
+    val frames: List<Ft8DecodedFrame>,
+    val candidateCount: Int,
+    val profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD,
+    val decodeMillis: Long? = null,
+    val processedCandidates: Int? = null,
+)
+
+/** Complete-slot channel operations; no text codec, device audio or RF access. */
 interface Ft8Engine {
-    suspend fun decode(slot: Ft8PcmSlot): Ft8DecodeResult
-    suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float): Ft8PcmSlot
+    suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): Ft8DecodeResult
+    suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float = .4f): Ft8PcmSlot
 }

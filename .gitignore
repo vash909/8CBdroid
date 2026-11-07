@@ -13,3 +13,11 @@ captures/
 .DS_Store
 __pycache__/
 *.pyc
+
+# Local planning, agent instructions and workstation helpers.
+/AGENTS.md
+/docs/ROADMAP.md
+/docs/LOCAL_WORKFLOW.md
+/.vscode/
+/scripts/controlled.sh
+/scripts/notify_action.sh

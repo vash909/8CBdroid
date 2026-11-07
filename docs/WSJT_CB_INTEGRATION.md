@@ -28,7 +28,7 @@ are retained across rotation, but are not persisted after process termination.
 
 1. Connect the PC and phone to the same LAN. Find the phone's Wi-Fi IPv4 address
    in Android's network settings. Client isolation must allow traffic between them.
-2. In the app's **LAN** tab, select the listening port, normally **2237**.
+2. In the app's **Settings → WSJT-CB LAN** page, select the listening port, normally **2237**.
    Optionally enter the PC's IPv4 address to restrict the accepted sender.
 3. Tap **Start listening**. The app should show that it is waiting for a desktop.
 4. In WSJT-CB's UDP settings, set the UDP server to the **phone's** IPv4 address
@@ -40,7 +40,7 @@ are retained across rotation, but are not persisted after process termination.
    Status packet updates the app. Receiving status does not require sending
    radio or TX commands from the phone.
 7. Wait for a desktop decode. Check its message, UTC time, SNR, delta time,
-   offset and flags under **LAN band activity**, also available in **Station**.
+   offset and flags under **LAN band activity**, also available on **Operate** with the LAN source selected.
 8. Enable **Accept UDP requests** in WSJT-CB. Tap **Clear list**, then
    **Request replay**: desktop history should arrive marked **Replay**. Replay
    is never automatic. Without clearing, identical replay payloads are deduplicated
@@ -118,8 +118,8 @@ Log parsing still needs the schema-specific QDateTime representation.
 ## Android network access
 
 The current target SDK is 36, using the existing `INTERNET` manifest permission.
-Before raising the target to 37+, implement the local-network runtime permission
-requirements described in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
+Before changing the target SDK, review the applicable local-network access
+requirements in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
 No foreground service or background-listening capability is claimed here.
 
 ## Verification and upstream sources
@@ -138,5 +138,9 @@ foreground stop ordering and disposal. Android device/real-desktop interoperabil
 - [MessageClient.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/MessageClient.cpp): ephemeral socket, schema upgrade and Status sender.
 - [Configuration.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Configuration.cpp): desktop server defaults.
 
-FT8 engine compatibility still requires separate tests of CB callsigns, hashes,
-type 4 packing and CB QSO sequences. The local FT8 engine is not integrated.
+Local offline FT8 now has separate [message/hash](CB_MESSAGE_CODEC.md),
+[waveform](OFFLINE_WAVEFORM.md) and [recorded-slot](RECORDED_SLOTS.md) paths.
+They do not consume LAN audio or share learned-call sessions. LAN SNR/DT are
+reported by the desktop; recorded SNR/DT come from the local backend and supplied
+UTC. Full live/RF and QSO interoperability remain unverified; see
+[validation](VALIDATION.md).

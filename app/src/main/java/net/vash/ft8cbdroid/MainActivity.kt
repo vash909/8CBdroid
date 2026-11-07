@@ -1,42 +1,90 @@
 package net.vash.ft8cbdroid
 
+import net.vash.ft8cbdroid.time.*
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import net.vash.ft8cbdroid.ui.*
+import net.vash.ft8cbdroid.audio.SpectrumPlot
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.vash.ft8cbdroid.core.CbCallsign
-import net.vash.ft8cbdroid.core.MaidenheadLocator
+import net.vash.ft8cbdroid.recording.RecordedSlotViewModel
+import net.vash.ft8cbdroid.recording.RecordedSlotUiState
+import net.vash.ft8cbdroid.recording.RecordedSlotPanel
+import net.vash.ft8cbdroid.audio.CaptureViewModel
+import net.vash.ft8cbdroid.audio.CaptureUiState
+import net.vash.ft8cbdroid.audio.CapturePanel
+import net.vash.ft8cbdroid.core.audio.SpectrumView
+import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
+import net.vash.ft8cbdroid.audio.CaptureObservationHost
+import net.vash.ft8cbdroid.audio.CaptureObservations
+import net.vash.ft8cbdroid.audio.SpectrumHost
+import net.vash.ft8cbdroid.audio.SpectrumPanel
+import net.vash.ft8cbdroid.audio.LiveReceivePanel
+import net.vash.ft8cbdroid.message.MessagePreviewPanel
+import net.vash.ft8cbdroid.message.HashSessionViewModel
+import net.vash.ft8cbdroid.message.HashSessionUiState
+import net.vash.ft8cbdroid.message.WaveformViewModel
+import net.vash.ft8cbdroid.message.WaveformUiState
+import net.vash.ft8cbdroid.core.message.EncodingMode
+import net.vash.ft8cbdroid.core.Ft8Payload77
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 import net.vash.ft8cbdroid.core.StationIdentity
 import net.vash.ft8cbdroid.usb.UsbPanel
 import net.vash.ft8cbdroid.usb.UsbInventoryState
 import net.vash.ft8cbdroid.usb.UsbViewModel
 import net.vash.ft8cbdroid.lan.LanPanel
-import net.vash.ft8cbdroid.lan.DecodesPanel
 import net.vash.ft8cbdroid.lan.LanUiState
 import net.vash.ft8cbdroid.lan.LanViewModel
 import net.vash.ft8cbdroid.settings.DataStoreStationPreferencesRepository
-import net.vash.ft8cbdroid.settings.SettingsFailure
 import net.vash.ft8cbdroid.settings.StationSettingsUiState
 import net.vash.ft8cbdroid.settings.StationSettingsViewModel
 import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
+    private lateinit var timeViewModel: TimeViewModel
+    private val gpsPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        timeViewModel.gpsPermissionResult(it[Manifest.permission.ACCESS_FINE_LOCATION] == true)
+    }
+    private val utcSlotDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        captureViewModel.export(it?.toString())
+    }
+    private lateinit var captureViewModel: CaptureViewModel
+    private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        captureViewModel.permissionResult(it)
+    }
+    private val microphoneDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        captureViewModel.export(it?.toString())
+    }
     private lateinit var lanViewModel: LanViewModel
+    private lateinit var waveformViewModel: WaveformViewModel
+    private val wavDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
+        waveformViewModel.export(it?.toString())
+    }
+    private lateinit var recordedSlotViewModel: RecordedSlotViewModel
+    private val wavSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        recordedSlotViewModel.importDocument(it?.toString())
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         val stationViewModel = ViewModelProvider(
             this,
             StationSettingsViewModel.factory(
@@ -45,10 +93,26 @@ class MainActivity : ComponentActivity() {
         )[StationSettingsViewModel::class.java]
         lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
+        val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
+        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
+        recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
+        timeViewModel = ViewModelProvider(this, TimeViewModel.factory(applicationContext))[TimeViewModel::class.java]
+        captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
+            val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
+            val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
+            val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
+            val capture by captureViewModel.controls.collectAsStateWithLifecycle(initialValue = CaptureUiState())
+            val time by timeViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(station.saved?.callsign) {
+                val call = station.saved?.callsign?.takeIf { it.isNotBlank() }
+                hashViewModel.changeStation(call)
+                recordedSlotViewModel.changeStation(call)
+                captureViewModel.changeStation(call)
+            }
             EightCbApp(
                 station = station,
                 usb = usb,
@@ -65,22 +129,67 @@ class MainActivity : ComponentActivity() {
                 onGridChange = stationViewModel::changeGrid,
                 onSaveStation = stationViewModel::save,
                 onRetryLoad = stationViewModel::retryLoad,
+                hashes = hashes,
+                onSimulateReceive = hashViewModel::receive,
+                onCommitHashes = hashViewModel::commit,
+                onResetHashes = hashViewModel::reset,
+                recording = recording,
+                capture = capture,
+                captureObservations = { CaptureObservationHost(captureViewModel.uiState) },
+                spectrumContent = { SpectrumHost(captureViewModel.uiState, captureViewModel::spectrumView) },
+                compactSpectrumContent = { SpectrumHost(captureViewModel.uiState, captureViewModel::spectrumView, compact = true) },
+                time = time,
+                timeActions = TimeActions(timeViewModel::selectPreset, timeViewModel::changeCustom,
+                    save = { captureViewModel.stop("Time settings changed. Restart capture explicitly.", clear = true); timeViewModel.save() },
+                    retry = timeViewModel::load, ntp = timeViewModel::measureNtp,
+                    gps = { if (timeViewModel.requestGps(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED))
+                        gpsPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) },
+                    apply = { captureViewModel.stop("Time correction changed. Restart capture explicitly.", clear = true); timeViewModel.applyMeasurement() },
+                    cancel = timeViewModel::cancel),
+                onAssembleUtc = captureViewModel::assembleUtc,
+                onDecodeLive = captureViewModel::decodeLive,
+                onLiveProfile = captureViewModel::liveProfile,
+                onSpectrumView = captureViewModel::spectrumView,
+                onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
+                    val utc = captureViewModel.uiState.value.latestSlotUtcMillis
+                    val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
+                    utcSlotDestination.launch("8CBdroid-UTC-$stamp.wav")
+                } },
+                onSelectInput = captureViewModel::select,
+                onStartCapture = {
+                    if (captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
+                        microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                },
+                onStopCapture = { captureViewModel.stop() },
+                onLeaveAudio = { captureViewModel.stop("Microphone stopped after leaving the receive screen.", clear = true) },
+                onSaveCapture = {
+                    if (captureViewModel.prepareExport()) microphoneDestination.launch("8CBdroid-microphone.wav")
+                },
+                onRecordedUtc = recordedSlotViewModel::changeUtc,
+                onRecordedProfile = recordedSlotViewModel::changeProfile,
+                onImportRecording = { if (recordedSlotViewModel.prepareImport()) wavSource.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) },
+                onCancelRecording = recordedSlotViewModel::cancel,
+                onClearRecording = recordedSlotViewModel::clear,
+                waveform = waveform,
+                onWaveformInput = waveformViewModel::changeInput,
+                onWaveformFrequency = waveformViewModel::changeFrequency,
+                onWaveformLevel = waveformViewModel::changeLevel,
+                onWaveformConsent = waveformViewModel::acceptChanges,
+                onGenerateWaveform = waveformViewModel::generate,
+                onCancelWaveform = waveformViewModel::cancel,
+                onSaveWaveform = { if (waveformViewModel.prepareExport()) wavDestination.launch("8CBdroid-FT8.wav") },
             )
         }
     }
 
     override fun onStop() {
+        timeViewModel.cancel()
+        captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.",
+            clear = !captureViewModel.isChoosingDocument)
         if (!isChangingConfigurations) lanViewModel.stop()
         super.onStop()
     }
 }
-
-private val palette = darkColorScheme(
-    primary = Color(0xFF67E8C4),
-    secondary = Color(0xFFAAC7FF),
-    background = Color(0xFF101820),
-    surface = Color(0xFF17232D),
-)
 
 @Composable
 fun EightCbApp(
@@ -99,122 +208,111 @@ fun EightCbApp(
     onGridChange: (String) -> Unit = {},
     onSaveStation: () -> Unit = {},
     onRetryLoad: () -> Unit = {},
+    hashes: HashSessionUiState = HashSessionUiState(),
+    onSimulateReceive: (Ft8Payload77) -> Unit = {},
+    onCommitHashes: () -> Unit = {},
+    onResetHashes: () -> Unit = {},
+    recording: RecordedSlotUiState = RecordedSlotUiState(),
+    capture: CaptureUiState = CaptureUiState(),
+    time: TimeUiState = TimeUiState(),
+    timeActions: TimeActions = TimeActions(),
+    onAssembleUtc: (Boolean) -> Unit = {},
+    onDecodeLive: (Boolean) -> Unit = {},
+    onLiveProfile: (Ft8DecodeProfile) -> Unit = {},
+    onSpectrumView: (SpectrumView) -> Unit = {},
+    captureObservations: @Composable () -> Unit = { CaptureObservations(capture.metrics, capture.slots) },
+    spectrumContent: @Composable () -> Unit = { SpectrumPanel(capture.spectrum, capture.spectrumView, localSpectrumMarkers(capture.live.rows), onSpectrumView) },
+    compactSpectrumContent: @Composable () -> Unit = { SpectrumPlot(capture.spectrum, capture.spectrumView, localSpectrumMarkers(capture.live.rows), onSpectrumView, 96.dp) },
+    onSaveUtcSlot: () -> Unit = {},
+    onSelectInput: (Int) -> Unit = {},
+    onStartCapture: () -> Unit = {},
+    onStopCapture: () -> Unit = {},
+    onLeaveAudio: () -> Unit = {},
+    onSaveCapture: () -> Unit = {},
+    onRecordedUtc: (String) -> Unit = {},
+    onRecordedProfile: (Ft8DecodeProfile) -> Unit = {},
+    onImportRecording: () -> Unit = {},
+    onCancelRecording: () -> Unit = {},
+    onClearRecording: () -> Unit = {},
+    waveform: WaveformUiState = WaveformUiState(),
+    onWaveformInput: (String, EncodingMode) -> Unit = { _, _ -> },
+    onWaveformFrequency: (String) -> Unit = {},
+    onWaveformLevel: (String) -> Unit = {},
+    onWaveformConsent: (Boolean) -> Unit = {},
+    onGenerateWaveform: (String, EncodingMode) -> Unit = { _, _ -> },
+    onCancelWaveform: () -> Unit = {},
+    onSaveWaveform: () -> Unit = {},
 ) {
-    var section by rememberSaveable { mutableIntStateOf(0) }
-    var connection by rememberSaveable { mutableStateOf("Phone VOX") }
-    val sections = listOf("Station", "Radio", "Audio", "LAN")
-
-    MaterialTheme(colorScheme = palette) {
+    var destination by rememberSaveable { mutableStateOf(AppDestination.OPERATE) }
+    var source by rememberSaveable { mutableStateOf(OperatingSource.LOCAL) }
+    val pageStates = rememberSaveableStateHolder()
+    fun navigate(next: AppDestination) {
+        if (stopsLocalReception(destination, next)) onLeaveAudio()
+        if (next == AppDestination.CHAT) onStopLan()
+        destination = next
+    }
+    BackHandler(enabled = destination != AppDestination.OPERATE) {
+        navigate(if (destination.tab == AppDestination.SETTINGS && destination != AppDestination.SETTINGS)
+            AppDestination.SETTINGS else AppDestination.OPERATE)
+    }
+    RadioTheme {
         Scaffold(
+            modifier = Modifier.imePadding(),
             bottomBar = {
-                NavigationBar {
-                    sections.forEachIndexed { index, label ->
-                        NavigationBarItem(
-                            selected = section == index,
-                            onClick = { section = index },
-                            icon = { Text(listOf("FT8", "USB", "VOX", "UDP")[index]) },
-                            label = { Text(label) },
-                        )
+                NavigationBar(containerColor = RadioColors.background, tonalElevation = 0.dp) {
+                    listOf(AppDestination.OPERATE, AppDestination.SETTINGS, AppDestination.CHAT).forEach { tab ->
+                        NavigationBarItem(selected = destination.tab == tab, onClick = { navigate(tab) },
+                            icon = { NavigationGlyph(tab) }, label = { Text(tab.title) })
                     }
                 }
             },
         ) { padding ->
-            Column(
-                Modifier.fillMaxSize().padding(padding)
-                    .verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
-                Text("FT8 • 11 metres • Android", color = MaterialTheme.colorScheme.primary)
-                Panel("Development preview") {
-                    Text("Station settings can be saved and desktop status/decodes can be monitored over LAN. Local FT8, radio control and audio are not implemented yet.")
-                }
-                when (section) {
-                    0 -> {
-                        Text("Your station", style = MaterialTheme.typography.titleLarge)
-                        OutlinedTextField(
-                            value = station.draft.callsign,
-                            onValueChange = onCallsignChange,
-                            label = { Text("CB callsign") },
-                            placeholder = { Text("1AT106") },
-                            singleLine = true,
-                            enabled = station.canEdit,
-                            isError = station.draft.callsign.isNotEmpty() && !CbCallsign.isValid(station.draft.callsign),
-                            supportingText = { Text("Complete CB callsign, for example 1AT106") },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        OutlinedTextField(
-                            value = station.draft.grid, onValueChange = onGridChange,
-                            label = { Text("Maidenhead locator") }, placeholder = { Text("JN45") },
-                            singleLine = true, modifier = Modifier.fillMaxWidth(),
-                            enabled = station.canEdit,
-                            isError = station.draft.grid.isNotEmpty() && !MaidenheadLocator.isValid(station.draft.grid),
-                            supportingText = { Text("4 or 6 characters, for example JN45 or JN45AB") },
-                        )
-                        Button(
-                            onClick = onSaveStation,
-                            enabled = station.canSave,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(if (station.isSaving) "Saving…" else "Save settings")
-                        }
-                        when {
-                            station.isLoading -> Text("Loading settings…")
-                            station.failure == SettingsFailure.READ -> {
-                                Text("Could not read saved settings.", color = MaterialTheme.colorScheme.error)
-                                OutlinedButton(onClick = onRetryLoad) { Text("Retry loading") }
+            Box(Modifier.fillMaxSize().padding(padding)) {
+                pageStates.SaveableStateProvider(destination.name) {
+                when (destination) {
+                    AppDestination.OPERATE -> OperatePanel(station, source, capture, lan, time, ::navigate,
+                        onReceive = {
+                            if (source == OperatingSource.LAN) onStartLan() else {
+                                onDecodeLive(true); onAssembleUtc(true); onStartCapture()
                             }
-                            station.failure == SettingsFailure.SAVE ->
-                                Text("Could not save settings. Try Save settings again.", color = MaterialTheme.colorScheme.error)
-                            station.isSaved -> Text("Settings saved on this phone.")
-                            station.hasChanges -> Text("Unsaved changes.")
-                        }
-                        Panel("FT8 / WSJT-CB profile") {
-                            Text("27.265 MHz • alternative 27.045 MHz")
-                            Text("15 s slots • 12 kHz DSP • 79 symbols")
-                            Text("Selected connection: $connection")
-                        }
-                        DecodesPanel(lan.connection.decodes, lan.canReplay, onReplayLan, onClearLan)
-                        Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                            Text("Start RX — not implemented")
-                        }
-                        OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                            Text("Enable TX — not implemented")
+                        }, onMonitor = { onDecodeLive(false); onAssembleUtc(false); onStartCapture() },
+                        onStop = { if (source == OperatingSource.LAN) onStopLan() else onStopCapture() },
+                        onView = onSpectrumView, spectrum = compactSpectrumContent)
+                    AppDestination.CHAT -> ChatPlaceholder()
+                    else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (destination != AppDestination.SETTINGS) TextButton(onClick = { navigate(AppDestination.SETTINGS) },
+                            contentPadding = PaddingValues(0.dp)) { Text("← All settings") }
+                        Text(destination.title, style = MaterialTheme.typography.headlineLarge)
+                        when (destination) {
+                            AppDestination.SETTINGS -> SettingsMenu(::navigate)
+                            AppDestination.STATION -> StationSettingsPanel(station, onCallsignChange, onGridChange, onSaveStation, onRetryLoad)
+                            AppDestination.TIME -> TimePanel(time, timeActions)
+                            AppDestination.AUDIO -> AudioSourceSettings(source, capture,
+                                onSource = { next ->
+                                    if (next != source) { onLeaveAudio(); onStopLan(); source = next }
+                                }, onSelectInput, onLiveProfile, ::navigate)
+                            AppDestination.LAN -> LanPanel(lan, onLanPortChange, onLanAddressChange,
+                                onStartLan, onStopLan, onReplayLan, onClearLan)
+                            AppDestination.USB -> UsbPanel(usb, onRefreshUsb, onUsbPermission)
+                            AppDestination.CAPTURE -> {
+                                CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture,
+                                    onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile,
+                                    visualization = spectrumContent, observations = captureObservations)
+                                Text("UTC time: ${time.sourceDescription}")
+                                if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
+                            }
+                            AppDestination.MESSAGES -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
+                                waveform, onWaveformInput, onWaveformFrequency, onWaveformLevel, onWaveformConsent,
+                                onGenerateWaveform, onCancelWaveform, onSaveWaveform)
+                            AppDestination.RECORDINGS -> RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile,
+                                onImportRecording, onCancelRecording, onClearRecording)
+                            else -> Unit
                         }
                     }
-                    1 -> {
-                        Text("Radio connection", style = MaterialTheme.typography.titleLarge)
-                        listOf("USB OTG / CAT", "Phone VOX", "WSJT-CB over LAN").forEach { mode ->
-                            FilterChip(selected = connection == mode, onClick = { connection = mode }, label = { Text(mode) })
-                        }
-                        UsbPanel(usb, onRefreshUsb, onUsbPermission)
-                    }
-                    2 -> {
-                        Text("Audio and VOX", style = MaterialTheme.typography.titleLarge)
-                        Panel("Phone microphone and speaker") {
-                            Text("Planned for acoustic coupling to a radio with VOX enabled.")
-                            Text("Microphone access, audio input/output, level calibration and resampling are not implemented.")
-                        }
-                        Panel("Audio USB") {
-                            Text("Planned for an Android-compatible USB audio interface. CAT and audio will be configured separately.")
-                        }
-                        OutlinedButton(onClick = {}, enabled = false) { Text("Calibrate input / output") }
-                    }
-                    3 -> {
-                        LanPanel(lan, onLanPortChange, onLanAddressChange, onStartLan, onStopLan, onReplayLan, onClearLan)
-                    }
+                }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun Panel(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            content()
         }
     }
 }

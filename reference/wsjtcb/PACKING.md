@@ -8,8 +8,8 @@ are pinned in `packing-sources.json`. Preserve their original bytes, whitespace
 and line endings; `.gitattributes` disables Git text conversion for these files.
 They remain under the upstream GPLv3 terms; see [notices](../../THIRD_PARTY_NOTICES.md).
 
-The input-only `packing-cases.json` contains 66 messages, 15 calls for hash
-vectors and 79 scenarios. It covers short/long, numeric and slash CB calls,
+The input-only `packing-cases.json` contains 82 messages, 15 calls for hash
+vectors and 96 scenarios. It covers short/long, numeric and slash CB calls,
 leading zeros, both type 4 hash orientations, finals, destination-only signed
 reports, standard-call controls, normalization, free-text fallbacks and malformed
 calls. Every packed message has a separate cold RX scenario. Additional scenarios
@@ -23,9 +23,10 @@ Use Linux with Python 3 and GNU Fortran (`gfortran`, or `FC` and optional
 `FFLAGS`). No network, Qt, FFTW, NDK or radio is needed:
 
 ```bash
-python3 scripts/wsjtcb_packing.py --check
-python3 scripts/wsjtcb_packing.py --check --optimization O2
-python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
+source scripts/env.sh
+timeout 180 python3 scripts/wsjtcb_packing.py --check
+timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
+timeout 180 python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
 ```
 
 Run without `--check` to intentionally regenerate `packing.json`, then review
@@ -63,7 +64,7 @@ input), `learn` (enqueue a full call through `save_hash_callvar`), `commit` (mer
 pending calls through `fillhashvar`, then start a new pending batch), `station`
 (set local identity through `fillhashvar`) and `lookup` (width plus call whose hash
 is queried). `decode` uses the `pack77` payload; both packers produce identical
-results for the 66 defined TX inputs, which the native integration tests verify.
+results for the defined TX inputs, which the native integration tests verify.
 The unresolved-placeholder RX case uses an explicit raw payload.
 
 ## Undefined TX placeholder discovered during R04
@@ -80,8 +81,8 @@ R04 removes this one case from deterministic TX comparisons (67 becomes 66).
 zero-prefix payload; its expected decode is still `<...> 26AT101`. The generator
 rejects unresolved placeholders in TX inputs before compilation. This preserves
 RX coverage without assigning a portable meaning to uninitialized TX data.
-R05 must report unresolved TX identities as unsupported, not transmit a guessed
-hash. Original production routines remain byte-for-byte unchanged.
+The R05 Kotlin codec reports unresolved TX identities as unsupported rather
+than encoding a guessed hash. Original production routines remain byte-for-byte unchanged.
 
 ## Results that constrain the Android implementation
 
@@ -108,11 +109,26 @@ hash. Original production routines remain byte-for-byte unchanged.
 These are payload fixtures, not 174-bit LDPC codewords, CRC checks, tones or audio.
 A binary payload with a flipped bit may still describe another valid message;
 the reserved-type and non-binary-input checks do not establish corrupt-frame
-rejection. No app encoder, decoder, hash cache, CAT/PTT or AutoSeq is added.
+rejection. These fixtures themselves do not implement an app encoder, decoder,
+hash cache, CAT/PTT or AutoSeq. Later runtime layers are documented in
+[the codec guide](../../docs/CB_MESSAGE_CODEC.md) and [validation](../../docs/VALIDATION.md).
 
-## Phone smoke test
+## Historical R03b phone scope
 
-Install the PR's `8CBdroid-debug` APK and open Station, LAN and Radio. Check that
-saved settings restore, LAN listening/decodes still work with WSJT-CB, and USB
-discovery opens. There are no new screens. These checks cover app regressions;
-the host reference job validates R03b. OTG hardware is not required for this PR.
+R03b introduced no app screens. Its phone smoke test concerned regressions in
+station settings, LAN and USB discovery; only the host reference job validated
+the new fixtures. For current offline message/hash and recorded-audio checks,
+use [development](../../docs/DEVELOPMENT.md#phone-checks) and
+[validation](../../docs/VALIDATION.md).
+
+R05 adds sixteen TX cases and seventeen RX scenarios for portable standard
+messages, CQ modifiers, standard-call suffixes, report boundaries/aliases,
+locator truncation, the free-text alphabet and a rejected hashed rover/grid
+frame. Its Kotlin codec and phone preview are described in
+[the R05 guide](../../docs/CB_MESSAGE_CODEC.md).
+
+R06 exports all 96 RX scenarios into `hash-sessions.tsv` for JVM and offline
+phone checks. The runtime session preserves staged learning and local-call
+orientation while deliberately retaining known collisions as ambiguous instead
+of choosing the desktop's last writer. Original sources and JSON are unchanged.
+See [the session guide](../../docs/CB_HASH_SESSIONS.md) for scope and differences.
