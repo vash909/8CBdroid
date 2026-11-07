@@ -7,12 +7,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.FlowPreview
 import net.vash.ft8cbdroid.core.audio.*
 import java.util.Locale
 
+@OptIn(FlowPreview::class)
 @Composable
 fun CaptureObservationHost(source: StateFlow<CaptureUiState>) {
-    val flow = remember(source) { source.map { it.metrics to it.slots }.distinctUntilChanged() }
+    val flow = remember(source) { source.map { it.metrics to it.slots }.distinctUntilChanged().sample(500) }
     val current by flow.collectAsStateWithLifecycle(initialValue = null to null)
     CaptureObservations(current.first, current.second)
 }

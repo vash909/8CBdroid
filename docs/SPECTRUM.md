@@ -34,8 +34,8 @@ playback or arm transmission. Those actions belong to later milestones.
 
 - The analyzer uses an independently implemented 4096-point radix-2 FFT with a
   Hann window: 341.3 ms of audio, 2.9296875 Hz per bin, displaying 0–3000 Hz.
-- A full window is required. Subsequent windows are 2400 samples apart, giving
-  at most five updates per second of captured audio. No FFT runs in Compose or
+- A full window is required. Subsequent windows are 6000 samples apart, giving
+  at most two updates per second of captured audio. No FFT runs in Compose or
   on the recorder thread. The recorder only copies windows; one worker consumes
   them with one replaceable pending window. Replacements are counted visibly.
 - Spectrum values are one-sided peak amplitudes corrected for Hann coherent
@@ -46,7 +46,7 @@ playback or arm transmission. Those actions belong to later milestones.
 - The waterfall color range is −90…−10 dBFS. Its newest row is at the top;
   black/blue is quiet and brighter colors are stronger. At most 96 rows and
   1025 bins per row are retained. At full rate without replacements, this spans
-  about 19 seconds; replaced display windows can extend that interval. Rows
+  about 48 seconds; replaced display windows can extend that interval. Rows
   are not a UTC grid and are not padded to hide missing display updates.
 - Color/bitmap preparation runs on a display worker. Compose draws the latest
   matching image and spectrum path; cancelled/old history cannot be republished
@@ -73,14 +73,16 @@ bash scripts/controlled.sh 240 bash scripts/check_spectrum_phone.sh
 ```
 
 The probe checks frequency error within 6 Hz, stable tone reception, at least
-450 analyzer updates over 120 seconds, the 96-row limit, actual UI render counts,
+220 analyzer updates over 120 seconds, the 96-row limit, actual UI render counts,
 post-warmup memory growth and Stop cleanup. It records measured PSS, process CPU,
 observed analysis times and Android graphics statistics under ignored `.tooling/`.
 These short measurements are not a thermal/battery or long-session qualification.
-The graphics gate, measured after 30 seconds of warmup, requires a 90th-percentile
-frame time no greater than 32 ms and at most 25% janky frames on the baseline
-debug device. This gate supplements actual control checks; a rendered-frame
-count alone does not establish responsiveness.
+Memory is sampled after 60 seconds, when the history is full, and again at the
+end. Graphics statistics are diagnostic: a 2 Hz instrument does not require a
+60 fps animation target. Acceptance requires sustained updates and actual
+cursor/zoom response within one second. Fast meter observations are sampled
+for the UI twice per second; audio capture, route checks and FT8 timing retain
+their original cadence.
 
 Global audio volume stays unchanged; temporary charging stay-awake is restored.
 

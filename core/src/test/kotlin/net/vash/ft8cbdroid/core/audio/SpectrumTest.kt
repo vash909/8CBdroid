@@ -54,19 +54,19 @@ class SpectrumTest {
         val monitor = SpectrumMonitor(backgroundScope, dispatcher) { windows += it; List(1025) { -50f } }
         monitor.offer(FloatArray(4095) { it.toFloat() }); runCurrent(); assertEquals(0, windows.size)
         monitor.offer(floatArrayOf(4095f)); runCurrent(); assertEquals(1, windows.size)
-        repeat(4) { index -> monitor.offer(FloatArray(2400) { (4096 + index * 2400 + it).toFloat() }) }
+        repeat(4) { index -> monitor.offer(FloatArray(6000) { (4096 + index * 6000 + it).toFloat() }) }
         runCurrent()
         assertEquals(3, windows.size); assertEquals(2, monitor.uiState.value.replaced)
         assertArrayEquals(FloatArray(4096) { it.toFloat() }, windows.first(), 0f)
-        assertArrayEquals(FloatArray(4096) { (9600 + it).toFloat() }, windows.last(), 0f)
-        assertEquals(13696, monitor.uiState.value.frames.first().endSample)
+        assertArrayEquals(FloatArray(4096) { (24000 + it).toFloat() }, windows.last(), 0f)
+        assertEquals(28096, monitor.uiState.value.frames.first().endSample)
         monitor.cancel()
     }
     @Test fun historyIsBoundedAndCancelledWorkersCannotPublishLateFrames() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val monitor = SpectrumMonitor(backgroundScope, dispatcher) { List(1025) { -50f } }
         monitor.offer(FloatArray(4096)); runCurrent()
-        repeat(110) { monitor.offer(FloatArray(2400)); runCurrent() }
+        repeat(110) { monitor.offer(FloatArray(6000)); runCurrent() }
         assertEquals(96, monitor.uiState.value.frames.size); assertEquals(111, monitor.uiState.value.processed)
         monitor.cancel(); val old = monitor.uiState.value
         monitor.offer(FloatArray(12000)); runCurrent(); assertSame(old, monitor.uiState.value)
@@ -80,7 +80,7 @@ class SpectrumTest {
             if (fail) error("Test failure") else List(1025) { -50f }
         }
         monitor.offer(FloatArray(4096)); runCurrent(); assertNotNull(monitor.uiState.value.error)
-        fail = false; monitor.offer(FloatArray(2400)); runCurrent()
+        fail = false; monitor.offer(FloatArray(6000)); runCurrent()
         assertEquals(1, monitor.uiState.value.processed); assertNull(monitor.uiState.value.error); monitor.cancel()
     }
     @Test fun zoomPanAndCursorSelectionUseTheSameFrequencyMapping() {

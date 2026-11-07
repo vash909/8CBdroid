@@ -46,7 +46,7 @@ fun SpectrumPanel(state: SpectrumState, view: SpectrumView, markers: List<Spectr
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Spectrum and waterfall", style = MaterialTheme.typography.titleLarge)
-        Text("Local microphone • 2.93 Hz resolution • up to 5 updates/s")
+        Text("Local microphone • 2.93 Hz resolution • up to 2 updates/s")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OffsetCursor.entries.forEach { cursor ->
                 FilterChip(selected = view.cursor == cursor, onClick = { onView(view.copy(cursor = cursor)) }, label = { Text("Select ${cursor.name}") })

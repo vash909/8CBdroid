@@ -53,7 +53,7 @@ class SpectrumCaptureViewModelTest {
         val controls = mutableListOf<CaptureUiState>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.controls.collect { controls += it } }
         vm.requestStart(true); runCurrent(); val active = controls.size
-        repeat(10) { capture.feed(FloatArray(2400)); runCurrent() }
+        repeat(10) { capture.feed(FloatArray(6000)); runCurrent() }
         assertTrue(vm.uiState.value.spectrum.processed > 0)
         assertEquals(active, controls.size); assertFalse(controls.last().canExport)
         vm.stop(); advanceUntilIdle()

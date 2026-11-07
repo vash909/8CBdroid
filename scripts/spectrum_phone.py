@@ -16,6 +16,8 @@ OUT = ROOT / '.tooling'
 
 def main():
     OUT.mkdir(exist_ok=True)
+    for name in ['spectrum-phone-report.json', 'spectrum-gfxinfo.txt']:
+        (OUT / name).unlink(missing_ok=True)
     env = dict(os.environ, ADB_LIBUSB='1')
 
     def adb(*args, check=True):

@@ -56,7 +56,7 @@ class SpectrumFft {
     companion object {
         const val RATE = 12000
         const val SIZE = 4096
-        const val HOP = 2400 // At most five updates per second of captured audio.
+        const val HOP = 6000 // At most two updates per second of captured audio.
         const val BINS = 1025 // 0–3000 Hz inclusive, 2.9296875 Hz/bin.
         const val FLOOR_DB = -100f
         fun frequency(bin: Int) = bin * RATE.toFloat() / SIZE
