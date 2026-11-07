@@ -5,8 +5,9 @@ An Android FT8 client in development for CB / 11 metres, built around
 project documentation use English.
 
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
-and recorded-slot decoding are implemented, along with foreground microphone capture, NTP/GPS time correction and UTC slot assembly. Speaker output,
-CAT/PTT, live local reception, AutoSeq and QSO logging remain unimplemented.
+and recorded-slot decoding are implemented, along with foreground microphone capture,
+NTP/GPS time correction, UTC slot assembly and live local decoding. Speaker output,
+CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
 ## What works
@@ -15,7 +16,7 @@ The app cannot yet make a radio QSO.
 | --- | --- | --- |
 | **Station** | Save callsign/locator and NTP server preferences; synchronize app time with NTP/GPS; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
 | **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Select/capture a microphone, inspect route/processing/levels, resample to 12 kHz and save recent audio or complete UTC slots; separately import/decode recorded FT8 WAVs with Fast/Standard profiles. | Recent audio retains five seconds; UTC mode retains the latest complete slot after NTP/GPS sync. No live decoding or playback. FT8 file import still requires exactly 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Audio** | Capture a selected microphone, inspect levels/processing, assemble UTC slots and decode local FT8 with Fast/Standard profiles; separately save audio or import/decode WAVs. | Live reception needs measured NTP/GPS time and the foreground. Latest 60 local frames; Stop clears local results/hash learning. No playback. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
 | **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
@@ -51,7 +52,12 @@ settings; see [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a
    expiry, device requirements and timing limits. There is no manual offset.
    GPS timing was verified on the S25 FE; the A51 did not obtain a fix. See
    [device evidence and limits](docs/VALIDATION.md#r11-time-synchronization-and-utc-capture).
-6. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
+6. For live local reception, enable **Decode live local FT8** in Audio, choose
+   **Local Standard** or **Local Fast** and press **Start microphone**. Complete
+   UTC slots are decoded automatically; inspect **Live local decodes** below the
+   capture controls. Stop clears these results and the local callsign cache.
+   See [live reception](docs/LIVE_RECEIVE.md) for work limits and phone checks.
+7. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
    send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
    [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
    describe the desktop request setting and foreground lifecycle.

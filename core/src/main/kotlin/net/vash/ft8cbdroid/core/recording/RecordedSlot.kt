@@ -104,18 +104,23 @@ class RecordedSlotDecoder(private val engine: Ft8Engine) {
     suspend fun decode(pcm: Ft8PcmSlot, context: RecordedSlotContext, stationCall: String? = null, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): RecordedSlotResult {
         val channel = engine.decode(pcm, profile)
         val session = CbMessageSession(stationCall)
-        val rows = channel.frames.map { frame ->
-            val message = session.unpack(frame.payload)
-            val parts = (message as? UnpackResult.Decoded)?.message?.parts.orEmpty()
-            val flags = mutableSetOf(RecordedDecodeFlag.CRC_LDPC_VALID)
-            flags += if (frame.estimatedSnrDb != null) RecordedDecodeFlag.SNR_ESTIMATED else RecordedDecodeFlag.SNR_UNAVAILABLE
-            if (message is UnpackResult.Unsupported) flags += RecordedDecodeFlag.UNSUPPORTED_MESSAGE
-            if (parts.any { it is MessagePart.UnresolvedCall }) flags += RecordedDecodeFlag.UNKNOWN_HASH
-            if (parts.any { it is MessagePart.AmbiguousCall }) flags += RecordedDecodeFlag.AMBIGUOUS_HASH
-            RecordedDecode(frame, message, context.slotStartUtc,
-                context.slotStartUtc.plusMillis((frame.startSecondsInSlot.toDouble() * 1000).roundToLong()),
-                frame.startSecondsInSlot - .5f, flags.toSet())
-        }
-        return RecordedSlotResult(context, rows, channel.candidateCount, channel.profile, channel.decodeMillis)
+        return interpretSlot(channel, context, session)
     }
+}
+
+/** Shared channel interpretation; the caller owns the receive session and its commit boundary. */
+internal fun interpretSlot(channel: Ft8DecodeResult, context: RecordedSlotContext, session: CbMessageSession): RecordedSlotResult {
+    val rows = channel.frames.map { frame ->
+        val message = session.unpack(frame.payload)
+        val parts = (message as? UnpackResult.Decoded)?.message?.parts.orEmpty()
+        val flags = mutableSetOf(RecordedDecodeFlag.CRC_LDPC_VALID)
+        flags += if (frame.estimatedSnrDb != null) RecordedDecodeFlag.SNR_ESTIMATED else RecordedDecodeFlag.SNR_UNAVAILABLE
+        if (message is UnpackResult.Unsupported) flags += RecordedDecodeFlag.UNSUPPORTED_MESSAGE
+        if (parts.any { it is MessagePart.UnresolvedCall }) flags += RecordedDecodeFlag.UNKNOWN_HASH
+        if (parts.any { it is MessagePart.AmbiguousCall }) flags += RecordedDecodeFlag.AMBIGUOUS_HASH
+        RecordedDecode(frame, message, context.slotStartUtc,
+            context.slotStartUtc.plusMillis((frame.startSecondsInSlot.toDouble() * 1000).roundToLong()),
+            frame.startSecondsInSlot - .5f, flags.toSet())
+    }
+    return RecordedSlotResult(context, rows, channel.candidateCount, channel.profile, channel.decodeMillis)
 }

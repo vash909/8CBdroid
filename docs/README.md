@@ -1,7 +1,7 @@
 # Documentation index
 
 8CBdroid currently supports LAN monitoring and offline CB message/audio-file
-experiments, plus foreground microphone capture. Start with the [repository README](../README.md) for screen-level
+experiments, plus foreground microphone capture and local FT8 reception. Start with the [repository README](../README.md) for screen-level
 capabilities and a first test. The [validation record](VALIDATION.md) separates
 implemented behavior, device evidence and checks still pending.
 
@@ -14,8 +14,9 @@ implemented behavior, device evidence and checks still pending.
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
 | [Offline WAV generation](OFFLINE_WAVEFORM.md) | Generate/export a fixed FT8 slot with explicit frequency, level and loss consent. |
-| [Microphone capture](MICROPHONE_CAPTURE.md) | Select an input, inspect levels/processing, capture/resample and save recent audio without live FT8 decoding. |
-| [UTC receive slots and time synchronization](UTC_RECEIVE_SLOTS.md) | Regional/custom NTP, offline GPS/GNSS time and complete microphone windows; no live decoding. |
+| [Microphone capture](MICROPHONE_CAPTURE.md) | Select an input, inspect levels/processing, capture/resample and save recent audio. |
+| [UTC receive slots and time synchronization](UTC_RECEIVE_SLOTS.md) | Regional/custom NTP, offline GPS/GNSS time and complete microphone windows. |
+| [Live local reception](LIVE_RECEIVE.md) | Automatically decode complete microphone slots, distinguish local/LAN results and reset bounded receive sessions. |
 | [Recorded slots](RECORDED_SLOTS.md) | Import WAVs, supply UTC and interpret DT, estimated SNR and message/hash flags. |
 | [USB discovery and CAT scope](USB_CAT.md) | Enumerate adapters and request access; distinguish this from a real CAT/audio connection. |
 

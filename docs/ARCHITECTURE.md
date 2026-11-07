@@ -142,10 +142,21 @@ it is not the implemented microphone contract.
 The JVM `CaptureResampler` preserves filter history/rational phase across chunks,
 and `CaptureBuffer` retains five seconds at 12 kHz. Metering happens before
 conversion. Device selection must match the actual route; interruptions stop the
-session. No audio queue feeds `Ft8Engine` yet. Details and test boundaries are in
+session. Timestamped complete slots can feed the bounded live receiver described below. Details and test boundaries are in
 [microphone capture](MICROPHONE_CAPTURE.md).
 
-Live reception still needs timestamped buffers, missing-sample/clock handling and
-complete UTC slots. Acoustic VOX also needs speaker output, calibrated levels,
+`LiveSlotReceiver` is a JVM coordinator owned by each `CaptureViewModel` run.
+It consumes immutable complete UTC slots through a single pending-slot channel
+and serially calls the shared `Ft8Engine` gate on a worker dispatcher. A newer
+pending slot replaces an older one rather than growing a queue or blocking the
+recorder. Metadata/UI delivery is conflated; PCM is not sent to Compose.
+Each run owns a `CbMessageSession`, commits full-call learning after a complete
+decode batch, and retains at most 60 message rows. Stop/background/station change
+cancel the decoder and clear its results/cache; restart waits for cleanup.
+LAN, recorded files and message previews cannot populate the live session.
+See [live reception](LIVE_RECEIVE.md).
+
+R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots.
+Acoustic VOX also needs speaker output, calibrated levels,
 lead/tail handling and tested radio hardware. PTT, scheduling, AutoSeq and
 background-service lifecycles remain separate implementations.

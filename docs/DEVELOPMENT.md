@@ -282,3 +282,20 @@ scenarios. Use matching verified CI app/test APKs and the
 [UTC procedure](UTC_RECEIVE_SLOTS.md#verification). These open real network,
 GNSS or microphone interfaces only on explicit invocation. A failed real GPS
 fix or audio timestamp check is pending qualification, not a mockable pass.
+
+## R12 live reception checks
+
+After deploying matching successful CI app/device-check APKs, follow
+[live reception](LIVE_RECEIVE.md#verify). The explicit helper plays three pinned
+desktop CB WAVs through the PC speakers while the phone records and decodes real
+microphone slots. It requires an unlocked phone with microphone permission,
+`pw-play` and a synchronized PC clock. It does not alter saved station settings.
+
+```bash
+source scripts/env.sh
+ADB_LIBUSB=1 bash scripts/controlled.sh 210 bash scripts/check_live_phone.sh
+```
+
+Publish `.tooling/live-phone-report.json` findings with the tested CI commit and
+device. Keep the private report itself out of Git, and separately complete actual
+UI/permission/lifecycle checks before applying conditional merge authorization.

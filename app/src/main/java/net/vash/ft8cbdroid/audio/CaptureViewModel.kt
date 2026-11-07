@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.time.*
+import net.vash.ft8cbdroid.core.Ft8Engine
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
+import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 
 enum class CapturePhase { IDLE, STARTING, CAPTURING, STOPPING }
 data class CaptureUiState(
@@ -29,6 +32,9 @@ data class CaptureUiState(
     val latestSlotUtcMillis: Long? = null,
     val slotSource: String? = null,
     val slotUncertaintyMillis: Double? = null,
+    val decodeLive: Boolean = false,
+    val liveProfile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD,
+    val live: LiveReceiveState = LiveReceiveState(),
 ) {
     val canConfigure get() = phase == CapturePhase.IDLE && !awaitingPermission && !exporting
     val canStart get() = canConfigure && inputs.any { it.id == selectedId }
@@ -41,11 +47,13 @@ private data class CapturePublication(val metrics: CaptureMetrics, val progress:
     val utcStartMillis: Long?, val source: String?, val uncertaintyMillis: Double?)
 
 /** Each start is explicit. Permission callbacks and late worker updates cannot restart stopped capture. */
-class CaptureViewModel(private val capture: MicrophoneCapture, private val writer: CaptureWriter, private val clock: ReceiveClock? = null) : ViewModel() {
+class CaptureViewModel(private val capture: MicrophoneCapture, private val writer: CaptureWriter, private val clock: ReceiveClock? = null,
+    private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default) : ViewModel() {
     private val state = MutableStateFlow(CaptureUiState())
     val uiState = state.asStateFlow()
     private var job: Job? = null
-    private var generation = 0L
+    @Volatile private var generation = 0L
+    private var stationCall: String? = null
     private var discard = false
     private var pendingExport: ByteArray? = null
     private var slotExport = false
@@ -54,7 +62,24 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     fun assembleUtc(enabled: Boolean) {
         if (!state.value.canConfigure || clock == null) return
         latestSlot = null
-        state.value = state.value.copy(assembleUtc = enabled, slots = null, latestSlotUtcMillis = null)
+        state.value = state.value.copy(assembleUtc = enabled, decodeLive = state.value.decodeLive && enabled,
+            live = LiveReceiveState(), slots = null, latestSlotUtcMillis = null)
+    }
+    fun decodeLive(enabled: Boolean) {
+        if (!state.value.canConfigure || clock == null || engine == null) return
+        latestSlot = null
+        state.value = state.value.copy(decodeLive = enabled, assembleUtc = state.value.assembleUtc || enabled,
+            live = LiveReceiveState(), slots = null, latestSlotUtcMillis = null, error = null, notice = null)
+    }
+    fun liveProfile(profile: Ft8DecodeProfile) {
+        if (!state.value.canConfigure) return
+        state.value = state.value.copy(liveProfile = profile, live = LiveReceiveState())
+    }
+    fun changeStation(call: String?) {
+        val normalized = call?.takeIf { it.isNotBlank() }
+        if (normalized == stationCall) return
+        stationCall = normalized
+        stop("Station changed. Restart microphone reception explicitly.", clear = true)
     }
     init {
         viewModelScope.launch {
@@ -66,7 +91,8 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     fun select(id: Int) {
         if (!state.value.canConfigure || state.value.inputs.none { it.id == id } || state.value.selectedId == id) return
         capture.clear(); pendingExport = null; latestSlot = null
-        state.value = state.value.copy(selectedId = id, metrics = null, slots = null, latestSlotUtcMillis = null, error = null, notice = null)
+        state.value = state.value.copy(selectedId = id, metrics = null, slots = null, latestSlotUtcMillis = null,
+            live = LiveReceiveState(), error = null, notice = null)
     }
     /** Return true only when the Activity must launch Android's permission request. */
     fun requestStart(permissionGranted: Boolean): Boolean {
@@ -91,12 +117,18 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         if (!state.value.canStart) return
         val ticket = ++generation
         discard = false; capture.clear(); latestSlot = null
-        state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null)
+        state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null,
+            live = LiveReceiveState())
+        val liveEnabled = state.value.decodeLive
+        val profile = state.value.liveProfile
+        val call = stationCall
         state.value = state.value.copy(phase = CapturePhase.STARTING, metrics = null)
         val completedSlot = AtomicReference<CompletedUtcSlot?>(null)
         val updates = MutableStateFlow<CapturePublication?>(null)
         var assembler: UtcSlotAssembler? = null
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            var receiver: LiveSlotReceiver? = null
+            var liveRender: Job? = null
             val render = launch {
                 updates.collect { publication ->
                     if (publication != null && ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
@@ -107,7 +139,19 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                 }
             }
             try {
-                if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) { completedSlot.set(it) }
+                if (liveEnabled) {
+                    val live = LiveSlotReceiver(requireNotNull(engine), this, call, profile, worker)
+                    receiver = live
+                    liveRender = launch {
+                        live.uiState.collect { result ->
+                            if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING))
+                                state.value = state.value.copy(live = result)
+                        }
+                    }
+                }
+                if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) {
+                    completedSlot.set(it); receiver?.offer(it)
+                }
                 // Conflate UI observations without suspending the hardware reader on the main thread.
                 val update: suspend (CaptureMetrics) -> Unit = { metrics ->
                     if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
@@ -127,10 +171,10 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
                 capture.clear(); latestSlot = null; completedSlot.set(null); updates.value = null
-                state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null,
+                state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null, live = LiveReceiveState(),
                     error = if (error is CaptureException || error is TimeException) error.message
                     else "Could not capture the microphone. Check permission and the input, then retry.")
-            } finally { render.cancel(); assembler?.clear() }
+            } finally { render.cancel(); liveRender?.cancel(); receiver?.cancel(); assembler?.clear() }
         }
         job = next
         // Completion also runs if Stop cancels before the coroutine body ever starts.
@@ -152,7 +196,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     fun stop(reason: String = "Microphone stopped.", clear: Boolean = false) {
         discard = discard || clear
         val wasPending = state.value.awaitingPermission
-        state.value = state.value.copy(awaitingPermission = false)
+        state.value = state.value.copy(awaitingPermission = false, live = LiveReceiveState())
         if (job != null) {
             state.value = state.value.copy(phase = CapturePhase.STOPPING, notice = reason)
             job?.cancel()
@@ -195,7 +239,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                     val output = resolver.openOutputStream(Uri.parse(document), "wt") ?: error("No output stream")
                     output.use { it.write(bytes) }
                 }
-            }, clock) }
+            }, clock, NativeFt8Engine()) }
         }
     }
 }

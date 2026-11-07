@@ -26,6 +26,7 @@ import net.vash.ft8cbdroid.recording.RecordedSlotPanel
 import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePanel
+import net.vash.ft8cbdroid.audio.LiveReceivePanel
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
 import net.vash.ft8cbdroid.message.HashSessionUiState
@@ -100,8 +101,10 @@ class MainActivity : ComponentActivity() {
             val capture by captureViewModel.uiState.collectAsStateWithLifecycle()
             val time by timeViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(station.saved?.callsign) {
-                hashViewModel.changeStation(station.saved?.callsign)
-                recordedSlotViewModel.changeStation(station.saved?.callsign)
+                val call = station.saved?.callsign?.takeIf { it.isNotBlank() }
+                hashViewModel.changeStation(call)
+                recordedSlotViewModel.changeStation(call)
+                captureViewModel.changeStation(call)
             }
             EightCbApp(
                 station = station,
@@ -134,6 +137,8 @@ class MainActivity : ComponentActivity() {
                     apply = { captureViewModel.stop("Time correction changed. Restart capture explicitly.", clear = true); timeViewModel.applyMeasurement() },
                     cancel = timeViewModel::cancel),
                 onAssembleUtc = captureViewModel::assembleUtc,
+                onDecodeLive = captureViewModel::decodeLive,
+                onLiveProfile = captureViewModel::liveProfile,
                 onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
                     val utc = captureViewModel.uiState.value.latestSlotUtcMillis
                     val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
@@ -208,6 +213,8 @@ fun EightCbApp(
     time: TimeUiState = TimeUiState(),
     timeActions: TimeActions = TimeActions(),
     onAssembleUtc: (Boolean) -> Unit = {},
+    onDecodeLive: (Boolean) -> Unit = {},
+    onLiveProfile: (Ft8DecodeProfile) -> Unit = {},
     onSaveUtcSlot: () -> Unit = {},
     onSelectInput: (Int) -> Unit = {},
     onStartCapture: () -> Unit = {},
@@ -255,7 +262,7 @@ fun EightCbApp(
                 Text("8CBdroid", style = MaterialTheme.typography.headlineLarge)
                 Text("FT8 • 11 metres • Android", color = MaterialTheme.colorScheme.primary)
                 Panel("Development preview") {
-                    Text("Station settings, LAN monitoring, offline FT8 tools and microphone capture are available. Live local FT8 decoding, radio control and audio output are pending.")
+                    Text("Station settings, LAN monitoring, offline FT8 tools and live local FT8 reception are available. Radio control and audio output are pending.")
                 }
                 when (section) {
                     0 -> {
@@ -319,8 +326,9 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot)
+                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile)
                         Text("UTC time: ${time.sourceDescription}")
+                        if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
                         HorizontalDivider()
                         RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile, onImportRecording, onCancelRecording, onClearRecording)
                     }
