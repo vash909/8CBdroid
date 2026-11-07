@@ -1,7 +1,8 @@
 # Third-party notices
 
 8CBdroid includes Kotlin CB message/hash algorithms and a source-built FT8
-channel backend. The complete WSJT-CB desktop engine and Hamlib are not bundled.
+channel backend and a source-built Hamlib catalog/Dummy adapter. The complete
+WSJT-CB desktop engine is not bundled.
 Original desktop sources are used separately for host reference tests.
 
 - [WSJT-CB](https://github.com/vash909/WSJT-CB), derived from WSJT-X by Joe
@@ -24,7 +25,7 @@ Original desktop sources are used separately for host reference tests.
   and capacity differences. See `docs/CB_MESSAGE_CODEC.md` and
   `docs/CB_HASH_SESSIONS.md` for provenance and limits.
 - Gradle Wrapper and Gradle: Apache-2.0. The wrapper scripts and JAR come
-  from the official `v8.13.0` tag.
+  from Gradle 8.14.6 after the dependency update.
 - Kotlin and AndroidX / Jetpack Compose: Apache-2.0.
 - JUnit 4: EPL-1.0.
 - Qt 5 Core and Network: host reference-test dependencies only, supplied by the
@@ -75,3 +76,23 @@ control. The manifest records input provenance, parameters, hashes and expected
 outcomes; `scripts/wsjtcb_recordings.py` reproduces them. These are reference-test
 assets in the separate probe APK, excluded from the main app. No personal or
 radio recording is included. See [recorded-slot qualification](docs/RECORDED_SLOTS.md).
+
+## Hamlib radio catalog
+
+- [Hamlib 4.7.2](https://github.com/Hamlib/Hamlib/tree/40f63488fe0bd751b147f48d62fd217bf53713a0),
+  The Hamlib Group and listed contributors: library code is LGPL-2.1-or-later;
+  upstream utilities/examples have their own GPL-2.0-or-later terms and are not
+  packaged. The library is statically linked into `libeightcbdroid_hamlib.so`.
+  Exact release archive and patch hashes are in `radio/hamlib/source.json`;
+  local modifications are in `radio/hamlib/patches/`. Source is downloaded and
+  verified during builds, not replaced with a committed prebuilt binary.
+- Hamlib bundles cJSON, copyright 2009–2017 Dave Gamble and contributors, MIT.
+- Full upstream LGPL/GPL text, license description, authors and cJSON notice are
+  retained under `radio/hamlib/src/main/assets/licenses/` and packaged in APKs.
+  The existing Android NDK toolchain notice also covers the static C++ runtime.
+- The JS8Call Android USB bridge patch was reviewed for compatibility but is not
+  included in this implementation. No JS8Call transport code is packaged.
+
+[Hamlib integration](docs/HAMLIB.md) records exclusions and reproduction commands.
+Retain the pinned upstream source and these patches with Corresponding Source.
+The application's GPL-3.0-only and commercial-distribution policy remain unchanged.

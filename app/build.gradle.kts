@@ -30,6 +30,7 @@ kotlin { jvmToolchain(17) }
 dependencies {
     implementation(project(":core"))
     implementation(project(":audio"))
+    implementation(project(":radio:hamlib"))
     implementation(project(":dsp:ft8"))
     implementation(libs.usb.serial)
     implementation(project(":protocol:wsjtcb"))

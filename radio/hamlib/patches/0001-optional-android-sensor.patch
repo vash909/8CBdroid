@@ -1,0 +1,18 @@
+From: 8CBdroid contributors
+Subject: Respect the configured Android sensor backend availability
+
+The declaration and configure backend list use HAVE_ANDROID_SENSOR, whereas
+this registration used only the platform macro. Match the existing declaration
+so radio-only builds can omit the Android sensor rotator without fake callbacks.
+
+--- a/src/rot_reg.c
++++ b/src/rot_reg.c
+@@ -137,7 +137,7 @@
+ #if HAVE_LIBINDI
+     { ROT_INDI, ROT_BACKEND_INDI, ROT_FUNCNAMA(indi) },
+ #endif
+-#if defined(ANDROID) || defined(__ANDROID__)
++#if HAVE_ANDROID_SENSOR
+     { ROT_ANDROIDSENSOR, ROT_BACKEND_ANDROIDSENSOR, ROT_FUNCNAMA(androidsensor) },
+ #endif
+     { ROT_GRBLTRK, ROT_BACKEND_GRBLTRK, ROT_FUNCNAMA(grbltrk) },

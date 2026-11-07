@@ -6,7 +6,8 @@ project documentation use English.
 
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
 and recorded-slot decoding are implemented, along with foreground microphone capture,
-NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. Speaker output,
+NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
+software-only Dummy check are available. Speaker output,
 CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -15,7 +16,7 @@ The app cannot yet make a radio QSO.
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
 | **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX audio cursors, Start RX/Stop and plain audio Monitor. | Local RX requires measured NTP/GPS time. Sent is empty; Enable TX is disabled. Period and custom-message edits are drafts, not scheduled transmissions. LAN carries desktop messages, not waterfall audio. |
-| **Settings** | Station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN and USB permission inventory. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, audio output or USB hardware qualification. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Settings** | Station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, audio output or USB hardware qualification. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
@@ -71,9 +72,13 @@ chosen location.
 See [the interface guide](docs/INTERFACE.md) for navigation and draft controls,
 and [spectrum and waterfall](docs/SPECTRUM.md) for zoom and measurement limits.
 
+The **Settings → USB / CAT** catalog lists compiled Hamlib models and declared
+read capabilities. Load/search a model or run the software-only Dummy check;
+these actions do not connect to a radio. See [Hamlib scope and checks](docs/HAMLIB.md).
+
 ## Build from source
 
-Supported automated setup: Linux x86_64, Python 3.12+, Git, `curl`, `unzip`,
+Supported automated setup: Linux x86_64, Python 3.12+, Git, GNU Make, `patch`, `curl`, `unzip`,
 Internet access and the standard Linux `timeout` command.
 
 ```bash

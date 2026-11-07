@@ -7,4 +7,5 @@
     <instrumentation android:name=".OfflineEngineProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="Offline FT8 channel checks" />
     <instrumentation android:name=".AudioCaptureProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="R10 microphone reference-tone check" />
     <instrumentation android:name=".AudioTimestampProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="Capture timestamp diagnostic" />
+    <instrumentation android:name=".HamlibProbe" android:targetPackage="net.vash.ft8cbdroid.engineprobe" android:label="Software-only Hamlib catalog and Dummy checks" />
 </manifest>

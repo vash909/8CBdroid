@@ -28,6 +28,8 @@ jobs:
           done
           sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
           sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
+      - name: Check Hamlib catalog and software-only Dummy backend
+        run: bash scripts/check_hamlib.sh
       - name: Check pinned desktop compatibility fixtures
         run: |
           python3 scripts/wsjtcb_codec.py --check

@@ -19,9 +19,10 @@ It cannot override third-party GPL rights in WSJT-X, WSJT-CB or other code.
 This document grants no proprietary exception to those components.
 
 The app already includes Kotlin ports of selected WSJT-CB message/hash routines
-and a source-built ft8_lib/KISS FFT channel backend. Original desktop Fortran,
-Qt and Boost are host-test dependencies; the complete WSJT-CB desktop engine
-and Hamlib are not bundled. Keep [third-party notices](../THIRD_PARTY_NOTICES.md)
+and source-built ft8_lib/KISS FFT and Hamlib catalog/Dummy libraries. Original
+desktop Fortran, Qt and Boost are host-test dependencies; the complete WSJT-CB
+desktop engine is not bundled. Hamlib source pins, local patches and license
+assets are documented in [the integration guide](HAMLIB.md). Keep [third-party notices](../THIRD_PARTY_NOTICES.md)
 aligned with the actual APK and audit additions before integration. An
 independently implemented UDP client requires a different assessment from a
 port that incorporates GPL source; using the same protocol alone does not settle the application's license.

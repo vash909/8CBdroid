@@ -9,7 +9,7 @@ class PendingRadioController : RadioController {
     override suspend fun setFrequency(frequencyHz: Long) = pending()
     override suspend fun setPtt(enabled: Boolean) = pending()
     override suspend fun disconnect() = Unit
-    private fun pending() = BackendResult.Unavailable("Hamlib/JNI or Android CAT backend is not implemented")
+    private fun pending() = BackendResult.Unavailable("Physical radio CAT transport is not implemented")
 }
 
 class PendingAudioEngine : AudioEngine {

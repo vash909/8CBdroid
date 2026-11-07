@@ -26,10 +26,12 @@ Dependency: `com.github.mik3y:usb-serial-for-android:3.11.0`, MIT license, from
 [JitPack](https://github.com/mik3y/usb-serial-for-android/tree/3.11.0). The Gradle
 repository filter allows only this module from JitPack. The upstream license is
 included in APK assets and linked in [third-party notices](../THIRD_PARTY_NOTICES.md).
-Descriptor discovery and permission handling use no Hamlib or native driver.
-The app still needs the NDK for its separate offline FT8 channel library.
-This selects the Java transport direction; a particular radio's CAT command set
-and settings still need a separate implementation and test.
+Descriptor discovery and permission handling use no native driver. A separate
+source-built Hamlib library now exposes a model catalog and software-only Dummy
+check; it does not consume these USB grants or open ports. See [the Hamlib guide](HAMLIB.md).
+Hamlib is the selected protocol direction; the Android USB serial bridge and
+actual radio settings/operations still require implementation and physical tests.
+The FT8 DSP library remains separate from CAT.
 
 Use only the default prober's recognized devices. Do not force an unknown device
 into a serial driver. Distinguish identical adapters by Android device path and
@@ -80,8 +82,9 @@ pending. Current accepted checks are recorded in [validation](VALIDATION.md).
 No radio/OTG-cable combination is qualified. CAT support requires a separate
 backend and physical validation with a documented phone/radio/cable setup:
 
-- Pin the first radio's CAT documentation and serial settings; choose its exact
-  interface and port. Define identity/frequency read fixtures from that protocol.
+- Choose the pinned Hamlib model ID and actual radio serial settings, interface
+  and port. Define frequency/status fixtures and keep upstream driver declarations
+  distinct from verified Android operations.
 - Implement open/read/close behind the radio contracts, with bounded I/O, detach
   recovery and all advertised write/PTT capabilities disabled for the read-only PR.
 - Verify permission, connection, identity/frequency read, repeated reconnect and

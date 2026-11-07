@@ -6,7 +6,9 @@ are in [validation](VALIDATION.md). Commands below run from the repository root.
 
 ## Linux x86_64 setup
 
-Requirements: Python 3.12+, Git, `curl`, `unzip`, `timeout` and Internet access.
+Requirements: Python 3.12+, Git, GNU Make, `patch`, `curl`, `unzip`, `timeout`
+and Internet access. Hamlib is compiled from its hash-verified release source;
+the release archive includes generated configure files, so autotools are not needed.
 
 ```bash
 python3 scripts/bootstrap.py
@@ -49,8 +51,10 @@ sdk.dir=/absolute/path/to/Android/Sdk
 Open the repository root in Android Studio, select Gradle JDK 17 and wait for
 sync. No global Gradle installation is needed. The bootstrap targets Linux; on
 another system use the installed toolchain and run
-`bash scripts/check.sh`, or the same tasks with `gradlew.bat --no-daemon` on
-Windows. Gradle limits worker concurrency to two; adapt command timeouts to your
+`bash scripts/check.sh` with Python, GNU Make and `patch` available. Native
+Hamlib preparation supports Linux/macOS hosts. On Windows use WSL2 with Linux
+JDK/SDK/NDK and build tools; running only `gradlew.bat` is not a supported native
+build setup. Gradle limits worker concurrency to two; adapt command timeouts to your
 hardware when needed.
 
 ## Build and check
@@ -62,7 +66,7 @@ source scripts/env.sh
 timeout 600 bash scripts/check.sh
 ```
 
-The check runs `:core:test`, `:protocol:wsjtcb:test`, `:protocol:ntp:test`, app JVM tests, app/audio/DSP/probe
+The check runs `:core:test`, `:protocol:wsjtcb:test`, `:protocol:ntp:test`, app JVM tests, app/audio/DSP/Hamlib/probe
 lint, the app/probe debug APK builds and the Android device-check APK. It uses `--no-daemon`. JVM tests read committed
 reference data and need no host Fortran/Qt compiler; building the JNI dependency
 does need the selected Android NDK/CMake.
@@ -194,7 +198,7 @@ The existing GitHub workflow runs on main pushes, PRs and manual dispatch:
 | Job/artifact | Contents |
 | --- | --- |
 | `reference` job | Host source/fixture reproduction, native channel/PCM/recording checks and Python tests. |
-| `build` job | JVM tests, app/audio/DSP/probe lint and all development APK builds. No physical device test. |
+| `build` job | JVM tests, app/audio/DSP/Hamlib/probe lint and all development APK builds. No physical device test. |
 | `8CBdroid-debug` | Main debug APK. |
 | `8CBdroid-engine-probe` | Offline/acoustic instrumentation APK with test corpora. |
 | `8CBdroid-device-checks` | Test-only APK targeting the debug app: R07 provider-failure/retry, UI cancellation and real encoder checks. |
@@ -260,3 +264,22 @@ timeout 210 bash scripts/check_live_phone.sh
 Publish `.tooling/live-phone-report.json` findings with the tested CI commit and
 device. Keep the private report itself out of Git, and separately complete actual
 UI/permission/lifecycle checks when recording device qualification.
+
+## Hamlib native catalog checks
+
+The `radio:hamlib` module builds static Hamlib for both packaged ABIs before
+CMake configures JNI. Its release archive and two local compatibility patches
+are hash-pinned in `radio/hamlib/source.json`. GNU Make and `patch` must be on
+PATH. Build logs are under `radio/hamlib/build/hamlib/<abi>/`; a failed build
+must not be replaced with an arbitrary system/prebuilt Hamlib library.
+
+For software-only host checks, with C/C++, CMake, Make and `patch` installed:
+
+```bash
+timeout 900 bash scripts/check_hamlib.sh
+```
+
+The host CI job runs this separately from the Android build. See
+[the Hamlib guide](HAMLIB.md) for the matching phone instrumentation command,
+UI checks, cancellation behavior and the boundary between catalog metadata and
+physical radio qualification. No USB cable/radio is required for Dummy checks.

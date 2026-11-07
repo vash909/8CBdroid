@@ -21,6 +21,8 @@ app (Compose, ViewModels, DataStore, Android USB/document access)
  │        radio/audio/DSP contracts)
  ├── audio (AndroidMicrophoneCapture; device access and recording worker)
  │    └── core
+ ├── radio:hamlib (pinned native catalog + fixed Dummy JNI; no hardware transport)
+ │    └── core
  ├── dsp:ft8 (NativeFt8Engine + JNI bridge)
  │    └── core
  ├── protocol:ntp (SNTP wire validation, bounded DNS/UDP backend)
@@ -48,6 +50,7 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Station draft/load/save status | `StationSettingsViewModel` | Retained across rotation; unread data cannot be overwritten while loading or after a read failure. |
 | LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Inputs survive rotation; not durable. Backgrounding stops the listener and clears peer/history. |
 | USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
+| Hamlib catalog/search/selection and Dummy result | `HamlibViewModel` / `NativeHamlibCatalog` | Explicit requests, rotation retained, process-local. Serialized native calls; cancellation discards late results. No hardware handles or profile persistence. |
 | Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
 | Generated waveform/export snapshot | `WaveformViewModel` | Edits invalidate old PCM; rotation retained, process restart discards it. Exported documents remain outside the session. |
 | Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit foreground session; stops/clears on Audio exit, rotation or background. No automatic restart or saved PCM. |
@@ -134,9 +137,9 @@ The selected transport direction follows FT8CN's Java USB-serial approach.
 `RadioController` currently has an unavailable implementation with no advertised
 capabilities. A real backend still needs the first radio/cable, manufacturer
 protocol, baud/port settings, bounded I/O, detach behavior and PTT release tests.
-Hamlib/JNI is an alternative requiring separate Android file-descriptor access
-and license/build review; it is not included. CAT and USB audio are separate
-capabilities. See [USB scope and verification](USB_CAT.md).
+The source-built Hamlib/JNI catalog is included, but is not connected to the
+Java USB transport. That bridge remains separate work behind `RadioController`;
+no physical CAT operation is enabled. CAT and USB audio are separate capabilities. See [USB scope and verification](USB_CAT.md).
 
 ## Microphone input and future playback/VOX
 
@@ -180,3 +183,13 @@ worker, one replaceable pending window and 96 immutable history rows.
 history only; it cannot call hardware or FT8 DSP. `SpectrumView` owns temporary
 zoom/pan and independent RX/TX cursors; those values do not drive a radio or TX.
 See [spectrum limits and tests](SPECTRUM.md).
+
+## Native radio catalog
+
+`RadioCatalog` and its typed model/Dummy results live in the JVM core. The
+Android `radio:hamlib` adapter loads the compiled catalog on an IO dispatcher
+through a serialized JNI boundary. `HamlibViewModel` admits one request and
+invalidates cancelled results; Compose only renders state/actions. A hardcoded
+Dummy operation is the only native open path. No physical model/device path is
+accepted, and `PendingRadioController` remains the hardware placeholder. See
+[the Hamlib guide](HAMLIB.md) for source pin, build, API bounds and transport gaps.
