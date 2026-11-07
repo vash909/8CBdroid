@@ -8,7 +8,7 @@ TX scheduling and radio operation remain later milestones.
 
 ## Synchronize time
 
-In **Station → Time synchronization**, choose a regional preset or **Custom NTP
+In **Settings → Time synchronization**, choose a regional preset or **Custom NTP
 server**, then **Save time settings** when the selection changes. Custom input
 accepts an IPv4 address, IPv6 address or hostname, without a URL or port; UDP/123
 is used. Brackets around IPv6 are accepted; interface suffixes are not supported.
@@ -87,7 +87,7 @@ service is used.
 
 ## Capture and export
 
-1. In **Audio**, enable **Assemble UTC slots**, select an input and start the
+1. In **Settings → Microphone tools**, enable **Assemble UTC slots**, select an input and start the
    microphone after applying valid NTP/GPS time.
 2. The app waits for complete windows on UTC seconds 00, 15, 30 and 45. Starting
    partway through a period discards that partial; it does not insert silence.
@@ -126,7 +126,7 @@ Slot-only mode retains one working slot and the latest complete slot. Optional
 live decoding adds one active slot and one latest pending slot; neither mode has
 an unbounded queue. Stop discards the unfinished window and retains the last
 complete one for export. Input/mode changes, ordinary rotation/background or
-leaving Audio clear captured slots. A pending document export preserves the
+leaving the receive screens for Settings or Chat clear captured slots. A pending document export preserves the
 stopped snapshot through the picker, including cancellation/retry. Nothing rearms.
 
 ## Verification

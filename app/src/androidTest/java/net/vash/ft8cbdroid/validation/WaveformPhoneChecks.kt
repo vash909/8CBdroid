@@ -99,7 +99,7 @@ class WaveformPhoneChecks : Instrumentation() {
     override fun onStart() {
         scenario?.let {
             if (it == "spectrum") { SpectrumPhoneChecks(this).run(); return }
-            if (it == "live") { LiveReceivePhoneChecks(this).run(); return }
+            if (it == "live" || it == "operate-live") { LiveReceivePhoneChecks(this, operate = it == "operate-live").run(); return }
             require(it == "ntp-audio" || it == "gps") { "Unknown time/capture scenario" }
             UtcPhoneChecks(this).run(it)
             return
@@ -118,8 +118,7 @@ class WaveformPhoneChecks : Instrumentation() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             val vm = main { ViewModelProvider(activity)[WaveformViewModel::class.java] }
             model = vm
-            await("Messages navigation") { button("Messages") != null }
-            click("Messages")
+            PhoneNavigation.open(this, "Message tools")
             await("Messages screen") { node("Message preview") != null }
             click("Generate offline WAV")
             await("first native waveform") { main { vm.uiState.value.canSave } }

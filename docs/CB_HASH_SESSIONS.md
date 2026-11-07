@@ -1,7 +1,7 @@
 # CB callsign hash sessions
 
 `core.message.CbMessageSession` adds learned-call resolution to the stateless
-R05 codec. The **Messages** tab exposes an offline receiver simulation. It does
+R05 codec. The **Settings → Message tools** page exposes an offline receiver simulation. It does
 not receive audio, read LAN decodes, authorize a QSO peer or enable transmission.
 
 ## Session contract
@@ -81,7 +81,7 @@ uses verified CI artifacts. Accepted results are recorded in [validation](VALIDA
 
 ## Phone verification
 
-1. Open **Messages**. RX simulation is separate from the unchanged TX preview.
+1. Open **Settings → Message tools**. RX simulation is separate from the unchanged TX preview.
 2. Tap **Reset learned calls**. Preview `CQ 26AT101` and tap **Simulate receive**.
    Pending calls should increase; learned calls should remain zero.
 3. Tap **Commit learned calls**. Preview `<26AT101> 161XZ085`, then simulate receive.

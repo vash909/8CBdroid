@@ -9,6 +9,7 @@ implemented behavior, device evidence and checks still pending.
 
 | Guide | Purpose |
 | --- | --- |
+| [Interface and navigation](INTERFACE.md) | Operate, settings, source selection, draft TX controls and the Chat placeholder. |
 | [Build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |

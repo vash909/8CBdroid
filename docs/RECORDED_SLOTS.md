@@ -1,6 +1,6 @@
 # Recorded FT8 slots
 
-The **Audio** tab selects Fast or Standard and imports a recorded WAV through Android's document picker and
+The **Settings → Recorded audio** page selects Fast or Standard and imports a recorded WAV through Android's document picker and
 runs the offline native decoder. No microphone, playback, radio access, live RX,
 automation or QSO completion is enabled.
 
@@ -105,7 +105,7 @@ refresh/index only the test files, or select them through internal storage.
 
 1. Install the CI APK and copy test WAVs to the test phone, preserving its data.
    Keep it unlocked and awake for the UI checks.
-2. Open **Audio**, select Standard, enter the UTC boundary above, then
+2. Open **Settings → Recorded audio**, select Standard, enter the UTC boundary above, then
    **Open WAV and decode**. Repeat with Fast and confirm the result profile/time.
    Select `cq.wav`: expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
 3. Import `noisy-cq.wav`: expect the same payload/text and estimated SNR near -4 dB.

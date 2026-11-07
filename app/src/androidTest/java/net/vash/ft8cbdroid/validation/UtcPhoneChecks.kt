@@ -77,9 +77,7 @@ class UtcPhoneChecks(private val instrumentation: Instrumentation) {
                 .put("uncertainty_ms", measurement.uncertaintyMillis ?: JSONObject.NULL)
             if (scenario == "ntp-audio") {
                 if (android.os.Build.VERSION.SDK_INT >= 34) uiAutomation.clearCache() else uiAutomation.serviceInfo = uiAutomation.serviceInfo
-                var button = find(uiAutomation.rootInActiveWindow, "Audio")
-                while (button != null && !button.isClickable) button = button.parent
-                check(requireNotNull(button).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                PhoneNavigation.open(instrumentation, "Microphone tools")
                 val manager = targetContext.getSystemService(AudioManager::class.java)
                 check(manager.getStreamVolume(AudioManager.STREAM_MUSIC) > 0) { "Media volume must be audible for the two-second reference tone" }
                 val speaker = manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS).first { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
