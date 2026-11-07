@@ -1,6 +1,6 @@
 # Offline CB waveform generation
 
-The **Messages** tab generates a WAV from a supported CB FT8 message, using the
+The **Settings → Message tools** page generates a WAV from a supported CB FT8 message, using the
 R05 codec and the source-built native channel engine. This is file generation
 only: this feature does not play audio, operate PTT or schedule TX. The separate
 [R10 microphone panel](MICROPHONE_CAPTURE.md) captures diagnostic audio; it does

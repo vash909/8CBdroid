@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.FlowPreview
@@ -20,10 +21,11 @@ fun CaptureObservationHost(source: StateFlow<CaptureUiState>) {
 }
 
 @Composable
-fun SpectrumHost(source: StateFlow<CaptureUiState>, onView: (SpectrumView) -> Unit) {
+fun SpectrumHost(source: StateFlow<CaptureUiState>, onView: (SpectrumView) -> Unit, compact: Boolean = false) {
     val flow = remember(source) { source.map { Triple(it.spectrum, it.spectrumView, localSpectrumMarkers(it.live.rows)) }.distinctUntilChanged() }
     val current by flow.collectAsStateWithLifecycle(initialValue = Triple(SpectrumState(), SpectrumView(), emptyList()))
-    SpectrumPanel(current.first, current.second, current.third, onView)
+    if (compact) SpectrumPlot(current.first, current.second, current.third, onView, 96.dp)
+    else SpectrumPanel(current.first, current.second, current.third, onView)
 }
 
 @Composable

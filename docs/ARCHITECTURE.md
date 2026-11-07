@@ -5,6 +5,14 @@ outside Compose; CB rules live in JVM code. LAN listening, file decoding, microp
 generation are explicit actions. No radio or live audio session starts on launch.
 For current capabilities and tested revisions, see [validation](VALIDATION.md).
 
+The UI shell has Operate, Settings and Chat destinations. Operate renders one
+selected source; local estimates and desktop reports keep distinct labels.
+Settings owns configuration/tool pages, while ViewModels retain existing backend
+ownership. Operate and the full microphone monitor are explicit receiving views;
+leaving them for configuration or Chat stops local reception and clears its
+session. Background and rotation cleanup remain unchanged. The Chat page performs
+no networking. TX controls, period and message drafts invoke no transmit backend.
+
 ## Modules and ownership
 
 ```text

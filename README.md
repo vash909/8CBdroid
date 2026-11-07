@@ -14,11 +14,9 @@ The app cannot yet make a radio QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Station** | Save callsign/locator and NTP server preferences; synchronize app time with NTP/GPS; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
-| **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Capture a selected microphone, inspect levels/processing and spectrum/waterfall, select RX/TX cursors, assemble UTC slots and decode local FT8 with Fast/Standard profiles; separately save audio or import/decode WAVs. | Live reception needs measured NTP/GPS time and the foreground. Latest 60 local frames and 96 waterfall rows at 2 Hz (about 48 s); Stop clears results/history/hash learning. Cursors do not tune or transmit. No playback. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
-| **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
-| **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
+| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX audio cursors, Start RX/Stop and plain audio Monitor. | Local RX requires measured NTP/GPS time. Sent is empty; Enable TX is disabled. Period and custom-message edits are drafts, not scheduled transmissions. LAN carries desktop messages, not waterfall audio. |
+| **Settings** | Station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN and USB permission inventory. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, audio output or USB hardware qualification. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
 VOX, documented USB CAT/audio hardware, and a separate WSJT-CB LAN companion
@@ -34,33 +32,35 @@ that run and install it on a compatible Android phone. See
 [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone) for ADB
 commands and debug-signature limitations.
 
-1. In **Station**, save a complete CB callsign and a 4- or 6-character locator,
+1. In **Settings → Station**, save a complete CB callsign and a 4- or 6-character locator,
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
-2. In **Messages**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
+2. In **Settings → Message tools**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
    then save it through Android's document picker. Content changes require consent.
-3. In **Audio**, scroll to **Decode a recorded slot**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
+3. In **Settings → Recorded audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
    select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
    This example assigns UTC context to a test file; it does not measure a clock.
-4. In **Audio → Microphone input**, select an input, press **Start microphone**
+4. In **Settings → Microphone tools**, select an input, press **Start microphone**
    and grant permission. Confirm the actual route and input levels. Stop before
    saving the most recent five seconds; this is a capture diagnostic, not live FT8.
    [Microphone capture](docs/MICROPHONE_CAPTURE.md) describes processing and lifecycle.
-5. In **Station → Time synchronization**, select a regional or custom NTP server
+5. In **Settings → Time synchronization**, select a regional or custom NTP server
    (IP/hostname), or measure GPS with precise location permission. Apply the valid
-   measurement, then enable **Assemble UTC slots** in Audio. Stop before exporting
+   measurement, then enable **Assemble UTC slots** in Microphone tools. Stop before exporting
    the latest complete 15-second WAV. [UTC slots](docs/UTC_RECEIVE_SLOTS.md) describes
    expiry, device requirements and timing limits. There is no manual offset.
    GPS timing was verified on the S25 FE; the A51 did not obtain a fix. See
    [device evidence and limits](docs/VALIDATION.md#r11-time-synchronization-and-utc-capture).
-6. For live local reception, enable **Decode live local FT8** in Audio, choose
-   **Local Standard** or **Local Fast** and press **Start microphone**. Complete
-   UTC slots are decoded automatically; inspect **Live local decodes** below the
-   capture controls. Stop clears these results and the local callsign cache.
-   See [live reception](docs/LIVE_RECEIVE.md) for work limits and phone checks.
-7. For desktop monitoring, start listening in **LAN**, then configure WSJT-CB to
-   send UDP to the **phone's Wi-Fi IPv4 address** and the same port, normally 2237.
+6. For live local reception, choose **Fast** or **Standard** under
+   **Settings → Audio & source**, synchronize time, then press **Start RX** on
+   **Operate**. Complete slots appear in **Received**; **→ RX** selects a decoded
+   frequency without establishing a QSO peer. **Monitor** displays plain audio
+   without time sync. Stop clears local results and hash learning.
+7. For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,
+   configure the phone port in **Settings → WSJT-CB LAN**, then press **Start RX**
+   on Operate. Configure the desktop to send UDP to the **phone's Wi-Fi IPv4
+   address** and the same port, normally 2237.
    [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
-   describe the desktop request setting and foreground lifecycle.
+   describe request settings and lifecycle limits.
 
 Android's system document picker can use the phone's own language. App controls
 and messages remain English. Ordinary WAV import/export requires no broad
@@ -68,7 +68,8 @@ storage permission. The saved station and server preferences are persistent; mea
 recordings and generated PCM are temporary. Exported documents remain in the
 chosen location.
 
-See [spectrum and waterfall](docs/SPECTRUM.md) for zoom, markers, cursor selection and measurement limits.
+See [the interface guide](docs/INTERFACE.md) for navigation and draft controls,
+and [spectrum and waterfall](docs/SPECTRUM.md) for zoom and measurement limits.
 
 ## Build from source
 

@@ -1,0 +1,212 @@
+package net.vash.ft8cbdroid.ui
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import net.vash.ft8cbdroid.audio.*
+import net.vash.ft8cbdroid.core.audio.*
+import net.vash.ft8cbdroid.core.message.UnpackResult
+import net.vash.ft8cbdroid.core.recording.RecordedDecodeFlag
+import kotlin.math.roundToInt
+import net.vash.ft8cbdroid.lan.LanUiState
+import net.vash.ft8cbdroid.protocol.LanPhase
+import net.vash.ft8cbdroid.settings.StationSettingsUiState
+import net.vash.ft8cbdroid.time.TimeUiState
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val utcTime = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC)
+
+data class ActivityMessage(val time: String, val message: String, val signal: String, val offset: Int,
+    val detail: String)
+
+/** Local estimates and desktop reports keep their source and confidence labels. */
+fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanUiState): List<ActivityMessage> =
+    if (source == OperatingSource.LOCAL) capture.live.rows.map { row ->
+        ActivityMessage(utcTime.format(row.decode.slotStartUtc), when (val text = row.decode.message) {
+            is UnpackResult.Decoded -> text.message.text
+            is UnpackResult.Unsupported -> "Unsupported: ${text.reason}"
+        }, row.decode.frame.estimatedSnrDb?.let { String.format(Locale.ROOT, "%+.0f*", it) } ?: "—",
+            row.decode.frame.audioFrequencyHz.roundToInt(), buildList {
+                add("Local audio · estimated SNR* · DT ${String.format(Locale.ROOT, "%+.2f", row.decode.deltaTimeSeconds)} s")
+                if (RecordedDecodeFlag.UNKNOWN_HASH in row.decode.flags) add("Unknown hash")
+                if (RecordedDecodeFlag.AMBIGUOUS_HASH in row.decode.flags) add("Ambiguous hash")
+            }.joinToString(" · "))
+    } else lan.connection.decodes.asReversed().map { row ->
+        val time = row.utcMillisOfDay?.let { String.format(Locale.ROOT, "%02d:%02d:%02d", it / 3_600_000, it / 60_000 % 60, it / 1000 % 60) } ?: "—"
+        ActivityMessage(time, row.message.ifEmpty { "(empty message)" }, String.format(Locale.ROOT, "%+d", row.snr),
+            row.deltaFrequencyHz.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt(),
+            listOfNotNull(if (row.isNew) "Desktop · live" else "Desktop · replay", if (row.offAir) "Off air" else null,
+                if (row.lowConfidence) "Low confidence" else null).joinToString(" · "))
+    }
+
+@Composable
+fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, capture: CaptureUiState,
+    lan: LanUiState, time: TimeUiState, onDestination: (AppDestination) -> Unit,
+    onReceive: () -> Unit, onMonitor: () -> Unit, onStop: () -> Unit,
+    onView: (SpectrumView) -> Unit, spectrum: @Composable () -> Unit) {
+    var sent by rememberSaveable { mutableStateOf(false) }
+    var odd by rememberSaveable { mutableStateOf(false) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val receiving = if (source == OperatingSource.LOCAL) capture.phase != CapturePhase.IDLE || capture.awaitingPermission else lan.active || lan.busy
+    val rows = remember(source, capture.live.rows, lan.connection.decodes) { activityMessages(source, capture, lan) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val small = maxHeight < 650.dp
+        Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+            .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("8CBdroid", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
+                    fontFamily = FontFamily.Monospace, color = RadioColors.gold)
+                TextButton(onClick = { onDestination(AppDestination.STATION) }, contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Text(station.saved?.callsign?.takeIf { it.isNotBlank() } ?: "Set station")
+                    station.saved?.grid?.takeIf { it.isNotBlank() }?.let { Text(" / $it", color = RadioColors.muted) }
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    val dial = if (source == OperatingSource.LOCAL) "27.265" else lan.connection.status?.let {
+                        String.format(Locale.ROOT, "%.3f", it.dialFrequencyHz / 1_000_000.0)
+                    } ?: "—"
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(dial, fontSize = 28.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
+                        Text("MHz / FT8", Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                    }
+                    Text(if (source == OperatingSource.LOCAL) "REFERENCE DIAL · 11 METRES" else "DESKTOP DIAL · READ ONLY",
+                        style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(if (!receiving) "RX IDLE" else if (source == OperatingSource.LAN) {
+                        if (lan.connection.phase == LanPhase.CONNECTED) "LAN CONNECTED" else "LISTENING"
+                    } else if (capture.decodeLive) "RECEIVING" else "MONITORING",
+                        style = MaterialTheme.typography.labelMedium, color = if (receiving) RadioColors.olive else RadioColors.muted)
+                    TextButton(onClick = { onDestination(AppDestination.TIME) }, contentPadding = PaddingValues(0.dp)) {
+                        Text("Time sync ↗", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+            Surface(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
+                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (source == OperatingSource.LOCAL) "AUDIO / 2 Hz" else "WSJT-CB / LAN", Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                        TextButton(onClick = { onDestination(if (source == OperatingSource.LOCAL) AppDestination.CAPTURE else AppDestination.LAN) },
+                            modifier = Modifier.heightIn(min = 32.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text(if (source == OperatingSource.LOCAL) "Expand ↗" else "Connection ↗", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    if (source == OperatingSource.LOCAL) spectrum() else Box(Modifier.fillMaxWidth().height(108.dp), contentAlignment = Alignment.Center) {
+                        Text("LAN carries messages, not waterfall audio.", style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
+                    }
+                }
+            }
+            ActivityLog(rows, sent, { sent = it }, source,
+                if (small) Modifier.fillMaxWidth().height(200.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView)
+            (if (source == OperatingSource.LOCAL) capture.error else lan.error ?: lan.connection.error)?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OffsetField("RX Hz", capture.spectrumView.rxHz, source == OperatingSource.LOCAL, Modifier.weight(1f)) {
+                    onView(capture.spectrumView.copy(cursor = OffsetCursor.RX).select(it.toFloat()))
+                }
+                OffsetField("TX Hz", capture.spectrumView.txHz, source == OperatingSource.LOCAL, Modifier.weight(1f)) {
+                    onView(capture.spectrumView.copy(cursor = OffsetCursor.TX).select(it.toFloat()))
+                }
+                Surface(color = RadioColors.panel, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
+                    Text("TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Button(onClick = onReceive, enabled = !receiving && if (source == OperatingSource.LOCAL) capture.canStart else lan.canStart,
+                    modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp)) { Text("Start RX") }
+                OutlinedButton(onClick = onStop, enabled = receiving, modifier = Modifier.weight(.7f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Stop") }
+                OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Enable TX") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("TX period", style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                FilterChip(selected = !odd, onClick = { odd = false }, label = { Text("Even") })
+                FilterChip(selected = odd, onClick = { odd = true }, label = { Text("Odd") })
+                Spacer(Modifier.weight(1f))
+                if (source == OperatingSource.LOCAL) TextButton(onClick = onMonitor, enabled = !receiving && capture.canStart,
+                    contentPadding = PaddingValues(horizontal = 4.dp)) { Text("Monitor") }
+            }
+            OutlinedTextField(value = draft, onValueChange = { draft = it.take(80) }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("Custom message · draft") }, singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
+            Text("TX is unavailable. Offsets and period do not arm transmission.", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+            // The correction remains explicit; this summary never implies system-clock synchronization.
+            Text(time.sourceDescription, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: Modifier, onValue: (Int) -> Unit) {
+    var text by remember(value) { mutableStateOf(value.toString()) }
+    OutlinedTextField(value = text, onValueChange = { next ->
+        if (next.length <= 4 && next.all { it in '0'..'9' }) { text = next; audioOffset(next)?.let(onValue) }
+    }, label = { Text(label) }, enabled = enabled, isError = audioOffset(text) == null, singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = modifier,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
+}
+
+@Composable
+private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boolean) -> Unit,
+    source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView) {
+    Surface(modifier, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
+        Column(Modifier.padding(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = { onSent(false) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                    Text("Received ${rows.size}", color = if (!sent) RadioColors.gold else RadioColors.muted)
+                }
+                TextButton(onClick = { onSent(true) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                    Text("Sent 0", color = if (sent) RadioColors.gold else RadioColors.muted)
+                }
+                Spacer(Modifier.weight(1f))
+                Text(if (source == OperatingSource.LOCAL) "LOCAL" else "LAN", style = MaterialTheme.typography.labelSmall, color = RadioColors.olive)
+            }
+            HorizontalDivider(color = RadioColors.line)
+            if (sent || rows.isEmpty()) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(if (sent) "No transmitted messages" else "Listening starts here", style = MaterialTheme.typography.bodyMedium)
+                    Text(if (sent) "Audio transmission is not available yet." else "${if (source == OperatingSource.LOCAL) "Start RX after time synchronization" else "Start RX to listen for a desktop"}.",
+                        style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
+                }
+            } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+                itemsIndexed(rows) { _, row ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(row.time, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                            Text("${row.signal} dB", style = MaterialTheme.typography.labelSmall, color = RadioColors.olive)
+                            Text("${row.offset} Hz", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                        }
+                        Text(row.message, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(row.detail, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                            if (source == OperatingSource.LOCAL) TextButton(onClick = {
+                                onView(view.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat()))
+                            }, contentPadding = PaddingValues(4.dp)) { Text("→ RX", style = MaterialTheme.typography.labelMedium) }
+                        }
+                        HorizontalDivider(color = RadioColors.line)
+                    }
+                }
+            }
+        }
+    }
+}

@@ -51,7 +51,7 @@ Standard preserves R08's search/iteration limits. All profiles retain the same
 payload deduplication and CB interpretation. Encoder work has a 2-second native
 deadline. No profile weakens integrity checks or enables desktop decoder filters.
 
-The **Audio** tab selects the profile for the next explicit import. Changing it
+The **Settings → Recorded audio** page selects the profile for the next explicit import. Changing it
 clears old results; the request snapshots profile, station and UTC. Results show
 the used profile and decode milliseconds. Profile choice survives rotation but
 is not a saved station setting. Fast can miss weaker signals. A larger experimental search budget did not

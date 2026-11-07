@@ -1,28 +1,31 @@
 # Local spectrum and waterfall
 
-The Audio screen displays the selected microphone's resampled 12 kHz PCM.
+Operate and Settings → Microphone tools display the selected microphone's resampled 12 kHz PCM.
 It works with plain capture; time synchronization is only required when UTC
 assembly or live FT8 decoding is enabled. It never displays LAN or imported WAV
 samples as local microphone audio. Phone evidence is in [validation](VALIDATION.md).
 
 ## Controls
 
-1. Select the microphone and press **Start microphone**, granting permission.
-   Scroll to **Spectrum and waterfall** below the capture controls.
+1. On **Operate**, press **Monitor** for the compact plot without time sync, or
+   **Start RX** after synchronization. **Expand ↗** opens the detailed monitor
+   without stopping reception. It is also under **Settings → Microphone tools**.
+   The controls below refer to that full monitor.
 2. **Select RX** or **Select TX**, then tap either part of the plot, move the
    accessible offset slider, or use the 25 Hz buttons. RX and TX are independent
-   cursors, limited to 200–2950 Hz. Green is RX; pink is TX.
+   cursors, limited to 200–2950 Hz. Olive is RX; gold is TX.
 3. Select **Zoom 1×**, **2×** or **4×** for a 3000, 1500 or 750 Hz view,
    centered on the selected cursor and clamped to the 0–3000 Hz band. Use
    **Lower band** / **Higher band** to pan by half the visible width.
    The three axis labels and tap selection use the same frequency mapping.
-4. Yellow dots identify frequencies in the latest local slot containing decoded
+4. Ivory dots identify frequencies in the latest local slot containing decoded
    frames. Its UTC is shown explicitly. These are frequency indicators, not
    event timestamps on the waterfall. Press a **Decode … Hz → RX** button to
    select that frequency. Unsupported/unresolved CB text can still have a valid
    channel frequency; selecting it does not establish a peer or a QSO.
-5. Stop clears spectrum, waterfall and decoded markers. Rotation, background,
-   leaving Audio, route/station changes and capture failure also discard history.
+5. Moving between Operate and the detailed monitor preserves a running capture.
+   Stop clears spectrum, waterfall and decoded markers. Rotation, background,
+   leaving the receive screens for Settings or Chat, route/station changes and capture failure also discard history.
    Restart remains explicit. Cursor/zoom choices survive Stop and rotation in
    the current ViewModel, but are not saved across process recreation.
 

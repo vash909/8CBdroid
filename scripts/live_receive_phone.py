@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Finite physical PC-speaker to Android-microphone qualification of live CB decoding."""
+import argparse
 import hashlib
 import json
 import os
@@ -13,6 +14,9 @@ OUT = ROOT / '.tooling'
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--screen', choices=['tools', 'operate'], default='tools')
+    args = parser.parse_args()
     OUT.mkdir(exist_ok=True)
     env = dict(os.environ, ADB_LIBUSB='1')
 
@@ -44,7 +48,7 @@ def main():
         adb('shell', 'run-as', 'net.vash.ft8cbdroid', 'rm', '-f', 'cache/r12-ready.json')
         with log.open('w') as output:
             instrument = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
-                '-e', 'scenario', 'live', 'net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.WaveformPhoneChecks'],
+                '-e', 'scenario', 'operate-live' if args.screen == 'operate' else 'live', 'net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.WaveformPhoneChecks'],
                 env=env, stdout=output, stderr=subprocess.STDOUT)
             stages = set()
             plays = []

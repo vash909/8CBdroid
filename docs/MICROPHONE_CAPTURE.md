@@ -1,6 +1,6 @@
 # Microphone capture
 
-The **Audio → Microphone input** panel captures mono PCM16 through Android
+The **Settings → Microphone tools** panel captures mono PCM16 through Android
 `AudioRecord`, meters the input and converts it to 12 kHz floating-point PCM.
 Optional [UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
 NTP/GPS sync and retains complete slots. [Live reception](LIVE_RECEIVE.md)
@@ -23,7 +23,7 @@ play audio or operate PTT; audio output and acoustic VOX are unimplemented.
    most five seconds, with no UTC or FT8-slot claim. It cannot be imported by
    the separate recorded-slot decoder, which requires a complete 15-second slot.
 
-Capture stops and clears its PCM when leaving Audio, rotating or backgrounding.
+Capture stops and clears its PCM when leaving the receive screens for Settings or Chat, rotating or backgrounding.
 A permission result arriving after Stop cannot restart it. Stop waits for worker
 cleanup before another start is allowed. Startup, interruption, permission loss,
 Android silencing, route loss/change and a two-second no-data stall require an

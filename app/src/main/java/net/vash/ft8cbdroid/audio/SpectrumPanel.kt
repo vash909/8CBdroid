@@ -15,6 +15,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import net.vash.ft8cbdroid.ui.RadioColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.vash.ft8cbdroid.core.audio.*
@@ -28,9 +30,10 @@ private fun waterfall(frames: List<SpectrumFrame>): ImageBitmap {
     frames.forEachIndexed { row, frame ->
         frame.dbfs.forEachIndexed { bin, db ->
             val t = ((db + 90) / 80).coerceIn(0f, 1f)
-            val r = ((t - .45f).coerceAtLeast(0f) / .55f * 255).roundToInt()
-            val g = ((t - .15f).coerceAtLeast(0f) / .85f * 240).roundToInt()
-            val b = (35 + minOf(t * 2, 1f) * 200).roundToInt()
+            val mix = if (t < .6f) t / .6f else (t - .6f) / .4f
+            val r = (if (t < .6f) 17 + 83 * mix else 100 + 127 * mix).roundToInt()
+            val g = (if (t < .6f) 19 + 97 * mix else 116 + 99 * mix).roundToInt()
+            val b = (if (t < .6f) 17 + 65 * mix else 82 + 76 * mix).roundToInt()
             pixels[row * width + bin] = android.graphics.Color.rgb(r, g, b)
         }
     }
@@ -41,9 +44,6 @@ private data class RenderedSpectrum(val sessionId: Long, val image: ImageBitmap)
 
 @Composable
 fun SpectrumPanel(state: SpectrumState, view: SpectrumView, markers: List<SpectrumMarker>, onView: (SpectrumView) -> Unit) {
-    val image by produceState<RenderedSpectrum?>(null, state.sessionId, state.frames) {
-        value = if (state.frames.isEmpty()) null else withContext(Dispatchers.Default) { RenderedSpectrum(state.sessionId, waterfall(state.frames)) }
-    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Spectrum and waterfall", style = MaterialTheme.typography.titleLarge)
         Text("Local microphone • 2.93 Hz resolution • up to 2 updates/s")
@@ -69,17 +69,43 @@ fun SpectrumPanel(state: SpectrumState, view: SpectrumView, markers: List<Spectr
         }
         Text("Visible band: ${view.startHz.roundToInt()}–${(view.startHz + view.spanHz).roundToInt()} Hz")
         Text("RX ${view.rxHz} Hz • TX ${view.txHz} Hz • Tap selects ${view.cursor.name}")
-        val selectedColor = Color(0xFF67E8C4)
-        val txColor = Color(0xFFFF7E9C)
-        val markerColor = Color(0xFFFFD166)
+        SpectrumPlot(state, view, markers, onView)
+        Text("Olive: RX • Gold: TX • Ivory: decoded frequency")
+        Text("Spectrum: 0 to −100 dBFS peak amplitude. Waterfall: −90 to −10 dBFS; newest row at top. Not an SNR meter.")
+        Text("${state.frames.size}/${SpectrumMonitor.HISTORY} rows • ${state.replaced} display windows replaced")
+        if (state.frames.isEmpty()) Text("Start microphone to display local audio. NTP/GPS is needed only for UTC/live FT8 mode.")
+        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (markers.isNotEmpty()) {
+            Text("Decoded markers: latest local decoded slot ${Instant.ofEpochMilli(markers.first().utcMillis)}. Frequency indicators, not waterfall event times.")
+            markers.forEach { marker ->
+                TextButton(onClick = { onView(view.copy(cursor = OffsetCursor.RX).select(marker.frequencyHz)) }) {
+                    Text("Decode ${marker.frequencyHz.roundToInt()} Hz → RX")
+                }
+            }
+        }
+        Text("RX/TX cursors are temporary selections. They do not filter decodes, tune a radio or transmit.")
+    }
+}
+
+/** Shared full/compact plot. FFT cadence and retained history are unchanged. */
+@Composable
+fun SpectrumPlot(state: SpectrumState, view: SpectrumView, markers: List<SpectrumMarker>,
+    onView: (SpectrumView) -> Unit, height: Dp = 196.dp) {
+    val image by produceState<RenderedSpectrum?>(null, state.sessionId, state.frames) {
+        value = if (state.frames.isEmpty()) null else withContext(Dispatchers.Default) { RenderedSpectrum(state.sessionId, waterfall(state.frames)) }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        val selectedColor = RadioColors.olive
+        val txColor = RadioColors.gold
+        val markerColor = RadioColors.ink
         fun Modifier.selection(description: String) = this.semantics { contentDescription = description }
             .pointerInput(view) { detectTapGestures { onView(view.select(view.at(it.x / size.width))) } }
-        Canvas(Modifier.fillMaxWidth().height(196.dp).selection("Local audio spectrum and waterfall. Tap to select ${view.cursor.name} offset.")) {
+        Canvas(Modifier.fillMaxWidth().height(height).selection("Local audio spectrum and waterfall. Tap to select ${view.cursor.name} offset.")) {
             val spectrumHeight = size.height * .36f
-            drawRect(Color(0xFF080F1D))
+            drawRect(RadioColors.background)
             listOf(-20, -40, -60, -80).forEach { db ->
                 val y = -db / 100f * spectrumHeight
-                drawLine(Color.DarkGray, Offset(0f, y), Offset(size.width, y))
+                drawLine(RadioColors.line, Offset(0f, y), Offset(size.width, y))
             }
             state.frames.firstOrNull()?.let { frame ->
                 val path = Path(); var began = false
@@ -110,21 +136,7 @@ fun SpectrumPanel(state: SpectrumState, view: SpectrumView, markers: List<Spectr
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf(0f, .5f, 1f).forEach { Text("${view.at(it).roundToInt()} Hz") }
+            listOf(0f, .5f, 1f).forEach { Text("${view.at(it).roundToInt()} Hz", style = MaterialTheme.typography.labelSmall) }
         }
-        Text("Green: RX • Pink: TX • Yellow: decoded frequency")
-        Text("Spectrum: 0 to −100 dBFS peak amplitude. Waterfall: −90 to −10 dBFS; newest row at top. Not an SNR meter.")
-        Text("${state.frames.size}/${SpectrumMonitor.HISTORY} rows • ${state.replaced} display windows replaced")
-        if (state.frames.isEmpty()) Text("Start microphone to display local audio. NTP/GPS is needed only for UTC/live FT8 mode.")
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (markers.isNotEmpty()) {
-            Text("Yellow markers: latest local decoded slot ${Instant.ofEpochMilli(markers.first().utcMillis)}. Frequency indicators, not waterfall event times.")
-            markers.forEach { marker ->
-                TextButton(onClick = { onView(view.copy(cursor = OffsetCursor.RX).select(marker.frequencyHz)) }) {
-                    Text("Decode ${marker.frequencyHz.roundToInt()} Hz → RX")
-                }
-            }
-        }
-        Text("RX/TX cursors are temporary selections. They do not filter decodes, tune a radio or transmit.")
     }
 }

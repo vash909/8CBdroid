@@ -82,8 +82,7 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             val station = main { ViewModelProvider(activity)[StationSettingsViewModel::class.java] }
             await("saved station loaded") { main { !station.uiState.value.isLoading } }
             val audio = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = audio
-            await("Audio navigation") { find(root()) { it.text?.toString() == "Audio" } != null }
-            click("Audio")
+            PhoneNavigation.open(instrumentation, "Microphone tools")
             val mic = context.getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
                 .first { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
             main { audio.select(mic.id); audio.assembleUtc(false); check(!audio.requestStart(true)) }
@@ -149,10 +148,10 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             reveal("Zoom 1×", true); click("Zoom 1×")
             check(main { audio.uiState.value.spectrumView.startHz == 0f && audio.uiState.value.spectrumView.spanHz == 3000f })
             // Actual tab navigation stops capture; returning cannot rearm it.
-            click("Station")
+            PhoneNavigation.open(instrumentation, "Station")
             await("navigation cleanup") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
             check(main { audio.uiState.value.spectrum.frames.isEmpty() })
-            click("Audio"); reveal("Start microphone"); click("Start microphone")
+            PhoneNavigation.open(instrumentation, "Microphone tools"); reveal("Start microphone"); click("Start microphone")
             await("explicit restart") { main { audio.uiState.value.spectrum.frames.isNotEmpty() } }
             val restarted = main { audio.uiState.value.spectrum }
             check(restarted.sessionId != end.sessionId && restarted.frames.size < 10)
