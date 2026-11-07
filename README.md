@@ -100,7 +100,7 @@ cooperative cancellation and the finite phone benchmark.
 | --- | --- |
 | Android | Minimum API 26 (Android 8.0); compile/target API 36 |
 | Native ABIs | `arm64-v8a`, `x86_64`; no ARM32 build |
-| JVM / Gradle | JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.2.21 |
+| JVM / Gradle | JDK 17, Gradle 8.14.6, AGP 8.13.2, Kotlin 2.4.21 |
 | Compose / native tools | BOM 2025.10.01, NDK 28.2.13676358, CMake 3.22.1 |
 
 ## Compatibility and verification
