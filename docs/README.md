@@ -20,6 +20,7 @@ implemented behavior, device evidence and checks still pending.
 | [Spectrum and waterfall](SPECTRUM.md) | Local microphone visualization, bounded history, zoom/pan and display-only RX/TX cursors. |
 | [Live local reception](LIVE_RECEIVE.md) | Automatically decode complete microphone slots, distinguish local/LAN results and reset bounded receive sessions. |
 | [Recorded slots](RECORDED_SLOTS.md) | Import WAVs, supply UTC and interpret DT, estimated SNR and message/hash flags. |
+| [Hamlib catalog and Dummy API](HAMLIB.md) | Source pin, Android native build, searchable model metadata and software-only checks; no hardware CAT. |
 | [USB discovery and CAT scope](USB_CAT.md) | Enumerate adapters and request access; distinguish this from a real CAT/audio connection. |
 
 ## Develop and verify

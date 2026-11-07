@@ -1,0 +1,18 @@
+{
+  "name": "Hamlib",
+  "version": "4.7.2",
+  "revision": "40f63488fe0bd751b147f48d62fd217bf53713a0",
+  "url": "https://github.com/Hamlib/Hamlib/releases/download/4.7.2/hamlib-4.7.2.tar.gz",
+  "sha256": "ae1fcf2dbc80ea0786ea8f047b09399c3f7737d1930442f61a031708ed33e88f",
+  "license": "LGPL-2.1-or-later",
+  "patches": [
+    {
+      "file": "patches/0001-optional-android-sensor.patch",
+      "sha256": "f6be0de6f2d86ce1332d02b5be8299a20100f0f5040c0743906afbf0ff672921"
+    },
+    {
+      "file": "patches/0002-require-glob-for-microham-discovery.patch",
+      "sha256": "a2c057fb4626913f0b170de9683b227d1e9646e9c6efcf703dbea21a8dae6bd3"
+    }
+  ]
+}

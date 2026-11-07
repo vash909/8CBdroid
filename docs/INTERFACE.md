@@ -39,7 +39,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; output selection remains unavailable. |
 | Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |
 | WSJT-CB LAN | Desktop filter, UDP port, status, Replay and detailed decode history. |
-| USB / CAT | Existing descriptor/driver discovery and Android permissions; no CAT commands. |
+| USB / CAT | Explicit Hamlib catalog/search/details and software-only Dummy check, plus descriptor/driver discovery and Android permissions; no hardware CAT commands. |
 | Microphone tools | Full spectrum controls, input diagnostics, UTC options and recent/complete-slot WAV export. |
 | Message tools | Existing codec previews, hash simulation and offline WAV generation/export. |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |

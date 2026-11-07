@@ -1,6 +1,7 @@
 package net.vash.ft8cbdroid
 
 import net.vash.ft8cbdroid.time.*
+import net.vash.ft8cbdroid.radio.*
 import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
@@ -93,6 +94,7 @@ class MainActivity : ComponentActivity() {
         )[StationSettingsViewModel::class.java]
         lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
+        val hamlibViewModel = ViewModelProvider(this)[HamlibViewModel::class.java]
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
@@ -100,6 +102,7 @@ class MainActivity : ComponentActivity() {
         captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
         setContent {
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
+            val hamlib by hamlibViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
@@ -116,6 +119,12 @@ class MainActivity : ComponentActivity() {
             EightCbApp(
                 station = station,
                 usb = usb,
+                hamlib = hamlib,
+                onLoadHamlib = hamlibViewModel::load,
+                onHamlibQuery = hamlibViewModel::query,
+                onHamlibSelect = hamlibViewModel::select,
+                onHamlibDummy = hamlibViewModel::checkDummy,
+                onCancelHamlib = hamlibViewModel::cancel,
                 onRefreshUsb = usbViewModel::refresh,
                 onUsbPermission = usbViewModel::requestPermission,
                 lan = lan,
@@ -196,6 +205,12 @@ fun EightCbApp(
     station: StationSettingsUiState,
     lan: LanUiState = LanUiState(),
     usb: UsbInventoryState = UsbInventoryState(),
+    hamlib: HamlibUiState = HamlibUiState(),
+    onLoadHamlib: () -> Unit = {},
+    onHamlibQuery: (String) -> Unit = {},
+    onHamlibSelect: (Int) -> Unit = {},
+    onHamlibDummy: () -> Unit = {},
+    onCancelHamlib: () -> Unit = {},
     onRefreshUsb: () -> Unit = {},
     onUsbPermission: (String) -> Unit = {},
     onLanPortChange: (String) -> Unit = {},
@@ -294,7 +309,10 @@ fun EightCbApp(
                                 }, onSelectInput, onLiveProfile, ::navigate)
                             AppDestination.LAN -> LanPanel(lan, onLanPortChange, onLanAddressChange,
                                 onStartLan, onStopLan, onReplayLan, onClearLan)
-                            AppDestination.USB -> UsbPanel(usb, onRefreshUsb, onUsbPermission)
+                            AppDestination.USB -> {
+                                HamlibPanel(hamlib, onLoadHamlib, onHamlibQuery, onHamlibSelect, onHamlibDummy, onCancelHamlib)
+                                UsbPanel(usb, onRefreshUsb, onUsbPermission)
+                            }
                             AppDestination.CAPTURE -> {
                                 CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture,
                                     onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile,

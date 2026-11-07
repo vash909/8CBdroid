@@ -1,0 +1,18 @@
+From: 8CBdroid contributors
+Subject: Omit microHAM discovery thread when glob is unavailable
+
+finddevices is compiled only with glob support on POSIX. Its caller must use
+the same condition. Android API 26 has no glob() and uses Android USB permissions
+instead of scanning desktop /dev paths. No microHAM support is claimed.
+
+--- a/src/microham.c
++++ b/src/microham.c
+@@ -898,7 +898,7 @@
+  */
+ static void start_thread()
+ {
+-#if defined(HAVE_SOCKETPAIR) && defined(HAVE_SELECT)
++#if defined(HAVE_SOCKETPAIR) && defined(HAVE_SELECT) && defined(HAVE_GLOB_H)
+     /*
+      * Find a microHam device and open serial port to it.
+      * If successful, create sockets for doing I/O from within hamlib
