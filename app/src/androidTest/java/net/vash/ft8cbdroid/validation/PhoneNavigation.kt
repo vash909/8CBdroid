@@ -16,7 +16,7 @@ object PhoneNavigation {
     }
     private fun clickable(node: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo? {
         if (node == null) return null
-        if (node.text?.toString() == text) {
+        if (node.text?.toString() == text || node.contentDescription?.toString() == text) {
             var parent: AccessibilityNodeInfo? = node
             while (parent != null && !parent.isScrollable) {
                 if (parent.isClickable) return parent

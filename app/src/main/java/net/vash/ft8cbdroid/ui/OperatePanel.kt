@@ -1,6 +1,7 @@
 package net.vash.ft8cbdroid.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,51 +69,45 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
     val receiving = if (source == OperatingSource.LOCAL) capture.phase != CapturePhase.IDLE || capture.awaitingPermission else lan.active || lan.busy
     val rows = remember(source, capture.live.rows, lan.connection.decodes) { activityMessages(source, capture, lan) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val small = maxHeight < 650.dp
+        val small = maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
         Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("8CBdroid", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FontFamily.Monospace, color = RadioColors.gold)
-                TextButton(onClick = { onDestination(AppDestination.STATION) }, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    Text(station.saved?.callsign?.takeIf { it.isNotBlank() } ?: "Set station")
-                    station.saved?.grid?.takeIf { it.isNotBlank() }?.let { Text(" / $it", color = RadioColors.muted) }
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
+                    Text("8CBdroid", style = MaterialTheme.typography.labelMedium,
+                        fontFamily = FontFamily.Monospace, color = RadioColors.gold)
                     val dial = if (source == OperatingSource.LOCAL) "27.265" else lan.connection.status?.let {
                         String.format(Locale.ROOT, "%.3f", it.dialFrequencyHz / 1_000_000.0)
                     } ?: "—"
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(dial, fontSize = 28.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
-                        Text("MHz / ${if (source == OperatingSource.LOCAL) "FT8" else lan.connection.status?.mode?.ifBlank { "—" } ?: "—"}", Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                        Text("MHz / ${if (source == OperatingSource.LOCAL) "FT8" else lan.connection.status?.mode?.ifBlank { "—" } ?: "—"}",
+                            Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                     }
                     Text(if (source == OperatingSource.LOCAL) "REFERENCE DIAL · 11 METRES" else "DESKTOP DIAL · READ ONLY",
                         style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                 }
                 Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = { onDestination(AppDestination.STATION) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        Text(station.saved?.callsign?.takeIf { it.isNotBlank() } ?: "Set station")
+                        station.saved?.grid?.takeIf { it.isNotBlank() }?.let { Text(" / $it", color = RadioColors.muted, style = MaterialTheme.typography.labelSmall) }
+                    }
                     Text(if (!receiving) "RX IDLE" else if (source == OperatingSource.LAN) {
-                        if (lan.connection.phase == LanPhase.CONNECTED) "LAN CONNECTED" else "LISTENING"
+                        if (lan.connection.status?.transmitting == true) "DESKTOP TX"
+                        else if (lan.connection.phase == LanPhase.CONNECTED) "LAN CONNECTED" else "LISTENING"
                     } else if (capture.decodeLive) "RECEIVING" else "MONITORING",
                         style = MaterialTheme.typography.labelMedium, color = if (receiving) RadioColors.olive else RadioColors.muted)
-                    TextButton(onClick = { onDestination(AppDestination.TIME) }, contentPadding = PaddingValues(0.dp)) {
-                        Text("Time sync ↗", style = MaterialTheme.typography.labelMedium)
-                    }
                 }
             }
             Surface(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
-                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (source == OperatingSource.LOCAL) "AUDIO / 2 Hz" else "WSJT-CB / LAN", Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
-                        TextButton(onClick = { onDestination(if (source == OperatingSource.LOCAL) AppDestination.CAPTURE else AppDestination.LAN) },
-                            modifier = Modifier.heightIn(min = 32.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                            Text(if (source == OperatingSource.LOCAL) "Expand ↗" else "Connection ↗", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
+                Box(Modifier.padding(6.dp)) {
                     if (source == OperatingSource.LOCAL) spectrum() else Box(Modifier.fillMaxWidth().height(108.dp), contentAlignment = Alignment.Center) {
                         Text("LAN carries messages, not waterfall audio.", style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
+                    }
+                    TextButton(onClick = { onDestination(if (source == OperatingSource.LOCAL) AppDestination.CAPTURE else AppDestination.LAN) },
+                        modifier = Modifier.align(Alignment.TopEnd).background(RadioColors.background.copy(alpha = .9f), MaterialTheme.shapes.small),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                        Text(if (source == OperatingSource.LOCAL) "Expand ↗" else "Connection ↗", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
@@ -128,7 +124,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                     onView(capture.spectrumView.copy(cursor = OffsetCursor.TX).select(it.toFloat()))
                 }
                 Surface(color = RadioColors.panel, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
-                    Text("TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                    Text(if (source == OperatingSource.LOCAL) "TX OFF" else "LOCAL TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

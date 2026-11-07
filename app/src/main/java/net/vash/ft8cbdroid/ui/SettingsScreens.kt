@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import net.vash.ft8cbdroid.audio.CaptureUiState
@@ -31,7 +33,8 @@ fun SettingsMenu(onOpen: (AppDestination) -> Unit) {
 
 @Composable
 private fun SettingsLink(title: String, subtitle: String, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = MaterialTheme.shapes.medium, border = BorderStroke(1.dp, RadioColors.line)) {
+    Surface(onClick = onClick, modifier = Modifier.semantics { contentDescription = title },
+        shape = MaterialTheme.shapes.medium, border = BorderStroke(1.dp, RadioColors.line)) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
