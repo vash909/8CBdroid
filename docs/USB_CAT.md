@@ -2,7 +2,7 @@
 
 ## Discovery and permission
 
-The **Radio** screen can enumerate attached USB devices, show VID/PID and device
+The **Settings → USB / CAT** page can enumerate attached USB devices, show VID/PID and device
 ID, identify serial drivers/port counts and request Android access to a recognized
 serial interface. Attach/detach updates the list while the app process is alive.
 Tap **Find USB devices** for an initial or manual refresh. Permission requests
@@ -47,7 +47,7 @@ for enumeration, permission and device lifetime.
 
 Without OTG hardware:
 
-1. Install the debug APK, open **Radio** and tap **Find USB devices**.
+1. Install the debug APK, open **Settings → USB / CAT** and tap **Find USB devices**.
 2. An OTG-capable phone with nothing attached should report **No USB devices
    found**; a device without host support should explain that host mode is unavailable.
 3. Rotate, switch tabs and reopen the app. There should be no automatic permission

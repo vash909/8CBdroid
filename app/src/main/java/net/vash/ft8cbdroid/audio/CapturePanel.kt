@@ -24,14 +24,14 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         }
         Row {
             Checkbox(checked = state.assembleUtc, onCheckedChange = onAssembleUtc, enabled = state.canConfigure)
-            Text("Assemble UTC slots (requires NTP/GPS sync in Station)")
+            Text("Assemble UTC slots (requires NTP/GPS sync in Settings → Time)")
         }
         Row {
             Checkbox(checked = state.decodeLive, onCheckedChange = onDecodeLive, enabled = state.canConfigure)
             Text("Decode live local FT8")
         }
         if (state.decodeLive) {
-            Text("Uses complete microphone UTC slots. Synchronize time in Station, then press Start microphone.")
+            Text("Uses complete microphone UTC slots. Synchronize time in Settings → Time, then press Start microphone.")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Ft8DecodeProfile.entries.forEach { profile ->
                     FilterChip(selected = state.liveProfile == profile, onClick = { onLiveProfile(profile) },
@@ -63,6 +63,6 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         OutlinedButton(onClick = onSaveSlot, enabled = state.canExportSlot) { Text("Save latest UTC slot WAV") }
         Text("Only complete 15-second UTC windows are retained. Stop before saving; initial partials and interrupted windows are discarded. Only the latest complete slot is retained in memory.")
         OutlinedButton(onClick = onSave, enabled = state.canExport) { Text("Save recent microphone WAV") }
-        Text("The most recent five seconds stay in memory until replaced or cleared. Stop before saving. Leaving Audio, rotating or backgrounding stops capture and clears its buffer. Restart is always explicit.")
+        Text("The most recent five seconds stay in memory until replaced or cleared. Stop before saving. Leaving the receive screens, rotating or backgrounding stops capture and clears its buffer. Restart is always explicit.")
     }
 }

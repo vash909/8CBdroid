@@ -28,7 +28,7 @@ are retained across rotation, but are not persisted after process termination.
 
 1. Connect the PC and phone to the same LAN. Find the phone's Wi-Fi IPv4 address
    in Android's network settings. Client isolation must allow traffic between them.
-2. In the app's **LAN** tab, select the listening port, normally **2237**.
+2. In the app's **Settings → WSJT-CB LAN** page, select the listening port, normally **2237**.
    Optionally enter the PC's IPv4 address to restrict the accepted sender.
 3. Tap **Start listening**. The app should show that it is waiting for a desktop.
 4. In WSJT-CB's UDP settings, set the UDP server to the **phone's** IPv4 address
@@ -40,7 +40,7 @@ are retained across rotation, but are not persisted after process termination.
    Status packet updates the app. Receiving status does not require sending
    radio or TX commands from the phone.
 7. Wait for a desktop decode. Check its message, UTC time, SNR, delta time,
-   offset and flags under **LAN band activity**, also available in **Station**.
+   offset and flags under **LAN band activity**, also available on **Operate** with the LAN source selected.
 8. Enable **Accept UDP requests** in WSJT-CB. Tap **Clear list**, then
    **Request replay**: desktop history should arrive marked **Replay**. Replay
    is never automatic. Without clearing, identical replay payloads are deduplicated

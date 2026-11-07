@@ -24,7 +24,7 @@ import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
 import kotlin.math.roundToInt
 
 /** Desktop fixtures must arrive acoustically through the microphone; no supplied PCM or decoder results. */
-class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
+class LiveReceivePhoneChecks(private val instrumentation: Instrumentation, private val operate: Boolean = false) {
     private val context get() = instrumentation.targetContext
     private fun <T> main(block: () -> T): T {
         var result: Result<T>? = null
@@ -81,12 +81,12 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
             val measurement = main { requireNotNull(timing.uiState.value.measurement) { timing.uiState.value.error ?: "No measured time" } }
             main { timing.applyMeasurement() }
             if (android.os.Build.VERSION.SDK_INT >= 34) automation.clearCache() else automation.serviceInfo = automation.serviceInfo
-            var navigation = find(automation.rootInActiveWindow, "Audio")
-            while (navigation != null && !navigation.isClickable) navigation = navigation.parent
-            check(requireNotNull(navigation).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            if (!operate) PhoneNavigation.open(instrumentation, "Microphone tools")
             val mic = context.getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
                 .first { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
-            main { audio.changeStation(null); audio.select(mic.id); audio.decodeLive(true); check(!audio.requestStart(true)) }
+            main { audio.changeStation(null); audio.select(mic.id) }
+            if (operate) PhoneNavigation.click(instrumentation, "Start RX")
+            else main { audio.decodeLive(true); check(!audio.requestStart(true)) }
             await("microphone recording") { main { audio.uiState.value.phase == CapturePhase.CAPTURING } }
             ready("first-run")
             fun messages() = main { audio.uiState.value.live.rows.mapNotNull { (it.decode.message as? UnpackResult.Decoded)?.message?.text } }
@@ -103,26 +103,44 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
             check(messages().all { it in setOf("CQ 1AT106", "<1AT106> 26AT101") })
             val markers = localSpectrumMarkers(first.live.rows)
             check(first.spectrum.frames.isNotEmpty() && markers.isNotEmpty())
-            show("Yellow markers: latest local decoded slot ${java.time.Instant.ofEpochMilli(markers.first().utcMillis)}. Frequency indicators, not waterfall event times.")
-            val label = "Decode ${markers.first().frequencyHz.roundToInt()} Hz → RX"
-            show(label)
-            var markerButton = find(automation.rootInActiveWindow, label)
-            while (markerButton != null && !markerButton.isClickable) markerButton = markerButton.parent
-            check(requireNotNull(markerButton).performAction(AccessibilityNodeInfo.ACTION_CLICK))
-            check(main { audio.uiState.value.spectrumView.rxHz } == markers.first().frequencyHz.roundToInt().coerceIn(200, 2950))
-            show("Live local decodes")
-            show("Source: local microphone • Standard • latest 60 frames")
-            show("<1AT106> 26AT101")
-            main { audio.stop(clear = true) }
+            if (operate) {
+                show("<1AT106> 26AT101")
+                PhoneNavigation.click(instrumentation, "→ RX")
+                check(main { audio.uiState.value.spectrumView.rxHz } == markers.first().frequencyHz.roundToInt().coerceIn(200, 2950))
+                PhoneNavigation.click(instrumentation, "Sent 0")
+                show("No transmitted messages")
+                PhoneNavigation.click(instrumentation, "Received ${first.live.rows.size}")
+                show("<1AT106> 26AT101")
+                PhoneNavigation.click(instrumentation, "Stop")
+            } else {
+                show("Decoded markers: latest local decoded slot ${java.time.Instant.ofEpochMilli(markers.first().utcMillis)}. Frequency indicators, not waterfall event times.")
+                val label = "Decode ${markers.first().frequencyHz.roundToInt()} Hz → RX"
+                show(label)
+                var markerButton = find(automation.rootInActiveWindow, label)
+                while (markerButton != null && !markerButton.isClickable) markerButton = markerButton.parent
+                check(requireNotNull(markerButton).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                check(main { audio.uiState.value.spectrumView.rxHz } == markers.first().frequencyHz.roundToInt().coerceIn(200, 2950))
+                show("Live local decodes")
+                show("Source: local microphone • Standard • latest 60 frames")
+                show("<1AT106> 26AT101")
+                main { audio.stop(clear = true) }
+            }
             await("capture/native cleanup") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
             check(main { audio.uiState.value.live.rows.isEmpty() && audio.uiState.value.live.learnedCalls == 0 })
             check(NativeFt8Engine.workSnapshot().nativeCalls == 0)
-            main { check(!audio.requestStart(true)) }
+            if (operate) PhoneNavigation.click(instrumentation, "Start RX")
+            else main { check(!audio.requestStart(true)) }
             await("explicit restart") { main { audio.uiState.value.phase == CapturePhase.CAPTURING } }
             ready("cold-restart")
             await("unknown hash after restart", 45) { healthy(); "<...> 26AT101" in messages() }
             val cold = main { audio.uiState.value.live }
-            main { audio.stop(clear = true) }
+            if (operate) {
+                PhoneNavigation.click(instrumentation, "Settings")
+                await("settings stops capture") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
+                PhoneNavigation.click(instrumentation, "Chat")
+                show("Chat between 8CBdroid operators is coming later.")
+                PhoneNavigation.click(instrumentation, "Operate")
+            } else main { audio.stop(clear = true) }
             await("final cleanup") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
             check(main { audio.uiState.value.live.rows.isEmpty() })
             val report = JSONObject().put("result", "PASS").put("model", android.os.Build.MODEL)
@@ -133,6 +151,7 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
                 .put("stop_clears_results_and_hashes", true).put("actual_builtin_microphone", true)
                 .put("local_origin_and_message_visible_in_ui", true)
                 .put("decoded_marker_visible_and_selects_rx", true)
+                .put("operating_home", operate).put("sent_tab_and_chat_placeholder", operate)
                 .put("native_calls_after_stop", NativeFt8Engine.workSnapshot().nativeCalls)
             File(context.cacheDir, "r12-live-report.json").writeText(report.toString(2))
             output.putString("live_report", report.toString()); output.putString("live_result", "PASS"); code = Activity.RESULT_OK

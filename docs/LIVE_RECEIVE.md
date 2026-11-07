@@ -1,6 +1,6 @@
 # Live local reception
 
-The Audio screen can decode complete microphone UTC slots automatically. Local
+Operate can decode complete microphone UTC slots automatically. Local
 results are labeled **Local microphone** and kept apart from LAN messages and
 recorded-file results. This is foreground reception; playback, PTT, AutoSeq and
 radio QSOs remain later work. Current device evidence is in [validation](VALIDATION.md).
@@ -23,7 +23,7 @@ radio QSOs remain later work. Current device evidence is in [validation](VALIDAT
    Every restart is explicit and creates a cold local callsign session.
 
 The live mode/profile are temporary ViewModel choices, separate from recorded
-file profiles. Stop, rotation, backgrounding, leaving Audio, station changes,
+file profiles. Stop, rotation, backgrounding, leaving the receive screens for Settings or Chat, station changes,
 input changes and capture failures cannot publish late live results or restart
 the microphone. A running decode must clean up before Start is available again.
 Changing/disabling UTC assembly also disables live decoding. Time-setting/apply

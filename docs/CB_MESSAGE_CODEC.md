@@ -1,6 +1,6 @@
 # Offline CB message codec
 
-The **Messages** tab previews FT8 text packing without audio or radio access.
+The **Settings → Message tools** page previews FT8 text packing without audio or radio access.
 Automatic mode selects free text (0.0), standard messages (1), portable standard
 messages (2), or a full callsign plus a 12-bit hash (4). Explicit **Free text**
 mode always selects 0.0. The preview shows the encoded text and warns whenever
@@ -99,7 +99,7 @@ conflicts and test-device setup.
 
 Install the verified CI APK and unlock the test phone:
 
-1. Open **Messages**; `CQ 1AT106` should show the same encoded text.
+1. Open **Settings → Message tools**; `CQ 1AT106` should show the same encoded text.
 2. Enter `<1AT106> 26AT101 R-10`; verify the lost-report warning and preview.
 3. Enter `HELLO WORLD 123456789`; verify preview `HELLO WORLD 1` and a warning.
 4. Enter `<...> 26AT101`; verify explicit rejection.
