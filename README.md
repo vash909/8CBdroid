@@ -6,7 +6,7 @@ project documentation use English.
 
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
 and recorded-slot decoding are implemented, along with foreground microphone capture,
-NTP/GPS time correction, UTC slot assembly and live local decoding. Speaker output,
+NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. Speaker output,
 CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -16,7 +16,7 @@ The app cannot yet make a radio QSO.
 | --- | --- | --- |
 | **Station** | Save callsign/locator and NTP server preferences; synchronize app time with NTP/GPS; view LAN activity. | Operating frequency/profile and local RX/TX controls are placeholders. |
 | **Radio** | Discover USB interfaces and request access to recognized serial adapters. | No serial port, CAT connection, frequency command or PTT. |
-| **Audio** | Capture a selected microphone, inspect levels/processing, assemble UTC slots and decode local FT8 with Fast/Standard profiles; separately save audio or import/decode WAVs. | Live reception needs measured NTP/GPS time and the foreground. Latest 60 local frames; Stop clears local results/hash learning. No playback. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Audio** | Capture a selected microphone, inspect levels/processing and spectrum/waterfall, select RX/TX cursors, assemble UTC slots and decode local FT8 with Fast/Standard profiles; separately save audio or import/decode WAVs. | Live reception needs measured NTP/GPS time and the foreground. Latest 60 local frames and 96 waterfall rows at 2 Hz (about 48 s); Stop clears results/history/hash learning. Cursors do not tune or transmit. No playback. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **LAN** | Monitor WSJT-CB heartbeat/status and up to 200 live/replayed decodes; request Replay and clear the local list. | IPv4 unicast, one desktop, foreground only. No log import or TX commands. |
 | **Messages** | Preview CB packing/losses, simulate a hash-learning session, generate and export an offline FT8 WAV. | No audio output, radio transmission or automatic sequencing. |
 
@@ -67,6 +67,8 @@ and messages remain English. Ordinary WAV import/export requires no broad
 storage permission. The saved station and server preferences are persistent; measured time, hash sessions, decoded
 recordings and generated PCM are temporary. Exported documents remain in the
 chosen location.
+
+See [spectrum and waterfall](docs/SPECTRUM.md) for zoom, markers, cursor selection and measurement limits.
 
 ## Build from source
 

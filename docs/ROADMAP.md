@@ -214,7 +214,7 @@ server accepting IP/hostname, and timestamped complete microphone slots are impl
 The owner explicitly excluded manual offsets and an unsynchronized fallback.
 See [behavior and qualification boundaries](UTC_RECEIVE_SLOTS.md) and
 [device validation](VALIDATION.md#r11-time-synchronization-and-utc-capture).
-R12 connects these slots to live local decoding and is under development;
+R12 connects these slots to live local decoding and is complete in PR #28;
 its current behavior and acceptance checks are in [live reception](LIVE_RECEIVE.md).
 
 | ID / proposed PR title | Deliverable | Acceptance evidence / dependency |
@@ -227,7 +227,11 @@ its current behavior and acceptance checks are in [live reception](LIVE_RECEIVE.
 | R10 — Capture phone audio | Implement microphone permission, selected-device capture, levels/clipping, buffering and resampling to DSP PCM. Expose actual route and processing settings. | Recorded signal/reference-tone checks on a phone; permission denial, interruption and route-loss recovery. Does not yet transmit. |
 | R11 — Assemble UTC receive slots | Timestamp audio, assemble complete 15-second windows and handle missing samples, clock changes and drift. Use NTP or GPS/GNSS time correction, regional/custom NTP servers and no manual/system-clock fallback; never change Android time. | Deterministic clock/buffer tests and recordings across slot boundaries. Discard incomplete windows. Depends on R10. |
 | R12 — Display live local decodes | Complete in PR #28: capture, UTC slot assembly and decoder are connected; local results are separate from LAN/files and cannot return after Stop/restart. | A51 / Android 13 decoded desktop-generated CB audio acoustically; cache reset, permission retry, rotation, background and navigation passed. See validation. Depends on R08–R11. |
-| R13 — Add spectrum and waterfall controls | Display levels, spectrum and waterfall with decoded-signal markers, bounded history, zoom and RX/TX offset selection. Keep display work separate from DSP. | Frequency-axis checks with reference tones, usable controls and sustained rendering on the baseline phone. Depends on R10/R12. |
+| R13 — Add spectrum and waterfall controls | Complete in PR #29: 2 Hz microphone spectrum/waterfall, bounded history, zoom/pan, independent display-only RX/TX cursors and latest local decoded-frequency markers. | A51 / Android 13 passed physical two-tone frequency/rendering checks, acoustic FT8 with marker selection, actual controls, permissions and lifecycle recovery. See validation. Depends on R10/R12. |
+
+R13 is complete in [PR #29](https://github.com/vash909/8CBdroid/pull/29).
+The 96-row waterfall spans about 48 seconds at 2 Hz. RX/TX selections do not
+filter reception, tune a radio or transmit. See [the spectrum guide](SPECTRUM.md).
 
 **Receive milestone:** the phone independently receives CB FT8 from recorded and
 live audio with measured limitations. A LAN decode list alone does not satisfy it.

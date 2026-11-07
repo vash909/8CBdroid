@@ -26,6 +26,12 @@ import net.vash.ft8cbdroid.recording.RecordedSlotPanel
 import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePanel
+import net.vash.ft8cbdroid.core.audio.SpectrumView
+import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
+import net.vash.ft8cbdroid.audio.CaptureObservationHost
+import net.vash.ft8cbdroid.audio.CaptureObservations
+import net.vash.ft8cbdroid.audio.SpectrumHost
+import net.vash.ft8cbdroid.audio.SpectrumPanel
 import net.vash.ft8cbdroid.audio.LiveReceivePanel
 import net.vash.ft8cbdroid.message.MessagePreviewPanel
 import net.vash.ft8cbdroid.message.HashSessionViewModel
@@ -98,7 +104,7 @@ class MainActivity : ComponentActivity() {
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
-            val capture by captureViewModel.uiState.collectAsStateWithLifecycle()
+            val capture by captureViewModel.controls.collectAsStateWithLifecycle(initialValue = CaptureUiState())
             val time by timeViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(station.saved?.callsign) {
                 val call = station.saved?.callsign?.takeIf { it.isNotBlank() }
@@ -128,6 +134,8 @@ class MainActivity : ComponentActivity() {
                 onResetHashes = hashViewModel::reset,
                 recording = recording,
                 capture = capture,
+                captureObservations = { CaptureObservationHost(captureViewModel.uiState) },
+                spectrumContent = { SpectrumHost(captureViewModel.uiState, captureViewModel::spectrumView) },
                 time = time,
                 timeActions = TimeActions(timeViewModel::selectPreset, timeViewModel::changeCustom,
                     save = { captureViewModel.stop("Time settings changed. Restart capture explicitly.", clear = true); timeViewModel.save() },
@@ -139,6 +147,7 @@ class MainActivity : ComponentActivity() {
                 onAssembleUtc = captureViewModel::assembleUtc,
                 onDecodeLive = captureViewModel::decodeLive,
                 onLiveProfile = captureViewModel::liveProfile,
+                onSpectrumView = captureViewModel::spectrumView,
                 onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
                     val utc = captureViewModel.uiState.value.latestSlotUtcMillis
                     val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
@@ -215,6 +224,9 @@ fun EightCbApp(
     onAssembleUtc: (Boolean) -> Unit = {},
     onDecodeLive: (Boolean) -> Unit = {},
     onLiveProfile: (Ft8DecodeProfile) -> Unit = {},
+    onSpectrumView: (SpectrumView) -> Unit = {},
+    captureObservations: @Composable () -> Unit = { CaptureObservations(capture.metrics, capture.slots) },
+    spectrumContent: @Composable () -> Unit = { SpectrumPanel(capture.spectrum, capture.spectrumView, localSpectrumMarkers(capture.live.rows), onSpectrumView) },
     onSaveUtcSlot: () -> Unit = {},
     onSelectInput: (Int) -> Unit = {},
     onStartCapture: () -> Unit = {},
@@ -326,7 +338,8 @@ fun EightCbApp(
                         UsbPanel(usb, onRefreshUsb, onUsbPermission)
                     }
                     2 -> {
-                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile)
+                        CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture, onAssembleUtc, onSaveUtcSlot,
+                            onDecodeLive, onLiveProfile, visualization = spectrumContent, observations = captureObservations)
                         Text("UTC time: ${time.sourceDescription}")
                         if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
                         HorizontalDivider()

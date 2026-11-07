@@ -270,6 +270,48 @@ See [live reception](LIVE_RECEIVE.md) for reproduction and interpretation limits
 These checks establish acoustic foreground RX on this device, not RF/VOX, USB,
 speaker TX, calibrated weak-signal performance or a complete QSO.
 
+## R13 spectrum/waterfall (PR #29)
+
+Device: **Samsung Galaxy A51 / SM-A515F, Android 13**. The qualified app and
+instrumentation came from successful [CI run 42384811302](https://github.com/vash909/8CBdroid/actions/runs/42384811302),
+commit **`c4ab82cc8969765f767df60890f2d8fdbe43b2cc`**. Local checks and CI passed
+824 JVM tests (717 core, 32 WSJT-CB, 5 NTP, 70 app), lint, debug builds and the
+desktop reference check. Artifact digests and installed APK hashes matched;
+private settings were backed up and restored with the owner's reinstall approval.
+
+The physical spectrum helper used independent 700/1900 Hz tones from actual PC
+speakers into the built-in microphone, with the whole plot visible. It injected
+neither PCM nor analyzer results. Plain spectrum capture required no time sync.
+The owner selected a fixed **2 Hz** cadence; 96 rows span about 48 seconds.
+
+| Check | Observation |
+| --- | --- |
+| Sustained display | 242 analyzed windows in 120,971 ms; 96 retained rows, zero replaced windows, and progress at every one-second observation. |
+| Frequency axis | Peaks at 700.1953 and 1901.3672 Hz; both tones passed all 120 observations within the 6 Hz tolerance. |
+| Memory/work | PSS 155,359 KiB after a full-history warmup and 157,716 KiB at the end; maximum observed analysis 8,283 µs. |
+| Actual controls | RX/TX buttons, graph tap, zoom 1×/4×, band pan, independent cursors, navigation, Stop and explicit cold restart passed. |
+| Acoustic FT8 | NTP from `ntp.metas.ch`; received `CQ 1AT106` then `<1AT106> 26AT101`, selected the visible decoded-frequency marker into RX, and verified local-source text. Three complete slots; last decode 198 ms. |
+| Session cleanup | Stop cleared results/history/hash learning and left zero native calls. A directed fixture after restart decoded as `<...> 26AT101`. |
+| Separate UI checks | Real permission denial/grant retry, diagnostics expand/collapse, slider TX selection at 2220 Hz with RX unchanged, rotation, background/reopen and process recreation passed. |
+
+The separate UI sequence used CI run 42383372135 / commit
+`5bb1865baaf1239e68de57ffac9774e312c59f89`. Every unsigned app/engine APK entry
+matched the qualified build; the subsequent change affected instrumentation
+scrolling only, and both affected acoustic probes were repeated successfully.
+The spectrum, live FT8 and separate UI helpers finished in 140, 101 and 342
+seconds respectively. Final documentation-only CI APK identity and deployment
+are recorded in [PR #29](https://github.com/vash909/8CBdroid/pull/29).
+
+Process CPU during the two-minute spectrum check was 142,934 ms (about 1.18 CPU
+cores on average). Android graphics recorded 352 frames after warmup, p90 81 ms
+and 99.43% janky frames against Android's animation deadlines. These are debug
+build diagnostics: the acceptance checks establish regular 2 Hz updates and
+working controls, not 60 fps animation, battery efficiency or thermal endurance.
+Memory measurements are snapshots, not peak or long-session qualification.
+
+See [the spectrum guide](SPECTRUM.md) for reproduction, levels and display-only
+cursor limits. This milestone does not qualify speaker TX, RF, USB or a QSO.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive

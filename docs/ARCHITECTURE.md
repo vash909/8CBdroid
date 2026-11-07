@@ -160,3 +160,15 @@ R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots
 Acoustic VOX also needs speaker output, calibrated levels,
 lead/tail handling and tested radio hardware. PTT, scheduling, AutoSeq and
 background-service lifecycles remain separate implementations.
+
+## Microphone visualization
+
+`PcmMicrophoneCapture` exposes the same normalized 12 kHz stream used by UTC
+assembly, without requiring a clock mapping for plain visualization. Its reader
+callback only fills/copies windows. A JVM `SpectrumMonitor` owns one serial FFT
+worker, one replaceable pending window and 96 immutable history rows.
+`CaptureViewModel` cancels it with capture and rejects late publications.
+`SpectrumPanel` prepares color images on a display worker and draws matching
+history only; it cannot call hardware or FT8 DSP. `SpectrumView` owns temporary
+zoom/pan and independent RX/TX cursors; those values do not drive a radio or TX.
+See [spectrum limits and tests](SPECTRUM.md).

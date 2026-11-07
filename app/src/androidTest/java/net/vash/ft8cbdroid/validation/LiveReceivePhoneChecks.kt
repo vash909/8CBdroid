@@ -20,6 +20,8 @@ import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import net.vash.ft8cbdroid.time.TimeViewModel
 import org.json.JSONArray
 import org.json.JSONObject
+import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
+import kotlin.math.roundToInt
 
 /** Desktop fixtures must arrive acoustically through the microphone; no supplied PCM or decoder results. */
 class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
@@ -45,18 +47,18 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
     }
     private fun show(text: String) {
         val automation = instrumentation.uiAutomation
-        repeat(12) {
+        for (forward in listOf(true, false)) repeat(14) {
             if (android.os.Build.VERSION.SDK_INT >= 34) automation.clearCache() else automation.serviceInfo = automation.serviceInfo
             val root = requireNotNull(automation.rootInActiveWindow)
             val screen = Rect(); root.getBoundsInScreen(screen)
             val found = find(root, text); val bounds = Rect(); found?.getBoundsInScreen(bounds)
             if (found?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && Rect.intersects(screen, bounds)) return
-            val x = screen.centerX(); val start = screen.top + screen.height() * 3 / 4
-            val end = screen.top + screen.height() / 3
+            val x = screen.centerX(); val start = screen.centerY()
+            val end = start + if (forward) -screen.height() / 5 else screen.height() / 5
             ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(
-                "timeout 3 input touchscreen swipe $x $start $x $end 200"
+                "timeout 3 input touchscreen swipe $x $start $x $end 600"
             )).use { check(it.readBytes().isEmpty()) }
-            SystemClock.sleep(150)
+            SystemClock.sleep(250)
         }
         error("Live UI text is not visible: $text")
     }
@@ -99,6 +101,15 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
             check(first.metrics?.route?.input?.id == mic.id)
             check(first.live.rows.all { it.decode.slotStartUtc.epochSecond % 15 == 0L })
             check(messages().all { it in setOf("CQ 1AT106", "<1AT106> 26AT101") })
+            val markers = localSpectrumMarkers(first.live.rows)
+            check(first.spectrum.frames.isNotEmpty() && markers.isNotEmpty())
+            show("Yellow markers: latest local decoded slot ${java.time.Instant.ofEpochMilli(markers.first().utcMillis)}. Frequency indicators, not waterfall event times.")
+            val label = "Decode ${markers.first().frequencyHz.roundToInt()} Hz → RX"
+            show(label)
+            var markerButton = find(automation.rootInActiveWindow, label)
+            while (markerButton != null && !markerButton.isClickable) markerButton = markerButton.parent
+            check(requireNotNull(markerButton).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            check(main { audio.uiState.value.spectrumView.rxHz } == markers.first().frequencyHz.roundToInt().coerceIn(200, 2950))
             show("Live local decodes")
             show("Source: local microphone • Standard • latest 60 frames")
             show("<1AT106> 26AT101")
@@ -121,6 +132,7 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation) {
                 .put("cold_restart_messages", JSONArray(cold.rows.map { (it.decode.message as? UnpackResult.Decoded)?.message?.text }))
                 .put("stop_clears_results_and_hashes", true).put("actual_builtin_microphone", true)
                 .put("local_origin_and_message_visible_in_ui", true)
+                .put("decoded_marker_visible_and_selects_rx", true)
                 .put("native_calls_after_stop", NativeFt8Engine.workSnapshot().nativeCalls)
             File(context.cacheDir, "r12-live-report.json").writeText(report.toString(2))
             output.putString("live_report", report.toString()); output.putString("live_result", "PASS"); code = Activity.RESULT_OK
