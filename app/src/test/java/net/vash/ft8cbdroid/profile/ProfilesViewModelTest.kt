@@ -36,9 +36,9 @@ class ProfilesViewModelTest {
         }
     }
     private class Runtime : ProfileRuntime {
-        val events = mutableListOf<String>(); var cleanup: CompletableDeferred<Unit>? = null; var fail = false
-        override suspend fun stop() { events += "stop"; cleanup?.await(); if (fail) error("stop failed") }
-        override suspend fun configure(profile: OperatingProfile) { events += "configure:${profile.name}" }
+        val events = mutableListOf<String>(); var cleanup: CompletableDeferred<Unit>? = null; var fail = false; var failConfigure = false; var timeout = false
+        override suspend fun stop() { events += "stop"; if (timeout) withTimeout(1) { delay(10) }; cleanup?.await(); if (fail) error("stop failed") }
+        override suspend fun configure(profile: OperatingProfile) { events += "configure:${profile.name}"; if (failConfigure) error("configuration failed") }
     }
     private class Catalog : RadioCatalog {
         var fail = false
@@ -96,6 +96,20 @@ class ProfilesViewModelTest {
         runtime.fail = true; vm.apply(); runCurrent()
         assertFalse(vm.uiState.value.ready); assertEquals(listOf("stop","configure:Default","stop"),runtime.events)
         runtime.fail = false; vm.apply(); runCurrent(); assertTrue(vm.uiState.value.ready)
+    }
+    @Test fun runtimeConfigurationFailureReportsThePersistedSelectionAndKeepsOperationBlocked() = runTest(dispatcher) {
+        val repo = Repository().apply { value = value.save(OperatingProfile("lan","Desktop",ConnectionMode.WSJT_CB_LAN)) }
+        val runtime = Runtime(); val vm = vm(repo,runtime); runCurrent()
+        vm.select("lan"); runtime.failConfigure = true; vm.apply(); runCurrent()
+        assertEquals("lan",repo.value.activeId); assertEquals("lan",vm.uiState.value.saved!!.activeId)
+        assertFalse(vm.uiState.value.ready); assertNotNull(vm.uiState.value.error)
+        runtime.failConfigure = false; vm.apply(); runCurrent(); assertTrue(vm.uiState.value.ready)
+    }
+    @Test fun runtimeCleanupDeadlineReportsAFailureAndAllowsExplicitRetry() = runTest(dispatcher) {
+        val runtime = Runtime(); val vm = vm(Repository(),runtime); runCurrent()
+        runtime.timeout = true; vm.apply(); advanceUntilIdle()
+        assertFalse(vm.uiState.value.ready); assertFalse(vm.uiState.value.busy); assertNotNull(vm.uiState.value.error)
+        runtime.timeout = false; vm.apply(); runCurrent(); assertTrue(vm.uiState.value.ready)
     }
     @Test fun discardAndDeleteProtectTheSavedAndActiveProfiles() = runTest(dispatcher) {
         val repo = Repository(); val runtime = Runtime(); val vm = vm(repo,runtime); runCurrent()

@@ -101,6 +101,7 @@ class ProfilesViewModel(private val repository: ProfileRepository, private val r
             runtime.stop()
             validateModel(profile)
             val saved = repository.activate(profile.id)
+            state.value = state.value.copy(saved = saved)
             runtime.configure(profile)
             state.value = state.value.copy(saved = saved, applied = profile, revision = state.value.revision + 1, receiveLan = profile.mode == ConnectionMode.WSJT_CB_LAN,
                 notice = "Profile applied. Synchronize time and start reception explicitly; TX is off.")
@@ -138,6 +139,7 @@ class ProfilesViewModel(private val repository: ProfileRepository, private val r
         state.value = state.value.copy(busy = true, error = null, notice = null)
         job = viewModelScope.launch {
             try { action() }
+            catch (_: kotlinx.coroutines.TimeoutCancellationException) { state.value = state.value.copy(error = failure) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (error: IllegalArgumentException) { state.value = state.value.copy(error = error.message ?: failure) }
             catch (_: Exception) { state.value = state.value.copy(error = failure) }

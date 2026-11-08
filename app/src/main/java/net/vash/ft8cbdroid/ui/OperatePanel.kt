@@ -89,7 +89,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                         Text("MHz / ${if (source == OperatingSource.LOCAL) "FT8" else lan.connection.status?.mode?.ifBlank { "—" } ?: "—"}",
                             Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                     }
-                    Text(if (source == OperatingSource.LOCAL) "REFERENCE DIAL · 11 METRES" else "DESKTOP DIAL · READ ONLY",
+                    Text(if (source == OperatingSource.LOCAL) "PROFILE REFERENCE DIAL" else "DESKTOP DIAL · READ ONLY",
                         style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                 }
                 Column(horizontalAlignment = Alignment.End) {
