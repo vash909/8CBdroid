@@ -142,7 +142,7 @@ The source-built Hamlib/JNI catalog is included, but is not connected to the
 Java USB transport. That bridge remains separate work behind `RadioController`;
 no physical CAT operation is enabled. CAT and USB audio are separate capabilities. See [USB scope and verification](USB_CAT.md).
 
-## Microphone input and future playback/VOX
+## Microphone input and bench audio preview
 
 `MicrophoneCapture` is the core input boundary; `AndroidMicrophoneCapture` in the
 Android `audio` module owns the recorder, effect handles, device callbacks and
@@ -168,8 +168,13 @@ cancel the decoder and clear its results/cache; restart waits for cleanup.
 LAN, recorded files and message previews cannot populate the live session.
 See [live reception](LIVE_RECEIVE.md).
 
+`AudioPreview` is a separate core boundary implemented by `AndroidAudioPreview`.
+It plays one immutable generated slot through an explicitly selected phone speaker,
+with bounded writes, focus/route checks and cancellation cleanup. The ViewModel
+waits for receive cleanup before playback. See [audio preview](AUDIO_PREVIEW.md).
+
 R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots.
-Acoustic VOX also needs speaker output, calibrated levels,
+Acoustic radio VOX still needs calibrated output levels,
 lead/tail handling and tested radio hardware. PTT, scheduling, AutoSeq and
 background-service lifecycles remain separate implementations.
 

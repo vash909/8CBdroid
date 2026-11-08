@@ -5,7 +5,8 @@ The **Settings → Microphone tools** panel captures mono PCM16 through Android
 Optional [UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
 NTP/GPS sync and retains complete slots. [Live reception](LIVE_RECEIVE.md)
 optionally decodes those slots in a separate bounded worker. Capture does not
-play audio or operate PTT; audio output and acoustic VOX are unimplemented.
+play audio or operate PTT. Generated PCM has a separate [bench speaker preview](AUDIO_PREVIEW.md);
+radio VOX and live TX remain unimplemented.
 
 ## Start, stop and permission
 

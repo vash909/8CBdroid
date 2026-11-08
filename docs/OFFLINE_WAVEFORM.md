@@ -111,3 +111,10 @@ This is a reusable checklist, not a claim that every step passed. Check the
 6. Change inputs after generation, cancel generation/picker, retry a failed save,
    rotate and reopen the app. Verify stale output cannot be saved as a new request,
    station settings persist, and all controls remain English.
+
+
+## Listen on the phone
+
+Generated PCM can also be played through an explicitly selected phone speaker.
+See [audio preview](AUDIO_PREVIEW.md) for gain, extra edge ramps, cancellation
+and focus/route handling. Generating or exporting a file never starts playback.

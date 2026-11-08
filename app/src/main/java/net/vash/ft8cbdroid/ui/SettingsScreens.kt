@@ -108,7 +108,7 @@ fun AudioSourceSettings(source: OperatingSource, capture: CaptureUiState, onSour
     Text("Audio output", style = MaterialTheme.typography.titleMedium)
     OutlinedTextField(value = "Phone speaker / USB output", onValueChange = {}, enabled = false,
         label = { Text("Transmit audio") }, modifier = Modifier.fillMaxWidth())
-    Text("Output selection and audio transmission are not available yet.", style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
+    Text("Live transmit output is unavailable. Message tools offers an explicit phone-speaker preview.", style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
 }
 
 @Composable

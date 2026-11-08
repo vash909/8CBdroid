@@ -8,9 +8,10 @@ import net.vash.ft8cbdroid.core.profile.OperatingProfile
 
 /** Holds backend owners, never an Activity or Compose state. No radio open/PTT path exists yet. */
 class AndroidProfileRuntime(private val capture: CaptureViewModel, private val lan: LanViewModel,
-    private val time: TimeViewModel) : ProfileRuntime {
+    private val time: TimeViewModel, private val waveform: net.vash.ft8cbdroid.message.WaveformViewModel) : ProfileRuntime {
     override suspend fun stop() {
         withTimeout(15_000) {
+            waveform.stopForProfile()
             capture.stopForProfile()
             lan.stopForProfile()
             time.resetForProfile()

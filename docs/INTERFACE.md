@@ -26,7 +26,7 @@ system language. No connection or microphone session starts on launch.
 - **TX OFF** and disabled **Enable TX** accurately show the current boundary.
   Even/Odd and the custom-message field are UI drafts only: no message is queued,
   encoded, played or marked as sent. Unvalidated custom text is not a claim of
-  FT8 encodability. Audio output, TX scheduling, CAT/PTT and AutoSeq remain absent.
+  FT8 encodability. Live audio TX, scheduling, CAT/PTT and AutoSeq remain absent; Message tools has a separate [bench speaker preview](AUDIO_PREVIEW.md).
 
 The message list scrolls independently. On short windows, including an open
 keyboard, the operating page scrolls so its controls remain reachable.
@@ -42,7 +42,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | WSJT-CB LAN | Desktop filter, UDP port, status, Replay and detailed decode history. |
 | USB / CAT | Explicit Hamlib catalog/search/details and software-only Dummy check, plus descriptor/driver discovery and Android permissions; no hardware CAT commands. |
 | Microphone tools | Full spectrum controls, input diagnostics, UTC options and recent/complete-slot WAV export. |
-| Message tools | Existing codec previews, hash simulation and offline WAV generation/export. |
+| Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview. |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |
 
 Moving between Operate and Microphone tools preserves the same receiver.

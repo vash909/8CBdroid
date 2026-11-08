@@ -99,13 +99,17 @@ class MainActivity : ComponentActivity() {
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
         val hamlibViewModel = ViewModelProvider(this)[HamlibViewModel::class.java]
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
-        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver))[WaveformViewModel::class.java]
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
         timeViewModel = ViewModelProvider(this, TimeViewModel.factory(applicationContext))[TimeViewModel::class.java]
         captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
+        val previewCapture = captureViewModel
+        val previewLan = lanViewModel
+        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver, applicationContext) {
+            previewCapture.stopForProfile(); previewLan.stopForProfile()
+        })[WaveformViewModel::class.java]
         val profilesViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
-                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
+                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel, waveformViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
         })[ProfilesViewModel::class.java]
         setContent {
             val profiles by profilesViewModel.uiState.collectAsStateWithLifecycle()
@@ -200,12 +204,18 @@ class MainActivity : ComponentActivity() {
                 onWaveformConsent = waveformViewModel::acceptChanges,
                 onGenerateWaveform = waveformViewModel::generate,
                 onCancelWaveform = waveformViewModel::cancel,
+                onPreviewOutput = waveformViewModel::selectOutput,
+                onPreviewGain = waveformViewModel::previewGain,
+                onPreviewRamp = waveformViewModel::previewRamp,
+                onPlayPreview = waveformViewModel::playPreview,
+                onStopPreview = { waveformViewModel.stopPreview() },
                 onSaveWaveform = { if (waveformViewModel.prepareExport()) wavDestination.launch("8CBdroid-FT8.wav") },
             )
         }
     }
 
     override fun onStop() {
+        waveformViewModel.stopPreview("Preview stopped because the app left the foreground.")
         timeViewModel.cancel()
         captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.",
             clear = !captureViewModel.isChoosingDocument)
@@ -274,11 +284,17 @@ fun EightCbApp(
     onGenerateWaveform: (String, EncodingMode) -> Unit = { _, _ -> },
     onCancelWaveform: () -> Unit = {},
     onSaveWaveform: () -> Unit = {},
+    onPreviewOutput: (Int?) -> Unit = {},
+    onPreviewGain: (String) -> Unit = {},
+    onPreviewRamp: (String) -> Unit = {},
+    onPlayPreview: () -> Unit = {},
+    onStopPreview: () -> Unit = {},
 ) {
     var destination by rememberSaveable { mutableStateOf(AppDestination.OPERATE) }
     val source = if (profiles.receiveLan) OperatingSource.LAN else OperatingSource.LOCAL
     val pageStates = rememberSaveableStateHolder()
     fun navigate(next: AppDestination) {
+        if (destination == AppDestination.MESSAGES && next != destination) onStopPreview()
         if (stopsLocalReception(destination, next)) onLeaveAudio()
         if (next == AppDestination.CHAT) onStopLan()
         destination = next
@@ -342,7 +358,8 @@ fun EightCbApp(
                             }
                             AppDestination.MESSAGES -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
                                 waveform, onWaveformInput, onWaveformFrequency, onWaveformLevel, onWaveformConsent,
-                                onGenerateWaveform, onCancelWaveform, onSaveWaveform)
+                                onGenerateWaveform, onCancelWaveform, onSaveWaveform,
+                                onPreviewOutput, onPreviewGain, onPreviewRamp, onPlayPreview, onStopPreview)
                             AppDestination.RECORDINGS -> RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile,
                                 onImportRecording, onCancelRecording, onClearRecording)
                             else -> Unit
