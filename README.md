@@ -7,7 +7,7 @@ project documentation use English.
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
 and recorded-slot decoding are implemented, along with foreground microphone capture,
 NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
-software-only Dummy check are available. Speaker output,
+software-only Dummy check and persistent operating profiles are available. Speaker output,
 CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -16,7 +16,7 @@ The app cannot yet make a radio QSO.
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
 | **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX audio cursors, Start RX/Stop and plain audio Monitor. | Local RX requires measured NTP/GPS time. Sent is empty; Enable TX is disabled. Period and custom-message edits are drafts, not scheduled transmissions. LAN carries desktop messages, not waterfall audio. |
-| **Settings** | Station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, audio output or USB hardware qualification. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, audio output or USB hardware qualification. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
@@ -33,7 +33,10 @@ that run and install it on a compatible Android phone. See
 [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone) for ADB
 commands and debug-signature limitations.
 
-1. In **Settings → Station**, save a complete CB callsign and a 4- or 6-character locator,
+1. In **Settings → Operating profiles**, optionally save and apply a named setup.
+   Applying stops reception and clears time correction; nothing connects automatically.
+   [Operating profiles](docs/OPERATING_PROFILES.md) explains CAT/audio/LAN fields and limits.
+   In **Settings → Station**, save a complete CB callsign and a 4- or 6-character locator,
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
 2. In **Settings → Message tools**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
    then save it through Android's document picker. Content changes require consent.
@@ -65,7 +68,7 @@ commands and debug-signature limitations.
 
 Android's system document picker can use the phone's own language. App controls
 and messages remain English. Ordinary WAV import/export requires no broad
-storage permission. The saved station and server preferences are persistent; measured time, hash sessions, decoded
+storage permission. Saved operating profiles, station identity and server preferences are persistent; measured time, hash sessions, decoded
 recordings and generated PCM are temporary. Exported documents remain in the
 chosen location.
 

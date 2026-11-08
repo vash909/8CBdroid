@@ -52,6 +52,15 @@ class TimeViewModelTest {
         vm.measureNtp(); runCurrent(); assertEquals("NTP", vm.uiState.value.busy)
         vm.cancel(); runCurrent(); assertNull(vm.uiState.value.busy); assertNull(vm.uiState.value.measurement)
     }
+    @Test fun profileSwitchInvalidatesCorrectionMeasurementAndPendingGpsPermission() = runTest(dispatcher) {
+        val clock = ReceiveClock(TimeSource { now })
+        val vm = TimeViewModel(Repository(), NtpClient { sample() }, GpsTimeClient { sample() }, clock, false); runCurrent()
+        vm.measureNtp(); runCurrent(); vm.applyMeasurement(); assertEquals("NTP: test",clock.snapshot().source)
+        vm.requestGps(false); vm.resetForProfile(); vm.gpsPermissionResult(true); runCurrent()
+        assertNull(vm.uiState.value.measurement); assertNull(vm.uiState.value.busy)
+        assertFalse(vm.uiState.value.awaitingGpsPermission); assertFalse(vm.uiState.value.canApply)
+        assertTrue(runCatching { clock.snapshot() }.isFailure)
+    }
     @Test fun gpsDoesNotDependOnAValidNtpDraftOrInternet() = runTest(dispatcher) {
         val clock = ReceiveClock(TimeSource { now })
         val vm = TimeViewModel(Repository(), NtpClient { error("GPS must not call NTP") },

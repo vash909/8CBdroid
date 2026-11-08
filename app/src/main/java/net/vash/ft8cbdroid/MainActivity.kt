@@ -1,6 +1,9 @@
 package net.vash.ft8cbdroid
 
+import net.vash.ft8cbdroid.profile.*
 import net.vash.ft8cbdroid.time.*
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import net.vash.ft8cbdroid.radio.*
 import android.os.Bundle
 import android.Manifest
@@ -100,7 +103,12 @@ class MainActivity : ComponentActivity() {
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
         timeViewModel = ViewModelProvider(this, TimeViewModel.factory(applicationContext))[TimeViewModel::class.java]
         captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
+        val profilesViewModel = ViewModelProvider(this, viewModelFactory {
+            initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
+                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
+        })[ProfilesViewModel::class.java]
         setContent {
+            val profiles by profilesViewModel.uiState.collectAsStateWithLifecycle()
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val hamlib by hamlibViewModel.uiState.collectAsStateWithLifecycle()
             val station by stationViewModel.uiState.collectAsStateWithLifecycle()
@@ -118,6 +126,12 @@ class MainActivity : ComponentActivity() {
             }
             EightCbApp(
                 station = station,
+                profiles = profiles,
+                onSourceChange = { profilesViewModel.temporarySource(it == OperatingSource.LAN) },
+                profilesContent = { ProfilesPanel(profiles, profilesViewModel::edit, profilesViewModel::select,
+                    profilesViewModel::newProfile, profilesViewModel::discard, profilesViewModel::save,
+                    profilesViewModel::apply, profilesViewModel::delete, profilesViewModel::load,
+                    profilesViewModel::loadModels, profilesViewModel::query, profilesViewModel::chooseModel) },
                 usb = usb,
                 hamlib = hamlib,
                 onLoadHamlib = hamlibViewModel::load,
@@ -130,7 +144,7 @@ class MainActivity : ComponentActivity() {
                 lan = lan,
                 onLanPortChange = lanViewModel::changePort,
                 onLanAddressChange = lanViewModel::changeAddress,
-                onStartLan = lanViewModel::start,
+                onStartLan = { if (profilesViewModel.uiState.value.ready) lanViewModel.start() },
                 onStopLan = lanViewModel::stop,
                 onReplayLan = lanViewModel::requestReplay,
                 onClearLan = lanViewModel::clearDecodes,
@@ -166,7 +180,7 @@ class MainActivity : ComponentActivity() {
                 } },
                 onSelectInput = captureViewModel::select,
                 onStartCapture = {
-                    if (captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
+                    if (profilesViewModel.uiState.value.ready && captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
                         microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
                 },
                 onStopCapture = { captureViewModel.stop() },
@@ -203,6 +217,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EightCbApp(
     station: StationSettingsUiState,
+    profiles: ProfilesUiState = ProfilesUiState(),
+    profilesContent: @Composable () -> Unit = {},
+    onSourceChange: (OperatingSource) -> Unit = {},
     lan: LanUiState = LanUiState(),
     usb: UsbInventoryState = UsbInventoryState(),
     hamlib: HamlibUiState = HamlibUiState(),
@@ -259,7 +276,7 @@ fun EightCbApp(
     onSaveWaveform: () -> Unit = {},
 ) {
     var destination by rememberSaveable { mutableStateOf(AppDestination.OPERATE) }
-    var source by rememberSaveable { mutableStateOf(OperatingSource.LOCAL) }
+    val source = if (profiles.receiveLan) OperatingSource.LAN else OperatingSource.LOCAL
     val pageStates = rememberSaveableStateHolder()
     fun navigate(next: AppDestination) {
         if (stopsLocalReception(destination, next)) onLeaveAudio()
@@ -292,7 +309,9 @@ fun EightCbApp(
                             }
                         }, onMonitor = { onDecodeLive(false); onAssembleUtc(false); onStartCapture() },
                         onStop = { if (source == OperatingSource.LAN) onStopLan() else onStopCapture() },
-                        onView = onSpectrumView, spectrum = compactSpectrumContent)
+                        onView = onSpectrumView, spectrum = compactSpectrumContent,
+                        profileName = profiles.applied?.name, referenceFrequencyHz = profiles.applied?.referenceFrequencyHz ?: 27_265_000L,
+                        profileReady = profiles.ready)
                     AppDestination.CHAT -> ChatPlaceholder()
                     else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -301,20 +320,21 @@ fun EightCbApp(
                         Text(destination.title, style = MaterialTheme.typography.headlineLarge)
                         when (destination) {
                             AppDestination.SETTINGS -> SettingsMenu(::navigate)
+                            AppDestination.PROFILES -> profilesContent()
                             AppDestination.STATION -> StationSettingsPanel(station, onCallsignChange, onGridChange, onSaveStation, onRetryLoad)
                             AppDestination.TIME -> TimePanel(time, timeActions)
                             AppDestination.AUDIO -> AudioSourceSettings(source, capture,
                                 onSource = { next ->
-                                    if (next != source) { onLeaveAudio(); onStopLan(); source = next }
+                                    if (next != source) { onLeaveAudio(); onStopLan(); onSourceChange(next) }
                                 }, onSelectInput, onLiveProfile, ::navigate)
-                            AppDestination.LAN -> LanPanel(lan, onLanPortChange, onLanAddressChange,
+                            AppDestination.LAN -> LanPanel(lan.copy(busy = lan.busy || !profiles.ready), onLanPortChange, onLanAddressChange,
                                 onStartLan, onStopLan, onReplayLan, onClearLan)
                             AppDestination.USB -> {
                                 HamlibPanel(hamlib, onLoadHamlib, onHamlibQuery, onHamlibSelect, onHamlibDummy, onCancelHamlib)
                                 UsbPanel(usb, onRefreshUsb, onUsbPermission)
                             }
                             AppDestination.CAPTURE -> {
-                                CapturePanel(capture, onSelectInput, onStartCapture, onStopCapture, onSaveCapture,
+                                CapturePanel(if (profiles.ready) capture else capture.copy(selectedId = null), onSelectInput, onStartCapture, onStopCapture, onSaveCapture,
                                     onAssembleUtc, onSaveUtcSlot, onDecodeLive, onLiveProfile,
                                     visualization = spectrumContent, observations = captureObservations)
                                 Text("UTC time: ${time.sourceDescription}")

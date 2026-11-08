@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import net.vash.ft8cbdroid.core.audio.*
@@ -66,6 +67,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     private var slotExport = false
     val isChoosingDocument get() = pendingExport != null
     private var latestSlot: CompletedUtcSlot? = null
+    private var preferredKind: AudioInputKind? = null
     fun assembleUtc(enabled: Boolean) {
         if (!state.value.canConfigure || clock == null) return
         latestSlot = null
@@ -92,12 +94,15 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     init {
         viewModelScope.launch {
             capture.inputs.collect { inputs ->
-                state.value = state.value.copy(inputs = inputs, selectedId = state.value.selectedId ?: inputs.firstOrNull()?.id)
+                state.value = state.value.copy(inputs = inputs, selectedId = preferredKind?.let { kind ->
+                    inputs.find { it.id == state.value.selectedId && it.kind == kind }?.id ?: inputs.firstOrNull { it.kind == kind }?.id
+                } ?: state.value.selectedId.takeIf { preferredKind == null } ?: inputs.firstOrNull().takeIf { preferredKind == null }?.id)
             }
         }
     }
     fun select(id: Int) {
         if (!state.value.canConfigure || state.value.inputs.none { it.id == id } || state.value.selectedId == id) return
+        preferredKind = state.value.inputs.first { it.id == id }.kind.takeUnless { it == AudioInputKind.UNKNOWN }
         capture.clear(); pendingExport = null; latestSlot = null
         state.value = state.value.copy(selectedId = id, metrics = null, slots = null, latestSlotUtcMillis = null,
             live = LiveReceiveState(), spectrum = SpectrumState(), error = null, notice = null)
@@ -226,6 +231,26 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             state.value = state.value.copy(metrics = state.value.metrics.takeUnless { clear },
                 slots = state.value.slots.takeUnless { clear }, latestSlotUtcMillis = latestSlot?.utcStartMillis, notice = reason.takeIf { wasPending } ?: state.value.notice)
         }
+    }
+    /** Join actual hardware cleanup before replacing a profile's route. Never opens the input. */
+    suspend fun stopForProfile() {
+        val previous = job
+        stop("Profile changed. Restart reception explicitly.", clear = true)
+        pendingExport = null
+        previous?.join()
+        // Completion is posted to Main; wait for it rather than exposing a partially stopped input.
+        uiState.first { it.phase == CapturePhase.IDLE }
+    }
+    fun configureProfile(profile: net.vash.ft8cbdroid.core.profile.OperatingProfile) {
+        check(state.value.phase == CapturePhase.IDLE && !state.value.awaitingPermission)
+        preferredKind = when (profile.audioInput) {
+            net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.PHONE -> AudioInputKind.PHONE
+            net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.USB -> AudioInputKind.USB
+            net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.WIRED -> AudioInputKind.WIRED
+        }
+        state.value = state.value.copy(selectedId = state.value.inputs.firstOrNull { it.kind == preferredKind }?.id,
+            liveProfile = profile.decoder, error = null,
+            notice = "${profile.audioInput.label} input preferred. Start reception explicitly.")
     }
     fun prepareExport(): Boolean {
         if (!state.value.canExport) return false

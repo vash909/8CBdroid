@@ -6,8 +6,8 @@ system language. No connection or microphone session starts on launch.
 
 ## Operate
 
-- Station identity and the reference dial appear at the top. **27.265 MHz** is
-  the CB profile's reference, not a measured radio frequency. With LAN selected,
+- The applied operating profile, station identity and reference dial appear at the top.
+  The saved local reference defaults to **27.265 MHz**; it is not a measured radio frequency. With LAN selected,
   the dial comes from desktop status and is explicitly read-only.
 - The compact local spectrum/waterfall uses the existing 2 Hz analyzer and
   96-row history. **Expand ↗** opens the full monitor. LAN supplies no waterfall
@@ -35,6 +35,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 
 | Page | Contents |
 | --- | --- |
+| Operating profiles | Named radio/audio/LAN setups, save/apply, validation, discard/delete and disconnected startup. See [profiles](OPERATING_PROFILES.md). |
 | Station | Persistent callsign and Maidenhead locator. |
 | Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; output selection remains unavailable. |
 | Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |
@@ -50,9 +51,10 @@ Switching source stops both receivers. Rotation/background still stop local
 capture and discard transient audio/results. Chat also stops the LAN listener;
 ordinary settings navigation preserves a foreground LAN connection.
 
-Station and NTP server preferences retain their existing persistence. Source,
-period and custom-message choices survive navigation/rotation within the saved
-UI session; they are not durable station settings and default when no saved UI state is restored.
+Station and NTP server preferences retain their existing persistence. Operating
+profiles persist separately. Temporary source choices survive navigation/rotation
+in the current process; reopening restores the active saved profile. Period and
+custom-message choices remain UI drafts and can survive restored UI state.
 No TX state is restored or armed.
 
 ## Chat

@@ -3,7 +3,7 @@ package net.vash.ft8cbdroid.ui
 /** Presentation routes only. Receiver ownership remains in the existing ViewModels. */
 enum class AppDestination(val title: String) {
     OPERATE("Operate"), SETTINGS("Settings"), CHAT("Chat"),
-    STATION("Station"), AUDIO("Audio & source"), TIME("Time synchronization"),
+    PROFILES("Operating profiles"), STATION("Station"), AUDIO("Audio & source"), TIME("Time synchronization"),
     LAN("WSJT-CB LAN"), USB("USB / CAT"), CAPTURE("Microphone tools"),
     MESSAGES("Message tools"), RECORDINGS("Recorded audio");
     val showsReceiver get() = this == OPERATE || this == CAPTURE
