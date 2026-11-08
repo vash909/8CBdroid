@@ -11,11 +11,16 @@ import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.vash.ft8cbdroid.core.audio.*
+import net.vash.ft8cbdroid.core.Ft8PcmSlot
+import net.vash.ft8cbdroid.audio.AndroidAudioPreview
 import net.vash.ft8cbdroid.core.Ft8Engine
 import net.vash.ft8cbdroid.core.Ft8EngineBusyException
 import net.vash.ft8cbdroid.core.Ft8EngineTimeoutException
@@ -31,9 +36,20 @@ data class WaveformUiState(
     val isChoosingDestination: Boolean = false,
     val isSaving: Boolean = false,
     val summary: WaveformSummary? = null,
+    val outputs: List<PreviewOutput> = emptyList(),
+    val outputId: Int? = null,
+    val previewGain: String = "100",
+    val previewRamp: String = "20",
+    val isPlaying: Boolean = false,
+    val playback: PreviewReport? = null,
     val error: String? = null,
     val notice: String? = null,
 ) {
+    val previewValidation get() = runCatching { previewSettings() }.exceptionOrNull()?.message
+    fun previewSettings() = PreviewSettings(previewGain.toIntOrNull() ?: throw IllegalArgumentException("Enter a preview gain in percent."),
+        previewRamp.toIntOrNull() ?: throw IllegalArgumentException("Enter a preview ramp in milliseconds."))
+    val canPlay get() = summary != null && !isGenerating && !isChoosingDestination && !isSaving && !isPlaying &&
+        outputs.any { it.id == outputId } && previewValidation == null
     val canSave: Boolean get() = summary != null && !isGenerating && !isChoosingDestination && !isSaving
 }
 
@@ -46,11 +62,13 @@ class DocumentWaveformExporter(private val resolver: ContentResolver) : Waveform
     }
 }
 
-/** Owns one replaceable offline generation and immutable export snapshots. No device audio. */
+/** Owns one replaceable offline generation and immutable export snapshots. Audio preview is explicit and owns its own cancellable device session. */
 class WaveformViewModel(
     engine: Ft8Engine,
     private val exporter: WaveformExporter,
     private val worker: CoroutineDispatcher = Dispatchers.Default,
+    private val preview: AudioPreview? = null,
+    private val preparePreview: suspend () -> Unit = {},
 ) : ViewModel() {
     private val generator = OfflineFt8Generator(engine)
     private val state = MutableStateFlow(WaveformUiState())
@@ -59,6 +77,71 @@ class WaveformViewModel(
     private var version = 0L
     private var job: Job? = null
     private var wav: ByteArray? = null
+    private var pcm: Ft8PcmSlot? = null
+    private var playbackJob: Job? = null
+    @Volatile private var playbackVersion = 0L
+    init {
+        preview?.let { player -> viewModelScope.launch {
+            player.outputs.collect { outputs ->
+                if (state.value.outputId != null && outputs.none { it.id == state.value.outputId }) stopPreview("Selected output disappeared. Select it again.")
+                state.value = state.value.copy(outputs = outputs, outputId = state.value.outputId?.takeIf { id -> outputs.any { it.id == id } })
+            }
+        } }
+    }
+    fun selectOutput(id: Int?) {
+        if (id != null && state.value.outputs.none { it.id == id }) return
+        if (state.value.outputId != id) {
+            stopPreview("Output selection changed. Restart preview explicitly.")
+            state.value = state.value.copy(outputId = id, playback = null)
+        }
+    }
+    fun previewGain(value: String) {
+        stopPreview("Preview settings changed."); state.value = state.value.copy(previewGain = value.take(4))
+    }
+    fun previewRamp(value: String) {
+        stopPreview("Preview settings changed."); state.value = state.value.copy(previewRamp = value.take(4))
+    }
+    fun playPreview() {
+        val player = preview ?: return
+        if (!state.value.canPlay) return
+        val slot = pcm ?: return
+        val id = state.value.outputId ?: return
+        val settings = state.value.previewSettings()
+        val ticket = ++playbackVersion
+        state.value = state.value.copy(isPlaying = true, playback = null, error = null, notice = null)
+        val next = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+            try {
+                kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                player.play(slot, id, settings) { report ->
+                    state.update { if (ticket == playbackVersion && it.isPlaying) it.copy(playback = report) else it }
+                }
+                state.value = state.value.copy(notice = "Preview completed. No transmission was scheduled.")
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                state.value = state.value.copy(error = "Receive cleanup timed out. Stop reception and retry the preview.")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: PreviewException) { state.value = state.value.copy(error = error.message) }
+            catch (_: Exception) { state.value = state.value.copy(error = "Could not play the preview. Select the output and retry.") }
+        }
+        playbackJob = next
+        next.invokeOnCompletion { viewModelScope.launch(Dispatchers.Main.immediate) {
+            if (playbackJob === next) { playbackJob = null; state.value = state.value.copy(isPlaying = false) }
+        } }
+        next.start()
+    }
+    fun stopPreview(reason: String = "Preview stopped.") {
+        if (playbackJob != null) {
+            playbackVersion++
+            state.value = state.value.copy(notice = reason)
+            playbackJob?.cancel()
+        }
+    }
+    suspend fun stopForProfile() {
+        stopPreview("Profile changed. Select the output and restart explicitly.")
+        playbackJob?.join()
+        state.value = state.value.copy(outputId = null, playback = null)
+    }
+
     private var pendingExport: Pair<Long, ByteArray>? = null
 
     fun changeInput(text: String, mode: EncodingMode) {
@@ -90,6 +173,8 @@ class WaveformViewModel(
     }
 
     private fun invalidate() {
+        stopPreview("Waveform changed. Generate and preview again explicitly.")
+        pcm = null
         version++
         job?.cancel()
         job = null
@@ -110,6 +195,8 @@ class WaveformViewModel(
             state.value = state.value.copy(error = error.message)
             return
         }
+        stopPreview("Waveform generation requested. Restart preview explicitly.")
+        pcm = null
         val ticket = ++version
         val consent = state.value.acceptContentChanges
         wav = null
@@ -130,6 +217,7 @@ class WaveformViewModel(
                         error = "Confirm the encoded message before generating: ${result.encodedText}")
                     is WaveformGenerationResult.Generated -> {
                         wav = requireNotNull(prepared.second)
+                        pcm = result.waveform.pcm
                         state.value = state.value.copy(summary = WaveformSummary(result.waveform.message.transmittedText,
                             settings.audioFrequencyHz, settings.peakAmplitude * 100, requireNotNull(prepared.third)))
                     }
@@ -180,9 +268,11 @@ class WaveformViewModel(
         }
     }
 
+    override fun onCleared() { playbackJob?.cancel(); preview?.close() }
+
     companion object {
-        fun factory(resolver: ContentResolver) = viewModelFactory {
-            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver)) }
+        fun factory(resolver: ContentResolver, context: android.content.Context, preparePreview: suspend () -> Unit) = viewModelFactory {
+            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver), preview = AndroidAudioPreview(context), preparePreview = preparePreview) }
         }
     }
 }

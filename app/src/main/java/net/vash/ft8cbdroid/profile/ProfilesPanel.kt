@@ -72,7 +72,7 @@ fun ProfilesPanel(state: ProfilesUiState, onEdit: (ProfileDraft) -> Unit, onSele
     Text("Audio routing is separate from CAT. Store a route type; choose the actual attached input in Audio & source. An unavailable route never falls back to the phone microphone.")
     Choice("Preferred input", ProfileAudioRoute.entries, p.audioInput, enabled, { it.label }) { change(p.copy(audioInput = it)) }
     Choice("Preferred output · saved only", ProfileAudioRoute.entries, p.audioOutput, enabled, { it.label }) { change(p.copy(audioOutput = it)) }
-    Text("Audio playback and VOX transmission are unavailable. USB audio requires separate physical qualification.", style = MaterialTheme.typography.bodySmall)
+    Text("Live audio TX and VOX transmission are unavailable; Message tools offers a separate phone-speaker preview. USB audio requires separate physical qualification.", style = MaterialTheme.typography.bodySmall)
     Choice("Decoder", Ft8DecodeProfile.entries, p.decoder, enabled, { it.label }) { change(p.copy(decoder = it)) }
     HorizontalDivider()
     Text("LAN configuration", style = MaterialTheme.typography.titleMedium)

@@ -23,10 +23,11 @@ import net.vash.ft8cbdroid.message.WaveformViewModel
 import org.json.JSONObject
 
 /** Finite on-device checks of the real Activity, ViewModel, JNI encoder and ContentResolver exporter.
- * No microphone, playback, radio access, production-file deletion or saved-setting edits.
+ * Default export checks do not use audio or change saved settings. The explicit preview scenario uses the speaker and applies the current profile.
  */
 class WaveformPhoneChecks : Instrumentation() {
     private var scenario: String? = null
+    private var previewRun: String = ""
     private fun <T> main(block: () -> T): T {
         var result: Result<T>? = null
         runOnMainSync { result = runCatching(block) }
@@ -95,9 +96,10 @@ class WaveformPhoneChecks : Instrumentation() {
         show(text)
         check(requireNotNull(button(text)).performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click: $text" }
     }
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; start() }
     override fun onStart() {
         scenario?.let {
+            if (it == "preview") { AudioPreviewPhoneChecks(this, previewRun).run(); return }
             if (it == "spectrum") { SpectrumPhoneChecks(this).run(); return }
             if (it == "live" || it == "operate-live") { LiveReceivePhoneChecks(this, operate = it == "operate-live").run(); return }
             require(it == "ntp-audio" || it == "gps") { "Unknown time/capture scenario" }

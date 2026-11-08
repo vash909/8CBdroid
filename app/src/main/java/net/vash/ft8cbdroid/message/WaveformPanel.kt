@@ -25,10 +25,15 @@ fun WaveformPanel(
     onGenerate: () -> Unit,
     onCancel: () -> Unit,
     onSave: () -> Unit,
+    onPreviewOutput: (Int?) -> Unit = {},
+    onPreviewGain: (String) -> Unit = {},
+    onPreviewRamp: (String) -> Unit = {},
+    onPlayPreview: () -> Unit = {},
+    onStopPreview: () -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Offline waveform", style = MaterialTheme.typography.titleLarge)
-        Text("Generate a WAV for inspection and desktop decoding. This does not play audio or transmit.")
+        Text("Generate a WAV for inspection and desktop decoding. Generating does not play audio. Use the explicit speaker preview below; live radio TX is unavailable.")
         OutlinedTextField(value = state.frequency, onValueChange = onFrequency,
             label = { Text("Base audio frequency (Hz)") }, supportingText = { Text("200–2900 Hz; first FT8 tone") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true,
@@ -57,6 +62,26 @@ fun WaveformPanel(
         OutlinedButton(onClick = onSave, enabled = state.canSave) {
             Text(if (state.isSaving) "Saving WAV…" else "Save WAV")
         }
+        HorizontalDivider()
+        Text("Speaker preview · bench only", style = MaterialTheme.typography.titleMedium)
+        Text("Plays one complete slot immediately, without UTC scheduling or PTT. Keep radios disconnected. Android media volume also affects loudness.")
+        state.outputs.forEach { output ->
+            FilterChip(selected = state.outputId == output.id, onClick = { onPreviewOutput(output.id) }, label = { Text(output.label) })
+        }
+        if (state.outputs.isEmpty()) Text("No phone speaker is available.")
+        OutlinedButton(onClick = { onPreviewOutput(null) }, enabled = state.outputId != null) { Text("Clear output selection") }
+        OutlinedTextField(state.previewGain, onPreviewGain, label = { Text("Preview gain (%)") }, singleLine = true,
+            supportingText = { Text("1–100%; multiplied by the generated peak level") }, modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        OutlinedTextField(state.previewRamp, onPreviewRamp, label = { Text("Preview edge ramp (ms)") }, singleLine = true,
+            supportingText = { Text("5–100 ms; additional fades at the signal edges") }, modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        state.previewValidation?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Button(onClick = onPlayPreview, enabled = state.canPlay) { Text("Play speaker preview") }
+        OutlinedButton(onClick = onStopPreview, enabled = state.isPlaying) { Text("Stop preview") }
+        if (state.isPlaying) Text("Playing preview…")
+        state.playback?.let { Text("${it.output} • client ${it.clientRateHz} Hz mono • ${it.playedFrames}/${180_000} frames played") }
+        Text("Android may resample in its output mixer. USB output, VOX and live TX are not implemented.", style = MaterialTheme.typography.bodySmall)
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }
     }

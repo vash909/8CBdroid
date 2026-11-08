@@ -17,7 +17,8 @@ TX off. A profile is configuration, not a connection or hardware qualification.
 4. Choose input and output route types independently of CAT. Input preference
    selects an available Android input of that type. If absent, reception is
    unavailable until the route appears or you explicitly select another input.
-   Output is saved for future playback; nothing plays or keys VOX.
+   Output preferences are saved for later operating backends; the separate bench
+   speaker preview still requires an explicit device selection. Nothing keys VOX.
 5. Choose Fast/Standard decoding and the LAN listen port/optional desktop IPv4
    filter. A blank filter accepts a desktop from any address. Profiles use the
    existing IPv4 LAN contract; NTP's separate custom field accepts IP/hostname.
