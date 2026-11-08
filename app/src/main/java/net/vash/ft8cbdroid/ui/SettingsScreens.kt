@@ -19,6 +19,7 @@ import net.vash.ft8cbdroid.settings.*
 @Composable
 fun SettingsMenu(onOpen: (AppDestination) -> Unit) {
     Text("YOUR STATION", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+    SettingsLink("Operating profiles", "Saved radio, audio and LAN setups", { onOpen(AppDestination.PROFILES) })
     SettingsLink("Station", "Callsign and Maidenhead locator", { onOpen(AppDestination.STATION) })
     SettingsLink("Audio & source", "Phone microphone, USB input or WSJT-CB LAN", { onOpen(AppDestination.AUDIO) })
     SettingsLink("Time synchronization", "Regional / custom NTP servers and GPS", { onOpen(AppDestination.TIME) })
@@ -75,6 +76,7 @@ fun StationSettingsPanel(state: StationSettingsUiState, onCall: (String) -> Unit
 @Composable
 fun AudioSourceSettings(source: OperatingSource, capture: CaptureUiState, onSource: (OperatingSource) -> Unit,
     onInput: (Int) -> Unit, onProfile: (Ft8DecodeProfile) -> Unit, onOpen: (AppDestination) -> Unit) {
+    Text("Changes here are temporary. Save reusable setups in Operating profiles.", style = MaterialTheme.typography.bodySmall)
     Text("Receive source", style = MaterialTheme.typography.titleMedium)
     OperatingSource.entries.forEach { item ->
         FilterChip(selected = source == item, onClick = { onSource(item) }, label = { Text(item.label) })

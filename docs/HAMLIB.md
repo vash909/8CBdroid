@@ -19,7 +19,8 @@ The native API accepts neither a model ID nor a device path for this operation.
 It uses no microphone, USB connection, network radio or physical PTT.
 
 Catalog/search/selection results survive rotation in `HamlibViewModel`, but are
-not durable operating profiles. Controls admit one request at a time. Cancel
+not durable operating profiles. Save model ID/version and serial preferences
+separately in [Operating profiles](OPERATING_PROFILES.md); neither picker opens a radio. Controls admit one request at a time. Cancel
 invalidates the request and discards late results; another explicit request can
 retry. Finite native catalog/Dummy operations finish cooperatively before the
 serialized native boundary is released; coroutine cancellation cannot interrupt
@@ -97,8 +98,8 @@ reopening through the real app UI. Evidence belongs in [validation](VALIDATION.m
 
 USB serial transport must be connected behind the radio contracts with explicit
 permission, bounded I/O and detach/reconnect handling. Real frequency/status
-reads, frequency writes, CAT PTT, operating profiles and physical radio/cable
-qualification are not implemented by this catalog. CAT and USB audio remain
+reads, frequency writes, CAT PTT and physical radio/cable qualification are not
+implemented by this catalog. Operating profiles save configuration separately. CAT and USB audio remain
 separate capabilities. Only actual device/radio tests can qualify a configuration.
 
 Hamlib is LGPL-2.1-or-later, with bundled cJSON under MIT. Source pins, local

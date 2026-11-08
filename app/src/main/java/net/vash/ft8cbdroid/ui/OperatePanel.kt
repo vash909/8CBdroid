@@ -62,7 +62,8 @@ fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanU
 fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, capture: CaptureUiState,
     lan: LanUiState, time: TimeUiState, onDestination: (AppDestination) -> Unit,
     onReceive: () -> Unit, onMonitor: () -> Unit, onStop: () -> Unit,
-    onView: (SpectrumView) -> Unit, spectrum: @Composable () -> Unit) {
+    onView: (SpectrumView) -> Unit, spectrum: @Composable () -> Unit,
+    profileName: String? = null, referenceFrequencyHz: Long = 27_265_000L, profileReady: Boolean = true) {
     var sent by rememberSaveable { mutableStateOf(false) }
     var odd by rememberSaveable { mutableStateOf(false) }
     var draft by rememberSaveable { mutableStateOf("") }
@@ -72,11 +73,15 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
         val small = maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
         Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { onDestination(AppDestination.PROFILES) }, contentPadding = PaddingValues(0.dp)) {
+                Text(if (profileReady) "Profile: ${profileName ?: "Default"}" else "Profiles need attention · open settings",
+                    style = MaterialTheme.typography.labelSmall)
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("8CBdroid", style = MaterialTheme.typography.labelMedium,
                         fontFamily = FontFamily.Monospace, color = RadioColors.gold)
-                    val dial = if (source == OperatingSource.LOCAL) "27.265" else lan.connection.status?.let {
+                    val dial = if (source == OperatingSource.LOCAL) String.format(Locale.ROOT, "%.3f", referenceFrequencyHz / 1_000_000.0) else lan.connection.status?.let {
                         String.format(Locale.ROOT, "%.3f", it.dialFrequencyHz / 1_000_000.0)
                     } ?: "—"
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -84,7 +89,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                         Text("MHz / ${if (source == OperatingSource.LOCAL) "FT8" else lan.connection.status?.mode?.ifBlank { "—" } ?: "—"}",
                             Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                     }
-                    Text(if (source == OperatingSource.LOCAL) "REFERENCE DIAL · 11 METRES" else "DESKTOP DIAL · READ ONLY",
+                    Text(if (source == OperatingSource.LOCAL) "PROFILE REFERENCE DIAL" else "DESKTOP DIAL · READ ONLY",
                         style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -128,7 +133,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = onReceive, enabled = !receiving && if (source == OperatingSource.LOCAL) capture.canStart else lan.canStart,
+                Button(onClick = onReceive, enabled = profileReady && !receiving && if (source == OperatingSource.LOCAL) capture.canStart else lan.canStart,
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp)) { Text("Start RX") }
                 OutlinedButton(onClick = onStop, enabled = receiving, modifier = Modifier.weight(.7f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Stop") }
                 OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Enable TX") }
@@ -138,7 +143,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 FilterChip(selected = !odd, onClick = { odd = false }, label = { Text("Even") })
                 FilterChip(selected = odd, onClick = { odd = true }, label = { Text("Odd") })
                 Spacer(Modifier.weight(1f))
-                if (source == OperatingSource.LOCAL) TextButton(onClick = onMonitor, enabled = !receiving && capture.canStart,
+                if (source == OperatingSource.LOCAL) TextButton(onClick = onMonitor, enabled = profileReady && !receiving && capture.canStart,
                     contentPadding = PaddingValues(horizontal = 4.dp)) { Text("Monitor") }
             }
             OutlinedTextField(value = draft, onValueChange = { draft = it.take(80) }, modifier = Modifier.fillMaxWidth(),

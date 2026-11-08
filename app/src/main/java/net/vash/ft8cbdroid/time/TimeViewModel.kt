@@ -118,6 +118,14 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         refresh()
     }
     fun cancel() { state.value = state.value.copy(awaitingGpsPermission = false); job?.takeIf { state.value.busy != null }?.cancel() }
+    suspend fun resetForProfile() {
+        val measurementJob = job?.takeIf { state.value.busy != null }
+        state.value = state.value.copy(awaitingGpsPermission = false)
+        measurementJob?.cancelAndJoin()
+        clock.reset()
+        state.value = state.value.copy(measurement = null, ageMillis = null, notice = null)
+        refresh()
+    }
     companion object {
         fun factory(context: Context) = viewModelFactory {
             initializer { TimeViewModel(DataStoreTimePreferencesRepository(context.applicationContext.timePreferences),

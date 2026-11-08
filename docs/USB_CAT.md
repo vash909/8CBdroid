@@ -30,7 +30,9 @@ Descriptor discovery and permission handling use no native driver. A separate
 source-built Hamlib library now exposes a model catalog and software-only Dummy
 check; it does not consume these USB grants or open ports. See [the Hamlib guide](HAMLIB.md).
 Hamlib is the selected protocol direction; the Android USB serial bridge and
-actual radio settings/operations still require implementation and physical tests.
+actual radio operations still require implementation and physical tests.
+[Operating profiles](OPERATING_PROFILES.md) can save a Hamlib model/version and
+serial preferences, but do not bind an adapter or open a port.
 The FT8 DSP library remains separate from CAT.
 
 Use only the default prober's recognized devices. Do not force an unknown device

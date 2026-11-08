@@ -77,6 +77,21 @@ class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
         }
     }
 
+    suspend fun stopForProfile() {
+        commands.withLock {
+            bridge.stop()
+            bridge.clearDecodes()
+            inputs.update { it.copy(busy = false, error = null) }
+        }
+    }
+    suspend fun configureProfile(profile: net.vash.ft8cbdroid.core.profile.ProfileLan) {
+        profile.validate()
+        commands.withLock {
+            check(!current().active && !current().busy) { "Stop the LAN listener before applying a profile." }
+            inputs.value = LanUiState(port = profile.port.toString(), desktopAddress = profile.desktopAddress)
+        }
+    }
+
     fun requestReplay() {
         if (!current().canReplay) return
         inputs.update { it.copy(busy = true, error = null) }

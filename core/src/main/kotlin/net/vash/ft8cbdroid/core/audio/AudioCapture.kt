@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 class CaptureException(message: String, val timingDiagnostic: String? = null) : IllegalStateException(message)
 
-data class AudioInput(val id: Int, val label: String)
+enum class AudioInputKind { PHONE, USB, WIRED, UNKNOWN }
+data class AudioInput(val id: Int, val label: String, val kind: AudioInputKind = AudioInputKind.UNKNOWN)
 data class CaptureRoute(
     val input: AudioInput,
     val clientRate: Int,

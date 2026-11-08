@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -77,6 +78,21 @@ class LanViewModelTest {
         advanceUntilIdle()
         assertNull(viewModel.uiState.value.error)
         assertEquals(LanPhase.LISTENING, viewModel.uiState.value.connection.phase)
+    }
+
+    @Test fun profileSwitchWaitsForBindThenClearsThePeerAndConfiguresWithoutListening() = runTest {
+        val bridge = FakeBridge().apply { bindGate = CompletableDeferred() }
+        val vm = create(bridge); vm.start(); advanceUntilIdle()
+        val update = kotlinx.coroutines.CoroutineScope(coroutineContext).launch {
+            vm.stopForProfile()
+            vm.configureProfile(net.vash.ft8cbdroid.core.profile.ProfileLan(2240, "192.0.2.8"))
+        }
+        advanceUntilIdle(); assertFalse(update.isCompleted)
+        bridge.bindGate!!.complete(Unit); advanceUntilIdle()
+        assertEquals(1, bridge.starts); assertEquals(1, bridge.stops)
+        assertEquals(LanPhase.STOPPED, vm.uiState.value.connection.phase)
+        assertEquals("2240",vm.uiState.value.port); assertEquals("192.0.2.8",vm.uiState.value.desktopAddress)
+        assertNull(vm.uiState.value.connection.peer); assertTrue(vm.uiState.value.connection.decodes.isEmpty())
     }
 
     @Test fun exposesDesktopStatusFromBridge() = runTest {

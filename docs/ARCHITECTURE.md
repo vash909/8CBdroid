@@ -46,9 +46,10 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 
 | State | Owner | Lifetime / side effects |
 | --- | --- | --- |
+| Saved operating profiles | `ProfilesViewModel` / DataStore / pure JVM profile codec | Bounded versioned configuration; no device IDs or sessions. Startup/apply joins receiver cleanup and clears timing before configuring disconnected backends. |
 | Saved station callsign/locator | DataStore repository | Durable across process restarts; written only by explicit Save. |
 | Station draft/load/save status | `StationSettingsViewModel` | Retained across rotation; unread data cannot be overwritten while loading or after a read failure. |
-| LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Inputs survive rotation; not durable. Backgrounding stops the listener and clears peer/history. |
+| LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Endpoint restored from an applied profile; temporary edits survive rotation. Backgrounding stops the listener and clears peer/history. |
 | USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
 | Hamlib catalog/search/selection and Dummy result | `HamlibViewModel` / `NativeHamlibCatalog` | Explicit requests, rotation retained, process-local. Serialized native calls; cancellation discards late results. No hardware handles or profile persistence. |
 | Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
@@ -56,11 +57,11 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit foreground session; stops/clears on Audio exit, rotation or background. No automatic restart or saved PCM. |
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
-Station identity and NTP preset/custom-server preferences are stored as app configuration.
+Operating profiles, station identity and NTP preset/custom-server preferences are stored as app configuration.
 NTP/GNSS measurements are process-local, expire, and require explicit application.
 [UTC slot assembly](UTC_RECEIVE_SLOTS.md) consumes boot-clock timestamps behind
 the capture contract; it never calls the decoder or changes Android time. Choosing a radio
-connection label does not implement or persist an operating profile. Android
+connection label does not establish a radio session. See [operating profiles](OPERATING_PROFILES.md) for durable configuration and explicit application. Android
 system picker history/USB grants have their own OS lifecycle.
 
 ## Station settings

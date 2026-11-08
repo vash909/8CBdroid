@@ -42,7 +42,13 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture,
             AudioDeviceInfo.TYPE_LINE_ANALOG -> "Analog input"
             else -> "USB audio input"
         }
-        return AudioInput(device.id, "$kind • ${device.productName} • ${device.id}")
+        val inputKind = when (device.type) {
+            AudioDeviceInfo.TYPE_BUILTIN_MIC -> AudioInputKind.PHONE
+            AudioDeviceInfo.TYPE_USB_DEVICE, AudioDeviceInfo.TYPE_USB_HEADSET -> AudioInputKind.USB
+            AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_LINE_ANALOG -> AudioInputKind.WIRED
+            else -> AudioInputKind.UNKNOWN
+        }
+        return AudioInput(device.id, "$kind • ${device.productName} • ${device.id}", inputKind)
     }
     private fun refresh() { if (!closed) devices.value = supported().map(::label) }
     private fun requirePermission() {

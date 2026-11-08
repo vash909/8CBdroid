@@ -103,6 +103,34 @@ class CaptureViewModelTest {
         vm.select(1); vm.requestStart(true); runCurrent(); assertEquals(2, capture.starts)
         vm.stop(); advanceUntilIdle()
     }
+    @Test fun applyingAProfileJoinsHardwareCleanupAndInvalidatesLatePermissionCallbacks() = runTest(dispatcher) {
+        val capture = Capture().apply { cleanup = CompletableDeferred() }
+        val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }); runCurrent()
+        vm.requestStart(true); runCurrent()
+        val stopped = launch { vm.stopForProfile() }; runCurrent()
+        assertFalse(stopped.isCompleted); assertEquals(1, capture.active)
+        capture.cleanup!!.complete(Unit); runCurrent(); stopped.join()
+        assertEquals(0, capture.active); assertEquals(CapturePhase.IDLE, vm.uiState.value.phase)
+        assertNull(vm.uiState.value.metrics)
+        vm.requestStart(false); vm.stopForProfile(); vm.permissionResult(true); runCurrent()
+        assertEquals(1, capture.starts)
+    }
+    @Test fun savedUsbPreferenceNeverFallsBackToPhoneAndDoesNotPersistDeviceIds() = runTest(dispatcher) {
+        val capture = Capture()
+        capture.inputs.value = listOf(AudioInput(71, "Phone", AudioInputKind.PHONE))
+        val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }); runCurrent()
+        vm.stopForProfile()
+        vm.configureProfile(net.vash.ft8cbdroid.core.profile.OperatingProfile(audioInput = net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.USB))
+        assertNull(vm.uiState.value.selectedId); assertFalse(vm.uiState.value.canStart)
+        capture.inputs.value += AudioInput(102, "USB", AudioInputKind.USB); runCurrent()
+        assertEquals(102, vm.uiState.value.selectedId); assertEquals(0, capture.starts)
+        capture.inputs.value = listOf(capture.inputs.value.first()); runCurrent()
+        assertNull(vm.uiState.value.selectedId); assertFalse(vm.uiState.value.canStart)
+        capture.inputs.value += AudioInput(205, "USB reattached", AudioInputKind.USB); runCurrent()
+        assertEquals(205, vm.uiState.value.selectedId); assertEquals(0, capture.starts)
+        vm.configureProfile(net.vash.ft8cbdroid.core.profile.OperatingProfile())
+        assertEquals(71, vm.uiState.value.selectedId)
+    }
     @Test fun exportUsesStoppedSnapshotAndCancelledPickerDoesNotWrite() = runTest(dispatcher) {
         val capture = Capture(); val exports = mutableListOf<ByteArray>()
         val vm = CaptureViewModel(capture, CaptureWriter { _, bytes -> exports += bytes }); runCurrent()
