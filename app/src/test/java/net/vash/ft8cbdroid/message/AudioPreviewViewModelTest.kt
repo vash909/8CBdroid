@@ -39,10 +39,10 @@ class AudioPreviewViewModelTest {
         override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float) =
             Ft8PcmSlot.fromSamples(FloatArray(180000) { if (it==9600) peakAmplitude else 0f })
     }
-    private fun model(player: Player, prepare: suspend () -> Unit = {}): WaveformViewModel {
+    private fun model(player: Player, coordinator: PhoneAudioCoordinator? = null, prepare: suspend () -> Unit = {}): WaveformViewModel {
         val store=ViewModelStore().also(stores::add)
         return ViewModelProvider(store,viewModelFactory { initializer {
-            WaveformViewModel(engine,WaveformExporter { _,_-> },dispatcher,player,prepare)
+            WaveformViewModel(engine,WaveformExporter { _,_-> },dispatcher,player,prepare, audioCoordinator = coordinator)
         } })[WaveformViewModel::class.java]
     }
     private fun WaveformViewModel.generate()=generate("CQ 1AT106",EncodingMode.AUTOMATIC)
@@ -101,5 +101,33 @@ class AudioPreviewViewModelTest {
         vm.previewGain("50");vm.playPreview();runCurrent();vm.generate();runCurrent();assertEquals(0,player.active)
         vm.playPreview();runCurrent();vm.changeInput("CQ 26AT101",EncodingMode.AUTOMATIC);runCurrent()
         assertFalse(vm.uiState.value.canPlay);assertEquals(0,player.active)
+    }
+    @Test fun coordinatedPreviewRetainsBusyStateDuringRecoveryAndConsentEditsCancelIt()=runTest(dispatcher) {
+        var resumes=0; var blocked=false
+        val coordinator=PhoneAudioCoordinator(object : PhoneAudioReceiver {
+            override fun blockStarts(value: Boolean) { blocked=value }
+            override suspend fun pause(): (() -> Boolean) = { resumes++;true }
+        })
+        val player=Player();val vm=model(player,coordinator);runCurrent();vm.generate();runCurrent();vm.selectOutput(10)
+        assertFalse(vm.uiState.value.resumeReceive)
+        vm.resumeReceive(true);vm.playPreview();runCurrent();assertTrue(blocked)
+        player.finish.complete(Unit);runCurrent()
+        assertTrue(vm.uiState.value.isPlaying);assertFalse(vm.uiState.value.canPlay);assertEquals(0,resumes)
+        vm.resumeReceive(false);advanceUntilIdle();assertEquals(0,resumes);assertFalse(blocked)
+        vm.resumeReceive(true);vm.playPreview();advanceUntilIdle();assertEquals(1,resumes)
+        vm.stopForProfile();assertFalse(vm.uiState.value.resumeReceive)
+    }
+    @Test fun coordinatedPreviewFailureAndReceiveCleanupTimeoutCannotResumeInput()=runTest(dispatcher) {
+        var resumes=0
+        val coordinator=PhoneAudioCoordinator(object : PhoneAudioReceiver {
+            override fun blockStarts(blocked: Boolean) {}
+            override suspend fun pause(): (() -> Boolean) = { resumes++;true }
+        })
+        val player=Player().apply { fail=true;finish.complete(Unit) };val vm=model(player,coordinator)
+        runCurrent();vm.generate();runCurrent();vm.selectOutput(10);vm.resumeReceive(true)
+        vm.playPreview();advanceUntilIdle();assertEquals(0,resumes);assertNotNull(vm.uiState.value.error)
+        val waiting=model(Player(),coordinator) { awaitCancellation() }
+        runCurrent();waiting.generate();runCurrent();waiting.selectOutput(10);waiting.resumeReceive(true)
+        waiting.playPreview();advanceUntilIdle();assertEquals(0,resumes);assertNotNull(waiting.uiState.value.error)
     }
 }

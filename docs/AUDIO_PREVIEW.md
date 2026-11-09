@@ -6,6 +6,11 @@ slot plays immediately. The separate [one-shot UTC controls](UTC_AUDIO_SCHEDULIN
 add scheduled bench playback; CAT/PTT and radio VOX remain unavailable.
 Keep radios disconnected for this bench feature. Operate's Enable TX stays disabled.
 
+Microphone reception on the same page is coordinated with output. Optional
+**Resume microphone after successful output** applies only to an already active
+built-in input; errors and cancellation never resume it. See
+[phone audio coordination](PHONE_AUDIO.md) for controls and recovery limits.
+
 ## Controls and lifetime
 
 - The generator's peak level remains part of its waveform. **Preview gain**

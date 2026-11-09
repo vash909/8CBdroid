@@ -33,6 +33,7 @@ fun WaveformPanel(
     onMeasureLatency: () -> Unit = {},
     onSlotPeriod: (net.vash.ft8cbdroid.core.audio.SlotPeriod) -> Unit = {},
     onQueueSlot: () -> Unit = {},
+    onResumeReceive: (Boolean) -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Offline waveform", style = MaterialTheme.typography.titleLarge)
@@ -68,6 +69,14 @@ fun WaveformPanel(
         HorizontalDivider()
         Text("Speaker preview · bench only", style = MaterialTheme.typography.titleMedium)
         Text("Plays one complete slot immediately, without UTC scheduling or PTT. Keep radios disconnected. Android media volume also affects loudness.")
+        if (state.coordinatedAudio) {
+            Row {
+                Checkbox(checked = state.resumeReceive, onCheckedChange = onResumeReceive,
+                    modifier = Modifier.semantics { contentDescription = "Resume microphone after successful output" })
+                Text("Resume microphone after successful output")
+            }
+            Text("Applies only to a built-in microphone already receiving on this page. The microphone stays closed during calibration, queued waiting and playback. Recovery waits 0.5 s and discards partial slots and the old hash context. Stop, errors and leaving the page require an explicit restart.", style = MaterialTheme.typography.bodySmall)
+        }
         state.outputs.forEach { output ->
             FilterChip(selected = state.outputId == output.id, onClick = { onPreviewOutput(output.id) }, label = { Text(output.label) })
         }

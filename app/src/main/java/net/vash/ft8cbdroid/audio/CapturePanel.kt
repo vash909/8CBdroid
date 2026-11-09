@@ -16,7 +16,7 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
     observations: @Composable () -> Unit = { CaptureObservations(state.metrics, state.slots) }) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Microphone input", style = MaterialTheme.typography.titleLarge)
-        Text("Capture 12 kHz PCM, assemble UTC slots and optionally decode local FT8 after NTP/GPS synchronization. Speaker output is pending.")
+        Text("Capture 12 kHz PCM, assemble UTC slots and optionally decode local FT8 after NTP/GPS synchronization. Use Message tools for the coordinated phone speaker/microphone bench.")
         if (state.inputs.isEmpty()) Text("No supported audio input is available.")
         state.inputs.forEach { input ->
             FilterChip(selected = state.selectedId == input.id, onClick = { onSelect(input.id) },
@@ -43,7 +43,7 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onStart, enabled = state.canStart) { Text("Start microphone") }
-            OutlinedButton(onClick = onStop, enabled = state.phase != CapturePhase.IDLE || state.awaitingPermission) { Text("Stop microphone") }
+            OutlinedButton(onClick = onStop, enabled = state.phase != CapturePhase.IDLE || state.awaitingPermission || state.outputBusy) { Text("Stop microphone") }
         }
         Text(when (state.phase) {
             CapturePhase.IDLE -> if (state.awaitingPermission) "Waiting for microphone permission…" else "Microphone idle"
@@ -51,6 +51,7 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
             CapturePhase.CAPTURING -> "Microphone active"
             CapturePhase.STOPPING -> "Releasing microphone…"
         })
+        if (state.outputBusy) Text("Microphone starts are blocked while the speaker session owns phone audio. Stop microphone also cancels pending receive recovery.")
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }
         visualization()
@@ -63,6 +64,6 @@ fun CapturePanel(state: CaptureUiState, onSelect: (Int) -> Unit, onStart: () -> 
         OutlinedButton(onClick = onSaveSlot, enabled = state.canExportSlot) { Text("Save latest UTC slot WAV") }
         Text("Only complete 15-second UTC windows are retained. Stop before saving; initial partials and interrupted windows are discarded. Only the latest complete slot is retained in memory.")
         OutlinedButton(onClick = onSave, enabled = state.canExport) { Text("Save recent microphone WAV") }
-        Text("The most recent five seconds stay in memory until replaced or cleared. Stop before saving. Leaving the receive screens, rotating or backgrounding stops capture and clears its buffer. Restart is always explicit.")
+        Text("The most recent five seconds stay in memory until replaced or cleared. Stop before saving. Leaving the receive screens, rotating or backgrounding stops capture and clears its buffer. Message tools can resume an already active microphone after successful output only with your explicit recovery choice.")
     }
 }

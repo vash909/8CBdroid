@@ -35,6 +35,8 @@ import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePanel
 import net.vash.ft8cbdroid.core.audio.SpectrumView
+import net.vash.ft8cbdroid.core.audio.PhoneAudioCoordinator
+import net.vash.ft8cbdroid.core.audio.PhoneAudioReceiver
 import net.vash.ft8cbdroid.core.audio.localSpectrumMarkers
 import net.vash.ft8cbdroid.audio.CaptureObservationHost
 import net.vash.ft8cbdroid.audio.CaptureObservations
@@ -104,8 +106,15 @@ class MainActivity : ComponentActivity() {
         captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
         val previewCapture = captureViewModel
         val previewLan = lanViewModel
-        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver, applicationContext, timeViewModel.clock) {
-            previewCapture.stopForProfile(); previewLan.stopForProfile()
+        val app = applicationContext
+        val audioCoordinator = PhoneAudioCoordinator(object : PhoneAudioReceiver {
+            override fun blockStarts(blocked: Boolean) = previewCapture.blockForOutput(blocked)
+            override suspend fun pause() = previewCapture.pauseForOutput {
+                app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            }
+        })
+        waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver, app, timeViewModel.clock, audioCoordinator) {
+            previewLan.stopForProfile()
         })[WaveformViewModel::class.java]
         val profilesViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
@@ -212,6 +221,7 @@ class MainActivity : ComponentActivity() {
                 onMeasureLatency = waveformViewModel::measureLatency,
                 onSlotPeriod = waveformViewModel::period,
                 onQueueSlot = waveformViewModel::queueSlot,
+                onResumeReceive = waveformViewModel::resumeReceive,
                 onSaveWaveform = { if (waveformViewModel.prepareExport()) wavDestination.launch("8CBdroid-FT8.wav") },
             )
         }
@@ -295,12 +305,13 @@ fun EightCbApp(
     onMeasureLatency: () -> Unit = {},
     onSlotPeriod: (net.vash.ft8cbdroid.core.audio.SlotPeriod) -> Unit = {},
     onQueueSlot: () -> Unit = {},
+    onResumeReceive: (Boolean) -> Unit = {},
 ) {
     var destination by rememberSaveable { mutableStateOf(AppDestination.OPERATE) }
     val source = if (profiles.receiveLan) OperatingSource.LAN else OperatingSource.LOCAL
     val pageStates = rememberSaveableStateHolder()
     fun navigate(next: AppDestination) {
-        if (destination == AppDestination.MESSAGES && next != destination) onStopPreview()
+        if (destination == AppDestination.MESSAGES && next != destination) { onStopPreview(); onLeaveAudio() }
         if (stopsLocalReception(destination, next)) onLeaveAudio()
         if (next == AppDestination.CHAT) onStopLan()
         destination = next
@@ -362,10 +373,15 @@ fun EightCbApp(
                                 Text("UTC time: ${time.sourceDescription}")
                                 if (capture.decodeLive) LiveReceivePanel(capture.live, capture.liveProfile, capture.phase)
                             }
-                            AppDestination.MESSAGES -> MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
+                            AppDestination.MESSAGES -> {
+                                net.vash.ft8cbdroid.audio.PhoneAudioPanel(if (profiles.ready) capture else capture.copy(selectedId = null), onSelectInput,
+                                    onReceive = { onDecodeLive(true); onAssembleUtc(true); onStartCapture() },
+                                    onMonitor = { onDecodeLive(false); onAssembleUtc(false); onStartCapture() }, onStop = onStopCapture)
+                                MessagePreviewPanel(hashes, onSimulateReceive, onCommitHashes, onResetHashes,
                                 waveform, onWaveformInput, onWaveformFrequency, onWaveformLevel, onWaveformConsent,
                                 onGenerateWaveform, onCancelWaveform, onSaveWaveform,
-                                onPreviewOutput, onPreviewGain, onPreviewRamp, onPlayPreview, onStopPreview, onMeasureLatency, onSlotPeriod, onQueueSlot)
+                                onPreviewOutput, onPreviewGain, onPreviewRamp, onPlayPreview, onStopPreview, onMeasureLatency, onSlotPeriod, onQueueSlot, onResumeReceive)
+                            }
                             AppDestination.RECORDINGS -> RecordedSlotPanel(recording, onRecordedUtc, onRecordedProfile,
                                 onImportRecording, onCancelRecording, onClearRecording)
                             else -> Unit

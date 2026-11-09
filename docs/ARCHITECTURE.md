@@ -171,7 +171,11 @@ See [live reception](LIVE_RECEIVE.md).
 `AudioPreview` is a separate core boundary implemented by `AndroidAudioPreview`.
 It plays one immutable generated slot through an explicitly selected phone speaker,
 with bounded writes, focus/route checks and cancellation cleanup. The ViewModel
-waits for receive cleanup before playback. See [audio preview](AUDIO_PREVIEW.md).
+uses the JVM `PhoneAudioCoordinator` to block microphone starts and join receive
+cleanup before calibration, waiting or playback. Recovery is opt-in, follows
+output cleanup and a 500 ms tail guard, and uses a one-use configuration-bound
+attempt. No stale permission callback or failed/cancelled output may restart
+input. See [audio preview](AUDIO_PREVIEW.md) and [phone audio](PHONE_AUDIO.md).
 
 R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots.
 Acoustic radio VOX still needs calibrated output levels,
