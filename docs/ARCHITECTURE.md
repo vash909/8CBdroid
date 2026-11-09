@@ -175,7 +175,8 @@ waits for receive cleanup before playback. See [audio preview](AUDIO_PREVIEW.md)
 
 R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots.
 Acoustic radio VOX still needs calibrated output levels,
-lead/tail handling and tested radio hardware. PTT, scheduling, AutoSeq and
+lead/tail handling and tested radio hardware. The pure JVM UTC planner and timestamp-based speaker scheduling are described in
+[one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md). PTT, AutoSeq and
 background-service lifecycles remain separate implementations.
 
 ## Microphone visualization

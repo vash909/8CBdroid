@@ -30,6 +30,9 @@ fun WaveformPanel(
     onPreviewRamp: (String) -> Unit = {},
     onPlayPreview: () -> Unit = {},
     onStopPreview: () -> Unit = {},
+    onMeasureLatency: () -> Unit = {},
+    onSlotPeriod: (net.vash.ft8cbdroid.core.audio.SlotPeriod) -> Unit = {},
+    onQueueSlot: () -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Offline waveform", style = MaterialTheme.typography.titleLarge)
@@ -79,8 +82,21 @@ fun WaveformPanel(
         state.previewValidation?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(onClick = onPlayPreview, enabled = state.canPlay) { Text("Play speaker preview") }
         OutlinedButton(onClick = onStopPreview, enabled = state.isPlaying) { Text("Stop preview") }
-        if (state.isPlaying) Text("Playing preview…")
+        if (state.isPlaying) Text(state.operation ?: "Playing preview…")
         state.playback?.let { Text("${it.output} • client ${it.clientRateHz} Hz mono • ${it.playedFrames}/${180_000} frames played") }
+        HorizontalDivider()
+        Text("One UTC slot · bench only", style = MaterialTheme.typography.titleMedium)
+        Text("Synchronize with NTP or GPS in Time synchronization. Measure speaker latency, choose even (00/30) or odd (15/45), then queue one slot. The first tone targets slot +0.5 s; PCM starts 0.3 s before the boundary; no PTT or automatic repetition.")
+        OutlinedButton(onClick = onMeasureLatency, enabled = state.outputId != null && !state.isPlaying && !state.isGenerating && !state.isSaving && !state.isChoosingDestination) { Text("Measure speaker latency") }
+        state.latency?.let { Text(String.format(Locale.ROOT, "Measured output latency: %.1f ms • spread %.1f ms • valid for 5 minutes on this output", it.nanos/1e6, it.spreadNanos/1e6)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            net.vash.ft8cbdroid.core.audio.SlotPeriod.entries.forEach { period ->
+                FilterChip(selected = state.period == period, onClick = { onSlotPeriod(period) }, label = { Text(if (period == net.vash.ft8cbdroid.core.audio.SlotPeriod.EVEN) "Even · 00/30" else "Odd · 15/45") })
+            }
+        }
+        Button(onClick = onQueueSlot, enabled = state.canPlay && state.latency != null) { Text("Queue one UTC slot") }
+        state.queuedUtcMillis?.let { Text("Queued slot UTC: ${java.time.Instant.ofEpochMilli(it)} • edit, Stop or leaving this page cancels it") }
+        state.playback?.firstFrameErrorMillis?.let { Text(String.format(Locale.ROOT, "Measured first-frame error: %+.1f ms", it)) }
         Text("Android may resample in its output mixer. USB output, VOX and live TX are not implemented.", style = MaterialTheme.typography.bodySmall)
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }

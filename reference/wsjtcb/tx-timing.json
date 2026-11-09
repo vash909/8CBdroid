@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "path": "Modulator/Modulator.cpp",
+  "sha256": "fe5388fd9073c2f008203d5b0fd762e89d613a8bc32a01fe7a313a8b5566af3d",
+  "source_lines": [
+    75,
+    76
+  ],
+  "mode": "FT8",
+  "samples_per_symbol_12khz": 1920,
+  "signal_delay_ms": 500,
+  "generated_leading_silence_ms": 800,
+  "scheduled_pcm_start_relative_to_slot_ms": -300
+}

@@ -99,6 +99,7 @@ class WaveformPhoneChecks : Instrumentation() {
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; start() }
     override fun onStart() {
         scenario?.let {
+            if (it == "scheduled") { ScheduledPhoneChecks(this, previewRun).run(); return }
             if (it == "preview") { AudioPreviewPhoneChecks(this, previewRun).run(); return }
             if (it == "spectrum") { SpectrumPhoneChecks(this).run(); return }
             if (it == "live" || it == "operate-live") { LiveReceivePhoneChecks(this, operate = it == "operate-live").run(); return }

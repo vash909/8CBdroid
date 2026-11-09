@@ -46,6 +46,9 @@ fun MessagePreviewPanel(
     onPreviewRamp: (String) -> Unit = {},
     onPlayPreview: () -> Unit = {},
     onStopPreview: () -> Unit = {},
+    onMeasureLatency: () -> Unit = {},
+    onSlotPeriod: (net.vash.ft8cbdroid.core.audio.SlotPeriod) -> Unit = {},
+    onQueueSlot: () -> Unit = {},
 ) {
     var text by rememberSaveable { mutableStateOf("CQ 1AT106") }
     var freeText by rememberSaveable { mutableStateOf(false) }
@@ -100,7 +103,7 @@ fun MessagePreviewPanel(
         WaveformPanel(waveform, (result as? PackResult.Encoded)?.contentChanged == true,
             result is PackResult.Encoded, onFrequency, onLevel, onAcceptChanges,
             { onGenerate(text, mode) }, onCancel, onSave,
-            onPreviewOutput, onPreviewGain, onPreviewRamp, onPlayPreview, onStopPreview)
+            onPreviewOutput, onPreviewGain, onPreviewRamp, onPlayPreview, onStopPreview, onMeasureLatency, onSlotPeriod, onQueueSlot)
         Text("Offline receive session", style = MaterialTheme.typography.titleLarge)
         Text("Simulate reception of the encoded payload. Editing or previewing a message does not teach this receiver.")
         Text("Local station: ${session.stationCall ?: "Not set"}")

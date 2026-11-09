@@ -2,7 +2,8 @@
 
 In **Settings → Message tools**, generate a WAV as before, explicitly select
 **Phone speaker**, and press **Play speaker preview**. One complete 15-second
-slot plays immediately. No UTC scheduling, CAT/PTT or radio VOX control exists.
+slot plays immediately. The separate [one-shot UTC controls](UTC_AUDIO_SCHEDULING.md)
+add scheduled bench playback; CAT/PTT and radio VOX remain unavailable.
 Keep radios disconnected for this bench feature. Operate's Enable TX stays disabled.
 
 ## Controls and lifetime
@@ -36,7 +37,7 @@ preparation is pure JVM code; Android focus, devices and AudioTrack live in
 `audio`. The ViewModel admits one immutable generated slot at a time and waits
 for microphone/listener cleanup with a 15-second deadline before opening the speaker. No I/O runs in Compose.
 
-AudioTrack uses mono float PCM at a **12,000 Hz client rate**, nonblocking bounded
+The common output path prefills 100 ms of silence before Play. AudioTrack uses mono float PCM at a **12,000 Hz client rate**, nonblocking bounded
 writes, confirmed speaker routing and a finite playback/drain deadline. Reports
 show client rate and written/played frames. Android may resample in its output
 mixer; the client rate does not establish the hardware DAC rate. Focus denial,

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.vash.ft8cbdroid.core.audio.*
+import net.vash.ft8cbdroid.core.time.ReceiveClock
 import net.vash.ft8cbdroid.core.Ft8PcmSlot
 import net.vash.ft8cbdroid.audio.AndroidAudioPreview
 import net.vash.ft8cbdroid.core.Ft8Engine
@@ -42,6 +43,10 @@ data class WaveformUiState(
     val previewRamp: String = "20",
     val isPlaying: Boolean = false,
     val playback: PreviewReport? = null,
+    val latency: OutputLatency? = null,
+    val period: SlotPeriod = SlotPeriod.EVEN,
+    val operation: String? = null,
+    val queuedUtcMillis: Long? = null,
     val error: String? = null,
     val notice: String? = null,
 ) {
@@ -69,6 +74,7 @@ class WaveformViewModel(
     private val worker: CoroutineDispatcher = Dispatchers.Default,
     private val preview: AudioPreview? = null,
     private val preparePreview: suspend () -> Unit = {},
+    private val clock: ReceiveClock? = null,
 ) : ViewModel() {
     private val generator = OfflineFt8Generator(engine)
     private val state = MutableStateFlow(WaveformUiState())
@@ -92,7 +98,7 @@ class WaveformViewModel(
         if (id != null && state.value.outputs.none { it.id == id }) return
         if (state.value.outputId != id) {
             stopPreview("Output selection changed. Restart preview explicitly.")
-            state.value = state.value.copy(outputId = id, playback = null)
+            state.value = state.value.copy(outputId = id, playback = null, latency = null)
         }
     }
     fun previewGain(value: String) {
@@ -101,31 +107,69 @@ class WaveformViewModel(
     fun previewRamp(value: String) {
         stopPreview("Preview settings changed."); state.value = state.value.copy(previewRamp = value.take(4))
     }
+    fun period(value: SlotPeriod) {
+        if (value != state.value.period) { stopPreview("Period changed. Queue again explicitly."); state.value = state.value.copy(period = value) }
+    }
+    fun measureLatency() {
+        val player = preview as? ScheduledAudioPreview ?: return
+        val id = state.value.outputId ?: return
+        if (state.value.isPlaying || state.value.isGenerating || state.value.isSaving || state.value.isChoosingDestination) return
+        state.value = state.value.copy(latency = null)
+        runOutput("Measuring silent speaker latency…") {
+            val result = player.measureLatency(id)
+            state.value = state.value.copy(latency = result, notice = "Speaker latency measured. Synchronize time, then queue one slot explicitly.")
+        }
+    }
+    fun queueSlot() {
+        val player = preview as? ScheduledAudioPreview ?: return
+        val timingClock = clock ?: return
+        if (!state.value.canPlay) return
+        val slot = pcm ?: return
+        val id = state.value.outputId ?: return
+        val latency = state.value.latency ?: return
+        val settings = state.value.previewSettings()
+        val plan = try { planSlot(timingClock, latency, id, state.value.period) }
+        catch (error: SchedulingException) { state.value = state.value.copy(error = error.message); return }
+        state.value = state.value.copy(queuedUtcMillis = plan.utcMillis)
+        runOutput("Waiting for the queued UTC slot…") { ticket ->
+            player.playScheduled(slot, id, settings, plan, timingClock) { report ->
+                state.update { if (ticket == playbackVersion && it.isPlaying) it.copy(playback = report,
+                    operation = "Playing the queued UTC slot…") else it }
+            }
+            state.value = state.value.copy(notice = "Scheduled bench slot completed. No next slot is armed.")
+        }
+    }
     fun playPreview() {
         val player = preview ?: return
         if (!state.value.canPlay) return
         val slot = pcm ?: return
         val id = state.value.outputId ?: return
         val settings = state.value.previewSettings()
+        runOutput("Playing preview…") { ticket ->
+            player.play(slot, id, settings) { report ->
+                state.update { if (ticket == playbackVersion && it.isPlaying) it.copy(playback = report) else it }
+            }
+            state.value = state.value.copy(notice = "Preview completed. No transmission was scheduled.")
+        }
+    }
+    private fun runOutput(operation: String, action: suspend (Long) -> Unit) {
         val ticket = ++playbackVersion
-        state.value = state.value.copy(isPlaying = true, playback = null, error = null, notice = null)
+        state.value = state.value.copy(isPlaying = true, operation = operation, playback = null, error = null, notice = null)
         val next = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             try {
                 kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
                 kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                player.play(slot, id, settings) { report ->
-                    state.update { if (ticket == playbackVersion && it.isPlaying) it.copy(playback = report) else it }
-                }
-                state.value = state.value.copy(notice = "Preview completed. No transmission was scheduled.")
+                action(ticket)
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
                 state.value = state.value.copy(error = "Receive cleanup timed out. Stop reception and retry the preview.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: PreviewException) { state.value = state.value.copy(error = error.message) }
+            catch (error: SchedulingException) { state.value = state.value.copy(error = error.message) }
             catch (_: Exception) { state.value = state.value.copy(error = "Could not play the preview. Select the output and retry.") }
         }
         playbackJob = next
         next.invokeOnCompletion { viewModelScope.launch(Dispatchers.Main.immediate) {
-            if (playbackJob === next) { playbackJob = null; state.value = state.value.copy(isPlaying = false) }
+            if (playbackJob === next) { playbackJob = null; state.value = state.value.copy(isPlaying = false, operation = null, queuedUtcMillis = null) }
         } }
         next.start()
     }
@@ -139,7 +183,7 @@ class WaveformViewModel(
     suspend fun stopForProfile() {
         stopPreview("Profile changed. Select the output and restart explicitly.")
         playbackJob?.join()
-        state.value = state.value.copy(outputId = null, playback = null)
+        state.value = state.value.copy(outputId = null, playback = null, latency = null)
     }
 
     private var pendingExport: Pair<Long, ByteArray>? = null
@@ -271,8 +315,8 @@ class WaveformViewModel(
     override fun onCleared() { playbackJob?.cancel(); preview?.close() }
 
     companion object {
-        fun factory(resolver: ContentResolver, context: android.content.Context, preparePreview: suspend () -> Unit) = viewModelFactory {
-            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver), preview = AndroidAudioPreview(context), preparePreview = preparePreview) }
+        fun factory(resolver: ContentResolver, context: android.content.Context, clock: ReceiveClock, preparePreview: suspend () -> Unit) = viewModelFactory {
+            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver), preview = AndroidAudioPreview(context), preparePreview = preparePreview, clock = clock) }
         }
     }
 }

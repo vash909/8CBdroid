@@ -12,7 +12,8 @@ data class PreviewSettings(val gainPercent: Int = 100, val rampMillis: Int = 20)
         require(rampMillis in 5..100) { "Preview ramp must be between 5 and 100 ms." }
     }
 }
-data class PreviewReport(val output: String, val clientRateHz: Int, val writtenFrames: Int, val playedFrames: Long)
+data class PreviewReport(val output: String, val clientRateHz: Int, val writtenFrames: Int, val playedFrames: Long,
+    val firstFrameErrorMillis: Double? = null, val scheduledUtcMillis: Long? = null)
 class PreviewException(message: String) : IllegalStateException(message)
 interface AudioPreview : AutoCloseable {
     val outputs: StateFlow<List<PreviewOutput>>
