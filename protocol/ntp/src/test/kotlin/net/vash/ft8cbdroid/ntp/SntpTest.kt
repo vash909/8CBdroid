@@ -64,6 +64,25 @@ class SntpTest {
             try { client.measure("localhost"); fail("Rate limit bypassed") } catch (_: IllegalStateException) { }
         }
     }
+    @Test fun slowNoncePreparationCannotBiasTheWireRoundTripOrOffset() = runBlocking {
+        DatagramSocket(0, InetAddress.getLoopbackAddress()).use { server ->
+            server.soTimeout = 2000
+            val elapsed = java.util.concurrent.atomic.AtomicLong(10_000_000_000)
+            val base = 1_800_000_000_000L
+            val source = TimeSource { val n=elapsed.get();ClockReading(n,base+(n-10_000_000_000)/1_000_000) }
+            val responder = async(Dispatchers.IO) {
+                val request=DatagramPacket(ByteArray(512),512);server.receive(request)
+                val now=source.read().unixMillis
+                val bytes=response(request.data.copyOf(request.length),now,now)
+                server.send(DatagramPacket(bytes,bytes.size,request.socketAddress))
+            }
+            val client=UdpNtpClient(source,server.localPort,0) { elapsed.addAndGet(500_000_000);123 }
+            val measured=client.measure(InetAddress.getLoopbackAddress().hostAddress!!)
+            assertEquals(0.0,measured.roundTripMillis!!,.001)
+            assertEquals(0.0,measured.offsetMillis(),.001)
+            responder.await()
+        }
+    }
     @Test fun cancellingARealPendingReceiveReleasesTheSocketAndAllowsRetry() = runBlocking {
         DatagramSocket(0, InetAddress.getLoopbackAddress()).use { server ->
             server.soTimeout = 2000

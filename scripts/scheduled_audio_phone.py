@@ -19,6 +19,8 @@ import uuid
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument("--ntp-host",default="time.cloudflare.com")
+    parser.add_argument("--ntp-port",type=int,default=123)
     args=parser.parse_args();args.output.mkdir(mode=0o700,parents=True,exist_ok=False)
     status=subprocess.check_output(['timedatectl','show','-p','NTPSynchronized','--value'],text=True,timeout=5).strip()
     if status!='yes': raise RuntimeError('Synchronize the host clock before timing qualification.')
@@ -42,7 +44,7 @@ def main():
     try:
         with (args.output/'instrumentation.log').open('w') as log,(args.output/'recorder.log').open('w') as audio_log:
             process=subprocess.Popen(['adb','shell','am','instrument','--user','0','-w','-r','-e','scenario','scheduled',
-                '-e','preview_run',run,package+'.test/'+package+'.validation.WaveformPhoneChecks'],env=env,stdout=log,stderr=subprocess.STDOUT)
+                '-e','preview_run',run,'-e','ntp_host',args.ntp_host,'-e','ntp_port',str(args.ntp_port),package+'.test/'+package+'.validation.WaveformPhoneChecks'],env=env,stdout=log,stderr=subprocess.STDOUT)
             end=time.monotonic()+240
             while process.poll() is None:
                 if time.monotonic()>end:raise TimeoutError('Scheduled checks exceeded 240 seconds.')

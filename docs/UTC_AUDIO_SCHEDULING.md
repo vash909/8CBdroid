@@ -66,7 +66,9 @@ microphone near the unlocked phone and `libpulse-simple`/PipeWire tools:
 python3 scripts/scheduled_audio_phone.py --output /path/to/new-private-directory
 ```
 
-The test uses a real NTP query without editing saved time settings. It records
+The test uses a real NTP query without editing saved time settings. For a nearby
+reference, pass `--ntp-host HOST` and optionally `--ntp-port PORT` (default 123).
+Use an actually synchronized server; do not inject an invented correction. It records
 even/odd slots and exercises the actual Android late-deadline rejection, clock
 correction changes, edits, Stop, focus loss, navigation, recreation and profiles.
 A unique run ID prevents stale reports/acknowledgements from passing.

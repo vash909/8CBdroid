@@ -82,7 +82,8 @@ private object BoundedDns {
 }
 
 /** Explicit one-shot query, UDP/123, 64-second admission interval; no automatic polling/failover. */
-class UdpNtpClient(private val source: TimeSource, private val port: Int = 123, private val intervalMillis: Long = 64_000) : NtpClient {
+class UdpNtpClient(private val source: TimeSource, private val port: Int = 123, private val intervalMillis: Long = 64_000,
+    private val nonce: () -> Int = { SecureRandom().nextInt() }) : NtpClient {
     private var lastAttempt = Long.MIN_VALUE
     private var lastNictAttempt = Long.MIN_VALUE
     @Synchronized private fun admit(now: Long, host: String) {
@@ -102,17 +103,20 @@ class UdpNtpClient(private val source: TimeSource, private val port: Int = 123, 
         return withContext(Dispatchers.IO) {
             DatagramSocket().use { socket ->
                 socket.connect(address, port); socket.soTimeout = 200
-                val sent = source.read()
-                val request = SntpPacket.request(sent, SecureRandom().nextInt())
-                socket.send(DatagramPacket(request, request.size))
+                // Entropy initialization and packet allocation are not network transit time.
+                val random = nonce()
+                val request = SntpPacket.request(source.read(), random)
+                val outgoing = DatagramPacket(request, request.size)
                 val response = ByteArray(512)
+                val incoming = DatagramPacket(response, response.size)
+                val sent = source.read()
+                socket.send(outgoing)
                 while (true) {
                     currentCoroutineContext().ensureActive()
                     if (source.read().monotonicNanos - sent.monotonicNanos > 3_000_000_000L)
                         throw TimeException("The NTP server did not reply within three seconds. Check the server/network and retry later.")
-                    val packet = DatagramPacket(response, response.size)
-                    try { socket.receive(packet) } catch (_: SocketTimeoutException) { continue }
-                    return@withContext SntpPacket.decode(request, response.copyOf(packet.length), sent, source.read(), normalized)
+                    try { socket.receive(incoming) } catch (_: SocketTimeoutException) { continue }
+                    return@withContext SntpPacket.decode(request, response.copyOf(incoming.length), sent, source.read(), normalized)
                 }
                 @Suppress("UNREACHABLE_CODE") error("NTP receive ended")
             }

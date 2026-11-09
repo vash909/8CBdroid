@@ -28,6 +28,8 @@ import org.json.JSONObject
 class WaveformPhoneChecks : Instrumentation() {
     private var scenario: String? = null
     private var previewRun: String = ""
+    private var ntpHost: String = "time.cloudflare.com"
+    private var ntpPort: Int = 123
     private fun <T> main(block: () -> T): T {
         var result: Result<T>? = null
         runOnMainSync { result = runCatching(block) }
@@ -96,10 +98,10 @@ class WaveformPhoneChecks : Instrumentation() {
         show(text)
         check(requireNotNull(button(text)).performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click: $text" }
     }
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; ntpHost = arguments?.getString("ntp_host") ?: "time.cloudflare.com"; ntpPort = arguments?.getString("ntp_port")?.toInt() ?: 123; start() }
     override fun onStart() {
         scenario?.let {
-            if (it == "scheduled") { ScheduledPhoneChecks(this, previewRun).run(); return }
+            if (it == "scheduled") { ScheduledPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
             if (it == "preview") { AudioPreviewPhoneChecks(this, previewRun).run(); return }
             if (it == "spectrum") { SpectrumPhoneChecks(this).run(); return }
             if (it == "live" || it == "operate-live") { LiveReceivePhoneChecks(this, operate = it == "operate-live").run(); return }

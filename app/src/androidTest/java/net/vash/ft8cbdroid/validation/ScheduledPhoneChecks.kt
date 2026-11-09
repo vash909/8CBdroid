@@ -22,7 +22,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Real synchronized speaker output. The PC records against its independently synchronized clock. */
-class ScheduledPhoneChecks(private val instrumentation: Instrumentation, private val runId: String) {
+class ScheduledPhoneChecks(private val instrumentation: Instrumentation, private val runId: String, private val ntpHost: String, private val ntpPort: Int) {
     private val context get()=instrumentation.targetContext
     private fun <T> main(block: ()->T): T {
         var result: Result<T>?=null;instrumentation.runOnMainSync { result=runCatching(block) }
@@ -59,7 +59,7 @@ class ScheduledPhoneChecks(private val instrumentation: Instrumentation, private
             main { model.queueSlot() }
             check(main { !model.uiState.value.isPlaying && model.uiState.value.error?.contains("Synchronize")==true })
             report.put("unsynchronized_queue_rejected",true)
-            val measurement=runBlocking { UdpNtpClient(AndroidTimeSource).measure("time.cloudflare.com") }
+            val measurement=runBlocking { UdpNtpClient(AndroidTimeSource,ntpPort).measure(ntpHost) }
             main { time.clock.apply(measurement) }
             report.put("ntp_source",measurement.source).put("ntp_offset_ms",measurement.offsetMillis())
                 .put("ntp_uncertainty_ms",measurement.uncertaintyMillis).put("ntp_rtt_ms",measurement.roundTripMillis)
