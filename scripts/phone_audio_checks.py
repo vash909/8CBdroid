@@ -20,6 +20,7 @@ import uuid
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--manual', action='store_true', help='Qualify Operate manual controls; requires station 1AT106, a valid locator and a Phone input/output profile. Also requires desktop reference compilers.')
     parser.add_argument('--ntp-host', default='time.cloudflare.com')
     parser.add_argument('--ntp-port', type=int, default=123)
     args = parser.parse_args()
@@ -33,6 +34,18 @@ def main():
     case = next(c for c in manifest['cases'] if c['file'] == '../channel/cq.wav')
     fixture = root/'reference/wsjtcb/channel/cq.wav'
     assert hashlib.sha256(fixture.read_bytes()).hexdigest() == case['sha256']
+    incoming = {}
+    if args.manual:
+        import wsjtcb_channel as channel
+        directory = args.output.resolve()/'desktop-reference'; directory.mkdir()
+        executable, _ = channel.compile_reference(directory)
+        messages = {m['message'].strip(): m['payload77'] for m in json.loads((root/'reference/wsjtcb/qso.json').read_text())['message_payloads']}
+        for stage, text in [('cq', 'CQ 26AT101'), ('reply', '<1AT106> 26AT101'), ('report', '1AT106 -07'), ('final', '1AT106 RR73')]:
+            path = directory/(stage+'.wav'); path.write_bytes(channel.make_wave(executable, messages[text], directory))
+            incoming['receive-'+stage] = path
+    prefix = 'r19a' if args.manual else 'r17a'
+    scenario = 'manual-audio' if args.manual else 'phone-audio'
+    result_key = 'manual_audio' if args.manual else 'phone_audio'
     env = dict(os.environ, ADB_LIBUSB='1'); package = 'net.vash.ft8cbdroid'; run = uuid.uuid4().hex
 
     def adb(*command, check=True):
@@ -62,23 +75,23 @@ def main():
     try:
         with (args.output/'instrumentation.log').open('w') as log, (args.output/'recorder.log').open('w') as audio_log:
             process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
-                '-e', 'scenario', 'phone-audio', '-e', 'preview_run', run, '-e', 'ntp_host', args.ntp_host,
+                '-e', 'scenario', scenario, '-e', 'preview_run', run, '-e', 'ntp_host', args.ntp_host,
                 '-e', 'ntp_port', str(args.ntp_port), package+'.test/'+package+'.validation.WaveformPhoneChecks'],
                 env=env, stdout=log, stderr=subprocess.STDOUT)
-            until = time.monotonic()+420
+            until = time.monotonic()+660
             while process.poll() is None:
-                assert time.monotonic() < until, 'Phone audio check exceeded 420 seconds.'
+                assert time.monotonic() < until, 'Phone audio check exceeded 660 seconds.'
                 if scheduled is not None and time.time() >= scheduled:
                     assert time.time()-scheduled < .2, 'Missed desktop slot deadline.'
-                    player = subprocess.Popen(['pw-play', '--volume', '0.5', str(fixture)], stdout=audio_log, stderr=subprocess.STDOUT)
+                    player = subprocess.Popen(['pw-play', '--volume', '0.5', str(incoming[stages[-1]] if args.manual else fixture)], stdout=audio_log, stderr=subprocess.STDOUT)
                     desktop_plays.append(dict(stage=stages[-1], target_utc=scheduled, launched_utc=time.time()))
                     scheduled = None
-                    print('Playing pinned desktop CQ acoustically.', flush=True)
+                    print('Playing pinned desktop audio acoustically.', flush=True)
                 if player is not None and player.poll() is not None:
                     assert player.returncode == 0, 'PC speaker playback failed.'
                     player = None
                 if scheduled is None or scheduled-time.time() > 1:
-                    ready = read('r17a-ready.json'); stage = ready.get('stage')
+                    ready = read(prefix+'-ready.json'); stage = ready.get('stage')
                     if ready.get('run') == run and stage not in stages:
                         stop_recorder()
                         # The preceding desktop fixture may still be draining its silent tail.
@@ -97,22 +110,22 @@ def main():
                         else:
                             assert stage == 'captures-complete', stage
                         stages.append(stage)
-                        adb('shell', 'run-as', package, 'touch', f'cache/r17a-go-{run}-{stage}')
+                        adb('shell', 'run-as', package, 'touch', f'cache/{prefix}-go-{run}-{stage}')
                         print('Phone stage:', stage, flush=True)
                 time.sleep(.03 if scheduled is not None and scheduled-time.time() < 1 else .2)
             stop_recorder()
         log = (args.output/'instrumentation.log').read_text()
-        assert process.returncode == 0 and 'phone_audio_result=PASS' in log and 'INSTRUMENTATION_CODE: -1' in log, log
-        report = read('r17a-report.json'); assert report['run'] == run
-        line = next(line.split('phone_audio_report=', 1)[1] for line in log.splitlines() if 'INSTRUMENTATION_RESULT: phone_audio_report=' in line)
-        assert json.loads(line) == report and len(desktop_plays) == 3 and len(captures) == 2
+        assert process.returncode == 0 and result_key+'_result=PASS' in log and 'INSTRUMENTATION_CODE: -1' in log, log
+        report = read(prefix+'-report.json'); assert report['run'] == run
+        line = next(line.split(result_key+'_report=', 1)[1] for line in log.splitlines() if 'INSTRUMENTATION_RESULT: '+result_key+'_report=' in line)
+        assert json.loads(line) == report and len(desktop_plays) == (4 if args.manual else 3) and len(captures) == (3 if args.manual else 2)
         for directory, slot in zip(captures, report['slots']):
-            assert directory.name == 'capture-'+slot['period'].lower()
+            assert directory.name == 'capture-'+(slot['stage'] if args.manual else slot['period'].lower())
             (directory/'report.json').write_text(json.dumps(dict(run=run, slots=[slot]), indent=2))
         report['desktop_plays'] = desktop_plays
         report['physical_source'] = source_name
         (args.output/'report.json').write_text(json.dumps(report, indent=2))
-        print('Physical RX/output/recovery and device scenarios passed. Independently decode and measure both captures.', flush=True)
+        print('Physical RX/output/recovery and device scenarios passed. Independently decode and measure every capture.', flush=True)
     finally:
         stop_recorder()
         if player is not None and player.poll() is None:

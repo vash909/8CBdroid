@@ -8,16 +8,18 @@ project documentation use English.
 and recorded-slot decoding are implemented, along with foreground microphone capture,
 NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
 software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
-microphone pause/opt-in recovery are available. Live speaker TX,
-CAT/PTT, AutoSeq and QSO logging remain unimplemented.
-The app cannot yet make a radio QSO.
+microphone pause/recovery are available. Operate now offers foreground manual
+phone-speaker exchanges: explicit peer/message selection, enable and one-slot send.
+CAT/PTT, AutoSeq, persistent QSO logging and qualified USB audio remain unimplemented.
+Radio frequency/mode and VOX are configured by the operator; completed audio does
+not independently confirm radio TX or a QSO.
 
 ## What works
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX audio cursors, Start RX/Stop and plain audio Monitor. | Local RX requires measured NTP/GPS time. Sent is empty; Enable TX is disabled. Period and custom-message edits are drafts, not scheduled transmissions. LAN carries desktop messages, not waterfall audio. |
-| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, live radio TX or USB hardware qualification; coordinated phone audio is bench-only. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX offsets, peer selection, CB message templates/custom text, bounded test tone and explicitly armed one-slot speaker sends. | Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground/manual operation; LAN remains read-only. |
+| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
@@ -60,7 +62,10 @@ commands and debug-signature limitations.
 6. For live local reception, choose **Fast** or **Standard** under
    **Settings → Audio & source**, synchronize time, then press **Start RX** on
    **Operate**. Complete slots appear in **Received**; **→ RX** selects a decoded
-   frequency without establishing a QSO peer. **Monitor** displays plain audio
+   frequency; **Use peer** selects a complete CB sender without arming TX.
+   For manual audio exchanges, select and calibrate the speaker, choose a message/period,
+   then explicitly Enable TX and Send one slot. See [manual operation](docs/MANUAL_OPERATION.md).
+   **Monitor** displays plain audio
    without time sync. Stop clears local results and hash learning.
 7. For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,
    configure the phone port in **Settings → WSJT-CB LAN**, then press **Start RX**
@@ -75,7 +80,7 @@ storage permission. Saved operating profiles, station identity and server prefer
 recordings and generated PCM are temporary. Exported documents remain in the
 chosen location.
 
-See [the interface guide](docs/INTERFACE.md) for navigation and draft controls,
+See [the interface guide](docs/INTERFACE.md) for navigation and operating controls,
 and [spectrum and waterfall](docs/SPECTRUM.md) for zoom and measurement limits.
 
 The **Settings → USB / CAT** catalog lists compiled Hamlib models and declared

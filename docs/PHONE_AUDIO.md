@@ -3,7 +3,8 @@
 **Settings → Message tools** combines built-in microphone reception with the
 existing explicit speaker preview and one-shot UTC scheduler. Keep radios
 disconnected: this qualifies phone audio handling, not radio VOX, CAT/PTT or an
-RF QSO. Operate's Enable TX remains disabled.
+RF QSO. [Manual operation](MANUAL_OPERATION.md) uses the same coordinator from Operate
+with explicit one-message enable/send and recovery of the previously active RX.
 
 1. Apply an NTP/GPS measurement in **Time synchronization** for FT8 reception
    and scheduled output. Plain **Monitor microphone** needs no time correction.
@@ -68,5 +69,4 @@ and after two even/odd output/recovery cycles, and records the phone speaker.
 It also exercises Stop, actual focus loss, correction reset, edits, navigation,
 retained recreation and profile cleanup. Run IDs reject stale acknowledgements.
 Independently decode both captured outputs and measure their onset; Android
-frame counts alone are insufficient. Input/output hardware qualifications and
-actual radio VOX key/release tests remain separate.
+frame counts alone are insufficient. These checks observe phone audio; they do not establish radio keying or RF output.

@@ -1,6 +1,7 @@
 package net.vash.ft8cbdroid
 
 import net.vash.ft8cbdroid.profile.*
+import net.vash.ft8cbdroid.operate.*
 import net.vash.ft8cbdroid.time.*
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
     }
     private lateinit var lanViewModel: LanViewModel
     private lateinit var waveformViewModel: WaveformViewModel
+    private lateinit var manualViewModel: ManualOperatingViewModel
     private val wavDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) {
         waveformViewModel.export(it?.toString())
     }
@@ -107,19 +109,32 @@ class MainActivity : ComponentActivity() {
         val previewCapture = captureViewModel
         val previewLan = lanViewModel
         val app = applicationContext
-        val audioCoordinator = PhoneAudioCoordinator(object : PhoneAudioReceiver {
-            override fun blockStarts(blocked: Boolean) = previewCapture.blockForOutput(blocked)
-            override suspend fun pause() = previewCapture.pauseForOutput {
-                app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            }
-        })
+        val audioCoordinator = previewCapture.audioCoordinator {
+            app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        }
         waveformViewModel = ViewModelProvider(this, WaveformViewModel.factory(contentResolver, app, timeViewModel.clock, audioCoordinator) {
             previewLan.stopForProfile()
         })[WaveformViewModel::class.java]
+        val bench = waveformViewModel
+        manualViewModel = ViewModelProvider(this, viewModelFactory {
+            initializer { ManualOperatingViewModel(net.vash.ft8cbdroid.dsp.NativeFt8Engine(),
+                net.vash.ft8cbdroid.audio.AndroidAudioPreview(app), audioCoordinator, timeViewModel.clock,
+                receiveReady = {
+                    val input = previewCapture.uiState.value
+                    app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+                        input.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING && input.decodeLive &&
+                        input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
+                }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }) }
+        })[ManualOperatingViewModel::class.java]
         val profilesViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
-                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel, waveformViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
+                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel, waveformViewModel, manualViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
         })[ProfilesViewModel::class.java]
+        val spectrumChange: (SpectrumView) -> Unit = { view ->
+            val previous = captureViewModel.uiState.value.spectrumView
+            captureViewModel.spectrumView(view)
+            if (view.txHz != previous.txHz) manualViewModel.frequency(view.txHz.toString())
+        }
         setContent {
             val profiles by profilesViewModel.uiState.collectAsStateWithLifecycle()
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
@@ -128,6 +143,7 @@ class MainActivity : ComponentActivity() {
             val lan by lanViewModel.uiState.collectAsStateWithLifecycle()
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
+            val manual by manualViewModel.uiState.collectAsStateWithLifecycle()
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
             val capture by captureViewModel.controls.collectAsStateWithLifecycle(initialValue = CaptureUiState())
             val time by timeViewModel.uiState.collectAsStateWithLifecycle()
@@ -137,10 +153,30 @@ class MainActivity : ComponentActivity() {
                 recordedSlotViewModel.changeStation(call)
                 captureViewModel.changeStation(call)
             }
+            LaunchedEffect(station.saved, profiles.ready, profiles.revision, profiles.receiveLan, capture.selectedId) {
+                val input = capture.inputs.firstOrNull { it.id == capture.selectedId }
+                val profile = profiles.applied
+                manualViewModel.context(station.saved, profiles.ready && !profiles.receiveLan &&
+                    input?.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE &&
+                    profile?.audioInput == net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.PHONE &&
+                    profile.audioOutput == net.vash.ft8cbdroid.core.profile.ProfileAudioRoute.PHONE,
+                    profile?.referenceFrequencyHz ?: 27_265_000L, profiles.revision to capture.selectedId)
+            }
             EightCbApp(
                 station = station,
+                manual = manual,
+                manualActions = ManualActions(manualViewModel::peer, manualViewModel::report,
+                    manualViewModel::choose, manualViewModel::custom, manualViewModel::freeText,
+                    manualViewModel::acceptChanges, { text -> manualViewModel.frequency(text)
+                        audioOffset(text)?.let { hz -> captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(txHz = hz)) } }, manualViewModel::level,
+                    manualViewModel::period, manualViewModel::output, manualViewModel::calibrate,
+                    manualViewModel::testTone, manualViewModel::enableTx, manualViewModel::send, { peer ->
+                        manualViewModel.selectPeer(peer)
+                        captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(rxHz = peer.frequencyHz.coerceIn(200, 2950), txHz = peer.frequencyHz.coerceIn(200, 2950)))
+                    }),
+                onLeaveOperate = { manualViewModel.stop("Left Operate. TX disabled.") },
                 profiles = profiles,
-                onSourceChange = { profilesViewModel.temporarySource(it == OperatingSource.LAN) },
+                onSourceChange = { manualViewModel.stop("Source changed. TX disabled."); profilesViewModel.temporarySource(it == OperatingSource.LAN) },
                 profilesContent = { ProfilesPanel(profiles, profilesViewModel::edit, profilesViewModel::select,
                     profilesViewModel::newProfile, profilesViewModel::discard, profilesViewModel::save,
                     profilesViewModel::apply, profilesViewModel::delete, profilesViewModel::load,
@@ -172,8 +208,8 @@ class MainActivity : ComponentActivity() {
                 recording = recording,
                 capture = capture,
                 captureObservations = { CaptureObservationHost(captureViewModel.uiState) },
-                spectrumContent = { SpectrumHost(captureViewModel.uiState, captureViewModel::spectrumView) },
-                compactSpectrumContent = { SpectrumHost(captureViewModel.uiState, captureViewModel::spectrumView, compact = true) },
+                spectrumContent = { SpectrumHost(captureViewModel.uiState, spectrumChange) },
+                compactSpectrumContent = { SpectrumHost(captureViewModel.uiState, spectrumChange, compact = true) },
                 time = time,
                 timeActions = TimeActions(timeViewModel::selectPreset, timeViewModel::changeCustom,
                     save = { captureViewModel.stop("Time settings changed. Restart capture explicitly.", clear = true); timeViewModel.save() },
@@ -185,7 +221,7 @@ class MainActivity : ComponentActivity() {
                 onAssembleUtc = captureViewModel::assembleUtc,
                 onDecodeLive = captureViewModel::decodeLive,
                 onLiveProfile = captureViewModel::liveProfile,
-                onSpectrumView = captureViewModel::spectrumView,
+                onSpectrumView = spectrumChange,
                 onSaveUtcSlot = { if (captureViewModel.prepareSlotExport()) {
                     val utc = captureViewModel.uiState.value.latestSlotUtcMillis
                     val stamp = utc?.let { java.time.Instant.ofEpochMilli(it).toString().replace(":", "-") } ?: "slot"
@@ -196,7 +232,7 @@ class MainActivity : ComponentActivity() {
                     if (profilesViewModel.uiState.value.ready && captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
                         microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
                 },
-                onStopCapture = { captureViewModel.stop() },
+                onStopCapture = { manualViewModel.stop(); captureViewModel.stop() },
                 onLeaveAudio = { captureViewModel.stop("Microphone stopped after leaving the receive screen.", clear = true) },
                 onSaveCapture = {
                     if (captureViewModel.prepareExport()) microphoneDestination.launch("8CBdroid-microphone.wav")
@@ -228,6 +264,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        manualViewModel.stop("App left the foreground. TX disabled.")
         waveformViewModel.stopPreview("Preview stopped because the app left the foreground.")
         timeViewModel.cancel()
         captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.",
@@ -240,6 +277,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EightCbApp(
     station: StationSettingsUiState,
+    manual: ManualOperatingState = ManualOperatingState(),
+    manualActions: ManualActions = ManualActions(),
+    onLeaveOperate: () -> Unit = {},
     profiles: ProfilesUiState = ProfilesUiState(),
     profilesContent: @Composable () -> Unit = {},
     onSourceChange: (OperatingSource) -> Unit = {},
@@ -311,6 +351,7 @@ fun EightCbApp(
     val source = if (profiles.receiveLan) OperatingSource.LAN else OperatingSource.LOCAL
     val pageStates = rememberSaveableStateHolder()
     fun navigate(next: AppDestination) {
+        if (destination == AppDestination.OPERATE && next != destination) onLeaveOperate()
         if (destination == AppDestination.MESSAGES && next != destination) { onStopPreview(); onLeaveAudio() }
         if (stopsLocalReception(destination, next)) onLeaveAudio()
         if (next == AppDestination.CHAT) onStopLan()
@@ -344,7 +385,7 @@ fun EightCbApp(
                         onStop = { if (source == OperatingSource.LAN) onStopLan() else onStopCapture() },
                         onView = onSpectrumView, spectrum = compactSpectrumContent,
                         profileName = profiles.applied?.name, referenceFrequencyHz = profiles.applied?.referenceFrequencyHz ?: 27_265_000L,
-                        profileReady = profiles.ready)
+                        profileReady = profiles.ready, manual = manual, manualActions = manualActions)
                     AppDestination.CHAT -> ChatPlaceholder()
                     else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
