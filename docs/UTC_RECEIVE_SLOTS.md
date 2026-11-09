@@ -4,8 +4,8 @@ The app can synchronize its receive clock through **NTP or GPS/GNSS**, timestamp
 microphone PCM and retain complete 15-second UTC windows. Android's system clock
 is never changed. There is no manual offset or unsynchronized fallback.
 [Live reception](LIVE_RECEIVE.md) optionally decodes these slots. Generated audio
-has a separate [bench preview](AUDIO_PREVIEW.md); UTC-scheduled playback,
-TX scheduling and radio operation remain later milestones.
+has separate [bench preview](AUDIO_PREVIEW.md) and [one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md).
+Radio operation remains later work.
 
 ## Synchronize time
 

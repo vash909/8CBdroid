@@ -2,8 +2,8 @@
 
 Operate can decode complete microphone UTC slots automatically. Local
 results are labeled **Local microphone** and kept apart from LAN messages and
-recorded-file results. This is foreground reception; scheduled playback, PTT, AutoSeq and
-radio QSOs remain later work. The separate [speaker preview](AUDIO_PREVIEW.md) stops reception before playing. Current device evidence is in [validation](VALIDATION.md).
+recorded-file results. This is foreground reception; radio PTT, AutoSeq and
+radio QSOs remain later work. The separate [speaker preview](AUDIO_PREVIEW.md) and [UTC scheduling](UTC_AUDIO_SCHEDULING.md) stop reception before playing. Current device evidence is in [validation](VALIDATION.md).
 
 ## Use
 

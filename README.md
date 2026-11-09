@@ -7,7 +7,7 @@ project documentation use English.
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
 and recorded-slot decoding are implemented, along with foreground microphone capture,
 NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
-software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview are available. Live speaker TX,
+software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling are available. Live speaker TX,
 CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -40,7 +40,7 @@ commands and debug-signature limitations.
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
 2. In **Settings → Message tools**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
    then save it through Android's document picker. For bench playback, explicitly
-   select Phone speaker and press Play speaker preview; see [audio preview](docs/AUDIO_PREVIEW.md). Content changes require consent.
+   select Phone speaker and press Play speaker preview. For an even/odd UTC slot, measure speaker latency and queue explicitly; see [UTC scheduling](docs/UTC_AUDIO_SCHEDULING.md). Content changes require consent.
 3. In **Settings → Recorded audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
    select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
    This example assigns UTC context to a test file; it does not measure a clock.

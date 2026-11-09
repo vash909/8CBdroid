@@ -14,6 +14,7 @@ qualification or a statement that all possible checks passed.
 | CB codec and hash sessions | Stateless packing/unpacking plus isolated, bounded RX hash learning with explicit ambiguity. | Desktop-derived JVM/phone fixtures. Full decoder plausibility and QSO admission are separate concerns. |
 | Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
 | Speaker preview | Explicit phone-speaker playback, gain/ramps, focus and cancellation. | R14 A51/Android 13 checks: two complete slots, physical PC-microphone recordings decoded by the pinned desktop known-time/frequency adapter, plus UI/lifecycle checks. Bench only. |
+| One-shot UTC output | Frozen message/clock/output, measured latency and even/odd bench slots. | Virtual-clock/ViewModel tests and real speaker/onset checks described in [the scheduling guide](UTC_AUDIO_SCHEDULING.md). No radio PTT/VOX qualification. |
 | Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. Complete desktop decoder parity remains unverified. |
 | Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
 | UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |

@@ -117,4 +117,4 @@ This is a reusable checklist, not a claim that every step passed. Check the
 
 Generated PCM can also be played through an explicitly selected phone speaker.
 See [audio preview](AUDIO_PREVIEW.md) for gain, extra edge ramps, cancellation
-and focus/route handling. Generating or exporting a file never starts playback.
+and focus/route handling. [One-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md) uses measured speaker latency to target the desktop FT8 onset. Generating or exporting a file never starts playback.
