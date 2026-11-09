@@ -17,6 +17,11 @@ operation freezes its message PCM, level/ramps, output, measured latency and UTC
 mapping. Clock corrections never move it to another slot. Completion leaves no
 next slot armed. PCM, calibration, output ID and pending work are never persisted.
 
+The [coordinated phone-audio controls](PHONE_AUDIO.md) can pause an active
+built-in microphone throughout the queued wait/playback and resume it after
+successful output with explicit consent. Cancellation or failure leaves it
+stopped. This does not change slot timing or qualify radio VOX.
+
 ## Timing and failure handling
 
 The pinned desktop [FT8 modulator](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Modulator/Modulator.cpp#L75)

@@ -42,11 +42,14 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | WSJT-CB LAN | Desktop filter, UDP port, status, Replay and detailed decode history. |
 | USB / CAT | Explicit Hamlib catalog/search/details and software-only Dummy check, plus descriptor/driver discovery and Android permissions; no hardware CAT commands. |
 | Microphone tools | Full spectrum controls, input diagnostics, UTC options and recent/complete-slot WAV export. |
-| Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview and one-shot UTC scheduling. |
+| Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview and one-shot UTC scheduling, plus built-in microphone reception with opt-in recovery after successful output. See [phone audio](PHONE_AUDIO.md). |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |
 
 Moving between Operate and Microphone tools preserves the same receiver.
 Entering configuration or Chat stops local capture; returning cannot restart it.
+Message tools can explicitly start its own foreground microphone session; leaving
+that page stops both input and output. Successful output may resume an already
+active microphone only with the page's explicit recovery choice.
 Switching source stops both receivers. Rotation/background still stop local
 capture and discard transient audio/results. Chat also stops the LAN listener;
 ordinary settings navigation preserves a foreground LAN connection.

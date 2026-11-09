@@ -7,7 +7,8 @@ project documentation use English.
 **Current state:** LAN monitoring, offline CB message encoding, WAV generation
 and recorded-slot decoding are implemented, along with foreground microphone capture,
 NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
-software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling are available. Live speaker TX,
+software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
+microphone pause/opt-in recovery are available. Live speaker TX,
 CAT/PTT, AutoSeq and QSO logging remain unimplemented.
 The app cannot yet make a radio QSO.
 
@@ -16,7 +17,7 @@ The app cannot yet make a radio QSO.
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
 | **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX audio cursors, Start RX/Stop and plain audio Monitor. | Local RX requires measured NTP/GPS time. Sent is empty; Enable TX is disabled. Period and custom-message edits are drafts, not scheduled transmissions. LAN carries desktop messages, not waterfall audio. |
-| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, live radio TX or USB hardware qualification; speaker preview is bench-only. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT, live radio TX or USB hardware qualification; coordinated phone audio is bench-only. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
@@ -40,7 +41,8 @@ commands and debug-signature limitations.
    for example `1AT106` / `JN45AB`. Wait for the save confirmation.
 2. In **Settings → Message tools**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
    then save it through Android's document picker. For bench playback, explicitly
-   select Phone speaker and press Play speaker preview. For an even/odd UTC slot, measure speaker latency and queue explicitly; see [UTC scheduling](docs/UTC_AUDIO_SCHEDULING.md). Content changes require consent.
+   select Phone speaker and press Play speaker preview. For an even/odd UTC slot, measure speaker latency and queue explicitly; see [UTC scheduling](docs/UTC_AUDIO_SCHEDULING.md). Content changes require consent. The same page offers built-in microphone RX
+   with optional recovery after successful output; see [phone audio](docs/PHONE_AUDIO.md).
 3. In **Settings → Recorded audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
    select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
    This example assigns UTC context to a test file; it does not measure a clock.

@@ -89,3 +89,13 @@ Also inspect the actual live controls/results, permission recovery, Stop during
 work, rotation, background/reopen and navigation. Verify local source labels and
 that neither LAN nor recorded-file results become local rows. Record actual CI
 commit/device/results before merge; pending hardware checks are not passes.
+
+
+## Coordinated speaker bench
+
+Message tools can explicitly start the same built-in microphone receiver and
+pause it for silent calibration or speaker output. Optional recovery after
+successful output starts a fresh local/hash/slot session; partial and self-TX
+slots are not retained. Stop, errors and leaving the page never recover it.
+See [phone audio](PHONE_AUDIO.md); this does not add background reception or
+radio VOX qualification.

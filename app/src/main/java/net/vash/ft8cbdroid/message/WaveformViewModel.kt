@@ -49,6 +49,8 @@ data class WaveformUiState(
     val queuedUtcMillis: Long? = null,
     val error: String? = null,
     val notice: String? = null,
+    val resumeReceive: Boolean = false,
+    val coordinatedAudio: Boolean = false,
 ) {
     val previewValidation get() = runCatching { previewSettings() }.exceptionOrNull()?.message
     fun previewSettings() = PreviewSettings(previewGain.toIntOrNull() ?: throw IllegalArgumentException("Enter a preview gain in percent."),
@@ -75,9 +77,10 @@ class WaveformViewModel(
     private val preview: AudioPreview? = null,
     private val preparePreview: suspend () -> Unit = {},
     private val clock: ReceiveClock? = null,
+    private val audioCoordinator: PhoneAudioCoordinator? = null,
 ) : ViewModel() {
     private val generator = OfflineFt8Generator(engine)
-    private val state = MutableStateFlow(WaveformUiState())
+    private val state = MutableStateFlow(WaveformUiState(coordinatedAudio = audioCoordinator != null))
     val uiState = state.asStateFlow()
     private var input: Pair<String, EncodingMode>? = null
     private var version = 0L
@@ -109,6 +112,11 @@ class WaveformViewModel(
     }
     fun period(value: SlotPeriod) {
         if (value != state.value.period) { stopPreview("Period changed. Queue again explicitly."); state.value = state.value.copy(period = value) }
+    }
+    fun resumeReceive(enabled: Boolean) {
+        if (enabled == state.value.resumeReceive) return
+        stopPreview("Receive recovery setting changed. Start output again explicitly.")
+        state.value = state.value.copy(resumeReceive = enabled)
     }
     fun measureLatency() {
         val player = preview as? ScheduledAudioPreview ?: return
@@ -154,12 +162,21 @@ class WaveformViewModel(
     }
     private fun runOutput(operation: String, action: suspend (Long) -> Unit) {
         val ticket = ++playbackVersion
+        val resumeReceive = state.value.resumeReceive
         state.value = state.value.copy(isPlaying = true, operation = operation, playback = null, error = null, notice = null)
         val next = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             try {
-                kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
-                kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                action(ticket)
+                val output: suspend () -> Unit = {
+                    kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    action(ticket)
+                }
+                if (audioCoordinator != null) {
+                    val resumed = audioCoordinator.output(resumeReceive, output)
+                    state.value = state.value.copy(notice = "${state.value.notice.orEmpty()} " +
+                        if (resumed) "Microphone recovery requested; waiting for new complete receive slots."
+                        else "Microphone remains stopped. Start reception explicitly if needed.")
+                } else output()
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
                 state.value = state.value.copy(error = "Receive cleanup timed out. Stop reception and retry the preview.")
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -184,6 +201,7 @@ class WaveformViewModel(
         stopPreview("Profile changed. Select the output and restart explicitly.")
         playbackJob?.join()
         state.value = state.value.copy(outputId = null, playback = null, latency = null)
+        state.value = state.value.copy(resumeReceive = false)
     }
 
     private var pendingExport: Pair<Long, ByteArray>? = null
@@ -315,8 +333,9 @@ class WaveformViewModel(
     override fun onCleared() { playbackJob?.cancel(); preview?.close() }
 
     companion object {
-        fun factory(resolver: ContentResolver, context: android.content.Context, clock: ReceiveClock, preparePreview: suspend () -> Unit) = viewModelFactory {
-            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver), preview = AndroidAudioPreview(context), preparePreview = preparePreview, clock = clock) }
+        fun factory(resolver: ContentResolver, context: android.content.Context, clock: ReceiveClock,
+            audioCoordinator: PhoneAudioCoordinator? = null, preparePreview: suspend () -> Unit) = viewModelFactory {
+            initializer { WaveformViewModel(NativeFt8Engine(), DocumentWaveformExporter(resolver), preview = AndroidAudioPreview(context), preparePreview = preparePreview, clock = clock, audioCoordinator = audioCoordinator) }
         }
     }
 }
