@@ -32,7 +32,7 @@ fun PhoneAudioPanel(state: CaptureUiState, onSelect: (Int) -> Unit, onReceive: (
             })
         Text("FT8 requires NTP/GPS sync. Monitor needs no time correction. Recovery clears partial slots and learned calls.", style = MaterialTheme.typography.bodySmall)
         state.live.lastSlotUtcMillis?.let { Text("Received slots: ${state.live.decodedSlots} · last UTC ${java.time.Instant.ofEpochMilli(it)}") }
-        state.live.rows.takeLast(3).forEach { row ->
+        state.live.rows.take(3).forEach { row ->
             val text = (row.decode.message as? UnpackResult.Decoded)?.message?.text ?: "Unsupported frame"
             Text("Local microphone · $text")
         }

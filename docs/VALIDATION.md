@@ -312,13 +312,44 @@ Memory measurements are snapshots, not peak or long-session qualification.
 See [the spectrum guide](SPECTRUM.md) for reproduction, levels and display-only
 cursor limits. This milestone does not qualify speaker TX, RF, USB or a QSO.
 
+## Coordinated phone audio bench (PR #35)
+
+On Samsung A51 / SM-A515F, Android 13 / ARM64, tested commit
+`fb5ba9713144ea9e4258ab752b6e20ca2d290769` with successful CI run
+[42689390307](https://github.com/vash909/8CBdroid/actions/runs/42689390307).
+The matching app/test/probe APKs were verified by artifact and installed hashes.
+Local checks passed 899 JVM tests, lint and debug builds.
+
+Physical PC-speaker to phone-microphone reception passed before output and after
+each of two scheduled even/odd phone-speaker slots. Silent latency calibration
+also recovered an existing receiver. The microphone stayed closed during queued
+waiting/playback; attempted starts were rejected, no receive DSP ran, and resumed
+sessions discarded partial slots, old results and learned calls.
+
+Both PC-microphone captures independently decoded `CQ 1AT106`, with matching
+77-bit payload and all 79 observed tones through the pinned desktop adapter.
+Estimated acoustic first-tone errors against UTC slot +500 ms were +24/+45 ms;
+nearby PC capture anchors spread 1.8/9.4 ms. Neither active signal clipped.
+Android presentation estimates were +7.8/+11.6 ms, with 180,000 frames per slot.
+These are finite bench measurements, not guarantees of DAC or acoustic timing.
+NTP uncertainty and the uncalibrated host microphone path remain relevant.
+
+Stop, explicit microphone Stop, real separate-app focus loss, correction reset,
+message edit, navigation, retained Activity recreation and profile cleanup
+passed. Errors/cancellation did not resume capture; profile application cleared
+recovery consent. See [the phone audio guide](PHONE_AUDIO.md) for reproducible
+checks. Radio VOX/PTT, RF QSOs, USB audio and continuous background operation
+are outside this evidence. Later changes and final APK checks are recorded in
+[PR #35](https://github.com/vash909/8CBdroid/pull/35).
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
   rates and large overlapping-signal workloads beyond the finite R09 corpus.
 - Sustained performance, memory peaks, thermal/battery behavior and other phones.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
-  acoustic VOX, scheduling, PTT and complete radio QSOs.
+  acoustic radio VOX, CAT/PTT and complete radio QSOs. Bench speaker scheduling
+  and phone audio recovery are covered separately above.
 - Android AutoSeq admission/progression and durable QSO logging.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
