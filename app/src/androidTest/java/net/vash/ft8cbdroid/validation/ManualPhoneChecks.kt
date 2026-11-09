@@ -56,6 +56,9 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
             val measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
             main { time.clock.apply(measurement) }
             report.put("ntp_rtt_ms", measurement.roundTripMillis).put("ntp_uncertainty_ms", measurement.uncertaintyMillis)
+            await("Operate accessibility window") {
+                PhoneNavigation.root(instrumentation)?.let { it.packageName == context.packageName && it.childCount > 0 } == true
+            }
             // Exercise the real Operate controls, not a separate test screen.
             PhoneNavigation.click(instrumentation, main { model.uiState.value.outputs.single().label })
             PhoneNavigation.click(instrumentation, "Calibrate speaker")

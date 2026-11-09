@@ -28,7 +28,8 @@ object PhoneNavigation {
     }
     fun click(instrumentation: Instrumentation, text: String) {
         for (forward in listOf(true, false)) repeat(16) {
-            val root = requireNotNull(root(instrumentation))
+            val root = root(instrumentation)
+            if (root == null) { SystemClock.sleep(100); return@repeat }
             val node = clickable(root, text); val bounds = Rect(); node?.getBoundsInScreen(bounds)
             val screen = Rect(); root.getBoundsInScreen(screen)
             if (node?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && screen.contains(bounds)) {
