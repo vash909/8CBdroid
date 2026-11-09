@@ -4,7 +4,7 @@ In **Settings → Message tools**, generate a WAV as before, explicitly select
 **Phone speaker**, and press **Play speaker preview**. One complete 15-second
 slot plays immediately. The separate [one-shot UTC controls](UTC_AUDIO_SCHEDULING.md)
 add scheduled bench playback; CAT/PTT and radio VOX remain unavailable.
-Keep radios disconnected for this bench feature. Operate's Enable TX stays disabled.
+Keep radios disconnected for this bench feature. Operate has separate [manual acoustic controls](MANUAL_OPERATION.md).
 
 Microphone reception on the same page is coordinated with output. Optional
 **Resume microphone after successful output** applies only to an already active

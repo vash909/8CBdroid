@@ -10,11 +10,12 @@ implemented behavior, device evidence and checks still pending.
 | Guide | Purpose |
 | --- | --- |
 | [Operating profiles](OPERATING_PROFILES.md) | Save radio/audio/LAN setups, restore disconnected configuration and handle validation/migration errors. |
-| [Interface and navigation](INTERFACE.md) | Operate, settings, source selection, draft TX controls and the Chat placeholder. |
+| [Interface and navigation](INTERFACE.md) | Operate, settings, source selection, manual acoustic TX controls and the Chat placeholder. |
 | [Build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
+| [Manual acoustic operation](MANUAL_OPERATION.md) | Explicit CB peer/messages, one-slot speaker sends, receive recovery and limits. |
 | [One-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md) | Measured output latency, even/odd slots and cancellation of stale work. |
 | [Coordinated phone audio](PHONE_AUDIO.md) | Exclusive microphone/speaker ownership, opt-in receive recovery and physical acoustic checks. |
 | [Speaker audio preview](AUDIO_PREVIEW.md) | Explicit generated-slot playback, level/ramps, Stop, focus and output lifetime. |

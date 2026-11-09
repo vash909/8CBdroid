@@ -21,6 +21,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.vash.ft8cbdroid.audio.*
+import net.vash.ft8cbdroid.operate.*
+import net.vash.ft8cbdroid.core.message.ManualPeer
+import net.vash.ft8cbdroid.core.message.manualPeer
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.core.recording.RecordedDecodeFlag
@@ -36,10 +39,10 @@ import java.util.Locale
 private val utcTime = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC)
 
 data class ActivityMessage(val time: String, val message: String, val signal: String, val offset: Int,
-    val detail: String)
+    val detail: String, val peer: ManualPeer? = null)
 
 /** Local estimates and desktop reports keep their source and confidence labels. */
-fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanUiState): List<ActivityMessage> =
+fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanUiState, ownCall: String = ""): List<ActivityMessage> =
     if (source == OperatingSource.LOCAL) capture.live.rows.map { row ->
         ActivityMessage(utcTime.format(row.decode.slotStartUtc), when (val text = row.decode.message) {
             is UnpackResult.Decoded -> text.message.text
@@ -49,7 +52,7 @@ fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanU
                 add("Local audio · estimated SNR* · DT ${String.format(Locale.ROOT, "%+.2f", row.decode.deltaTimeSeconds)} s")
                 if (RecordedDecodeFlag.UNKNOWN_HASH in row.decode.flags) add("Unknown hash")
                 if (RecordedDecodeFlag.AMBIGUOUS_HASH in row.decode.flags) add("Ambiguous hash")
-            }.joinToString(" · "))
+            }.joinToString(" · "), manualPeer(row, ownCall))
     } else lan.connection.decodes.asReversed().map { row ->
         val time = row.utcMillisOfDay?.let { String.format(Locale.ROOT, "%02d:%02d:%02d", it / 3_600_000, it / 60_000 % 60, it / 1000 % 60) } ?: "—"
         ActivityMessage(time, row.message.ifEmpty { "(empty message)" }, String.format(Locale.ROOT, "%+d", row.snr),
@@ -63,14 +66,13 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
     lan: LanUiState, time: TimeUiState, onDestination: (AppDestination) -> Unit,
     onReceive: () -> Unit, onMonitor: () -> Unit, onStop: () -> Unit,
     onView: (SpectrumView) -> Unit, spectrum: @Composable () -> Unit,
-    profileName: String? = null, referenceFrequencyHz: Long = 27_265_000L, profileReady: Boolean = true) {
+    profileName: String? = null, referenceFrequencyHz: Long = 27_265_000L, profileReady: Boolean = true,
+    manual: ManualOperatingState = ManualOperatingState(), manualActions: ManualActions = ManualActions()) {
     var sent by rememberSaveable { mutableStateOf(false) }
-    var odd by rememberSaveable { mutableStateOf(false) }
-    var draft by rememberSaveable { mutableStateOf("") }
     val receiving = if (source == OperatingSource.LOCAL) capture.phase != CapturePhase.IDLE || capture.awaitingPermission else lan.active || lan.busy
-    val rows = remember(source, capture.live.rows, lan.connection.decodes) { activityMessages(source, capture, lan) }
+    val rows = remember(source, capture.live.rows, lan.connection.decodes, station.saved?.callsign) { activityMessages(source, capture, lan, station.saved?.callsign.orEmpty()) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val small = maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
+        val small = source == OperatingSource.LOCAL || maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
         Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { onDestination(AppDestination.PROFILES) }, contentPadding = PaddingValues(0.dp)) {
@@ -117,7 +119,10 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 }
             }
             ActivityLog(rows, sent, { sent = it }, source,
-                if (small) Modifier.fillMaxWidth().height(200.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView)
+                if (small) Modifier.fillMaxWidth().height(200.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView,
+                manual.sent.map { entry -> ActivityMessage(utcTime.format(java.time.Instant.ofEpochMilli(entry.utcMillis)), entry.text,
+                    "—", entry.frequencyHz.roundToInt(), "Completed speaker audio · radio TX unconfirmed · reference dial ${entry.referenceDialHz} Hz") },
+                manualActions.selectPeer)
             (if (source == OperatingSource.LOCAL) capture.error else lan.error ?: lan.connection.error)?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
@@ -125,31 +130,34 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 OffsetField("RX Hz", capture.spectrumView.rxHz, source == OperatingSource.LOCAL, Modifier.weight(1f)) {
                     onView(capture.spectrumView.copy(cursor = OffsetCursor.RX).select(it.toFloat()))
                 }
-                OffsetField("TX Hz", capture.spectrumView.txHz, source == OperatingSource.LOCAL, Modifier.weight(1f)) {
-                    onView(capture.spectrumView.copy(cursor = OffsetCursor.TX).select(it.toFloat()))
-                }
+                OutlinedTextField(value = if (source == OperatingSource.LOCAL) manual.frequency else "—", onValueChange = manualActions.frequency,
+                    label = { Text("TX Hz") }, singleLine = true, enabled = source == OperatingSource.LOCAL,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
                 Surface(color = RadioColors.panel, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
-                    Text(if (source == OperatingSource.LOCAL) "TX OFF" else "LOCAL TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
+                    Text(if (source == OperatingSource.LAN) "LOCAL TX OFF" else if (manual.busy) when (manual.phase) {
+                        ManualPhase.CALIBRATING -> "CALIBRATING"
+                        ManualPhase.GENERATING -> "ENCODING"
+                        ManualPhase.WAITING -> "TX QUEUED"
+                        ManualPhase.PLAYING -> "TX AUDIO"
+                        ManualPhase.TONE -> "TEST TONE"
+                        else -> "CLEANUP"
+                    } else if (manual.armed) "TX ARMED" else "TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Button(onClick = onReceive, enabled = profileReady && !receiving && if (source == OperatingSource.LOCAL) capture.canStart else lan.canStart,
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp)) { Text("Start RX") }
-                OutlinedButton(onClick = onStop, enabled = receiving, modifier = Modifier.weight(.7f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Stop") }
-                OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Enable TX") }
+                OutlinedButton(onClick = onStop, enabled = receiving || manual.busy || manual.armed, modifier = Modifier.weight(.7f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Stop") }
+                OutlinedButton(onClick = manualActions.enable, enabled = source == OperatingSource.LOCAL && !manual.busy && (manual.armed || manual.canArm), modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp)) { Text(if (manual.armed) "Disable TX" else "Enable TX") }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("TX period", style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
-                FilterChip(selected = !odd, onClick = { odd = false }, label = { Text("Even") })
-                FilterChip(selected = odd, onClick = { odd = true }, label = { Text("Odd") })
-                Spacer(Modifier.weight(1f))
-                if (source == OperatingSource.LOCAL) TextButton(onClick = onMonitor, enabled = profileReady && !receiving && capture.canStart,
-                    contentPadding = PaddingValues(horizontal = 4.dp)) { Text("Monitor") }
-            }
-            OutlinedTextField(value = draft, onValueChange = { draft = it.take(80) }, modifier = Modifier.fillMaxWidth(),
-                label = { Text("Custom message · draft") }, singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
-            Text("TX is unavailable. Offsets and period do not arm transmission.", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+            if (source == OperatingSource.LOCAL) {
+                manual.queuedUtcMillis?.let { Text("Queued UTC: ${java.time.Instant.ofEpochMilli(it)}", style = MaterialTheme.typography.bodySmall) }
+                manual.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                manual.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                Button(onClick = manualActions.send, enabled = manual.armed && !manual.busy, modifier = Modifier.fillMaxWidth()) { Text("Send one slot") }
+                TextButton(onClick = onMonitor, enabled = profileReady && !receiving && capture.canStart) { Text("Monitor") }
+                ManualOperatingPanel(manual, manualActions)
+            } else Text("Local audio TX is disabled in LAN mode.", style = MaterialTheme.typography.bodySmall)
             // The correction remains explicit; this summary never implies system-clock synchronization.
             Text(time.sourceDescription, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -169,7 +177,7 @@ private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: M
 
 @Composable
 private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boolean) -> Unit,
-    source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView) {
+    source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView, sentRows: List<ActivityMessage> = emptyList(), onPeer: (ManualPeer) -> Unit = {}) {
     Surface(modifier, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
         Column(Modifier.padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -177,20 +185,20 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                     Text("Received ${rows.size}", color = if (!sent) RadioColors.gold else RadioColors.muted)
                 }
                 TextButton(onClick = { onSent(true) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                    Text("Sent 0", color = if (sent) RadioColors.gold else RadioColors.muted)
+                    Text("Sent ${sentRows.size}", color = if (sent) RadioColors.gold else RadioColors.muted)
                 }
                 Spacer(Modifier.weight(1f))
                 Text(if (source == OperatingSource.LOCAL) "LOCAL" else "LAN", style = MaterialTheme.typography.labelSmall, color = RadioColors.olive)
             }
             HorizontalDivider(color = RadioColors.line)
-            if (sent || rows.isEmpty()) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            if ((if (sent) sentRows else rows).isEmpty()) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(if (sent) "No transmitted messages" else "Listening starts here", style = MaterialTheme.typography.bodyMedium)
-                    Text(if (sent) "Audio transmission is not available yet." else "${if (source == OperatingSource.LOCAL) "Start RX after time synchronization" else "Start RX to listen for a desktop"}.",
+                    Text(if (sent) "Only completed speaker slots appear here; this is not a QSO log." else "${if (source == OperatingSource.LOCAL) "Start RX after time synchronization" else "Start RX to listen for a desktop"}.",
                         style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
                 }
             } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
-                itemsIndexed(rows) { _, row ->
+                itemsIndexed(if (sent) sentRows else rows) { _, row ->
                     Column(Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(row.time, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
@@ -200,9 +208,12 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                         Text(row.message, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(row.detail, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
-                            if (source == OperatingSource.LOCAL) TextButton(onClick = {
+                            if (!sent && source == OperatingSource.LOCAL) TextButton(onClick = {
                                 onView(view.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat()))
                             }, contentPadding = PaddingValues(4.dp)) { Text("→ RX", style = MaterialTheme.typography.labelMedium) }
+                            if (!sent && source == OperatingSource.LOCAL) row.peer?.let { peer ->
+                                TextButton(onClick = { onPeer(peer) }, contentPadding = PaddingValues(4.dp)) { Text("Use peer", style = MaterialTheme.typography.labelMedium) }
+                            }
                         }
                         HorizontalDivider(color = RadioColors.line)
                     }

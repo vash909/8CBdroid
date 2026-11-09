@@ -6,7 +6,8 @@ Optional [UTC assembly](UTC_RECEIVE_SLOTS.md) now timestamps capture after
 NTP/GPS sync and retains complete slots. [Live reception](LIVE_RECEIVE.md)
 optionally decodes those slots in a separate bounded worker. Capture does not
 play audio or operate PTT. Generated PCM has a separate [bench speaker preview](AUDIO_PREVIEW.md);
-radio VOX and live TX remain unimplemented.
+Operate adds separate [manual speaker sends](MANUAL_OPERATION.md); radio/VOX
+settings remain manual.
 
 ## Start, stop and permission
 

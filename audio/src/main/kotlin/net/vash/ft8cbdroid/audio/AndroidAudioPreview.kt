@@ -45,6 +45,9 @@ class AndroidAudioPreview(context: Context) : ScheduledAudioPreview {
     }
     override suspend fun measureLatency(outputId: Int): OutputLatency =
         requireNotNull(output(FloatArray(12_000), outputId, null, null, true) {})
+    override suspend fun testTone(outputId: Int, frequencyHz: Float, peakAmplitude: Float) {
+        output(phoneTestTone(frequencyHz, peakAmplitude), outputId, null, null, false) {}
+    }
     override suspend fun playScheduled(slot: Ft8PcmSlot, outputId: Int, settings: PreviewSettings,
         plan: ScheduledSlot, clock: ReceiveClock, update: (PreviewReport) -> Unit) {
         output(previewSamples(slot, settings), outputId, plan, clock, false, update)

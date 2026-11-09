@@ -1,8 +1,9 @@
 # One-shot UTC audio scheduling
 
 **Settings → Message tools** can queue one generated FT8 slot through the phone
-speaker. This remains a foreground bench tool. CAT/PTT, radio VOX, automatic
-repetition and live Enable TX on Operate are unavailable.
+speaker. This remains a foreground bench tool. CAT/PTT and automatic
+repetition are unavailable. [Operate](MANUAL_OPERATION.md) uses this scheduler for
+explicit manual acoustic sends; radio VOX is operator-configured.
 
 1. Synchronize and explicitly apply an NTP or GPS measurement in **Time synchronization**.
 2. Generate a message and explicitly select **Phone speaker** in Message tools.

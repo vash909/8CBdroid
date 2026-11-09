@@ -11,7 +11,10 @@ Settings owns configuration/tool pages, while ViewModels retain existing backend
 ownership. Operate and the full microphone monitor are explicit receiving views;
 leaving them for configuration or Chat stops local reception and clears its
 session. Background and rotation cleanup remain unchanged. The Chat page performs
-no networking. TX controls, period and message drafts invoke no transmit backend.
+no networking. ManualOperatingViewModel freezes one explicit CB message and owns
+one scheduled speaker send, using the same retained PhoneAudioCoordinator as
+Message tools. Protocol templates/peer selection live in core; Android output and
+capture stay behind contracts. Completion records audio only, without QSO automation.
 
 ## Modules and ownership
 

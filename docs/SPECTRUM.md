@@ -29,9 +29,11 @@ samples as local microphone audio. Phone evidence is in [validation](VALIDATION.
    Restart remains explicit. Cursor/zoom choices survive Stop and rotation in
    the current ViewModel, but are not saved across process recreation.
 
-**The cursors are display selections only.** They do not narrow the FT8 search,
-change a radio frequency, connect to the offline waveform editor, start audio
-playback or arm transmission. Those actions belong to later milestones.
+**RX is a display selection. TX also sets the manual output frequency.** Neither
+cursor narrows the FT8 search, tunes a radio, changes the offline waveform editor
+or starts/arms audio. Manual output validates 200–2900 Hz; higher display values
+block sending. Changing TX frequency cancels/disarms a pending manual send. See
+[manual operation](MANUAL_OPERATION.md).
 
 ## Frequency, level and work limits
 

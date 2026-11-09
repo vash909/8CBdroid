@@ -71,6 +71,12 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     private var preferredKind: AudioInputKind? = null
     private var recoveryRevision = 0L
     fun blockForOutput(blocked: Boolean) { state.value = state.value.copy(outputBusy = blocked) }
+    private var sharedCoordinator: PhoneAudioCoordinator? = null
+    /** Retained with the receiver, so operating and bench outputs share ownership across Activity recreation. */
+    fun audioCoordinator(permissionGranted: () -> Boolean): PhoneAudioCoordinator = sharedCoordinator ?: PhoneAudioCoordinator(object : PhoneAudioReceiver {
+        override fun blockStarts(blocked: Boolean) = blockForOutput(blocked)
+        override suspend fun pause() = pauseForOutput(permissionGranted)
+    }).also { sharedCoordinator = it }
 
     /** Freeze a recovery request, discard partial/self-TX slots and join actual input/DSP cleanup. */
     suspend fun pauseForOutput(permissionGranted: () -> Boolean): (() -> Boolean)? {

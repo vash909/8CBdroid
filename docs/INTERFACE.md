@@ -12,21 +12,22 @@ system language. No connection or microphone session starts on launch.
 - The compact local spectrum/waterfall uses the existing 2 Hz analyzer and
   96-row history. **Expand ↗** opens the full monitor. LAN supplies no waterfall
   audio, so that source shows an explanation rather than invented samples.
-- **Received** shows only the selected source: local microphone/USB input or
-  WSJT-CB desktop messages. Local SNR has an estimated-value marker; desktop
-  replay, off-air and low-confidence flags remain visible. **→ RX** selects a
-  local decoded frequency, not a QSO peer. **Sent** is empty because no transmit
-  backend exists.
-- **RX Hz** and **TX Hz** edit the existing local display cursors within
-  200–2950 Hz. Invalid drafts do not change the cursor. Unavailable LAN audio offsets show a dash. They do not tune a radio,
-  filter decoder searches or configure the separate offline waveform editor.
-- **Start RX** starts local FT8 reception with measured NTP/GPS time, or the
-  desktop UDP listener for the LAN source. **Monitor** starts local visualization
-  without time sync. **Stop** releases the selected receiver.
-- **TX OFF** and disabled **Enable TX** accurately show the current boundary.
-  Even/Odd and the custom-message field are UI drafts only: no message is queued,
-  encoded, played or marked as sent. Unvalidated custom text is not a claim of
-  FT8 encodability. Live radio TX, CAT/PTT and AutoSeq remain absent; Message tools has a separate [bench speaker preview](AUDIO_PREVIEW.md).
+- **Received** shows the selected source, with estimated local SNR and desktop
+  confidence/replay flags. **→ RX** changes the RX cursor; **Use peer** selects a
+  complete local CB sender and suggests a reply, report, opposite period and TX
+  frequency without arming. **Sent** records only completed speaker audio.
+- **RX Hz** controls the 200–2950 Hz display cursor. **TX Hz** also selects actual
+  manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
+  LAN offsets are unavailable; the separate offline waveform editor is unchanged.
+- **Start RX** starts local synchronized FT8 reception or the desktop listener.
+  **Monitor** starts plain local audio without time sync. **Stop** stops RX and
+  cancels/disarms manual output.
+- **Enable TX** followed by **Send one slot** sends one manually selected message
+  with measured time/calibration and active built-in FT8 RX. There is no repeat or
+  AutoSeq. CQ/reply/report/final templates, custom/free text, encoding consent,
+  Even/Odd, speaker selection, level, silent calibration and a two-second test
+  tone are below the main controls. See [manual operation](MANUAL_OPERATION.md).
+  Radio/VOX setup is manual; Sent is not a QSO log or radio TX confirmation.
 
 The message list scrolls independently. On short windows, including an open
 keyboard, the operating page scrolls so its controls remain reachable.
@@ -37,7 +38,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | --- | --- |
 | Operating profiles | Named radio/audio/LAN setups, save/apply, validation, discard/delete and disconnected startup. See [profiles](OPERATING_PROFILES.md). |
 | Station | Persistent callsign and Maidenhead locator. |
-| Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; output selection remains unavailable. |
+| Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; manual output selects the phone speaker on Operate. |
 | Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |
 | WSJT-CB LAN | Desktop filter, UDP port, status, Replay and detailed decode history. |
 | USB / CAT | Explicit Hamlib catalog/search/details and software-only Dummy check, plus descriptor/driver discovery and Android permissions; no hardware CAT commands. |
@@ -45,8 +46,9 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview and one-shot UTC scheduling, plus built-in microphone reception with opt-in recovery after successful output. See [phone audio](PHONE_AUDIO.md). |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |
 
-Moving between Operate and Microphone tools preserves the same receiver.
-Entering configuration or Chat stops local capture; returning cannot restart it.
+Leaving Operate cancels/disarms manual output. Moving to Microphone tools
+preserves an already active receiver; entering configuration or Chat stops local
+capture, and returning cannot restart it.
 Message tools can explicitly start its own foreground microphone session; leaving
 that page stops both input and output. Successful output may resume an already
 active microphone only with the page's explicit recovery choice.
@@ -56,9 +58,8 @@ ordinary settings navigation preserves a foreground LAN connection.
 
 Station and NTP server preferences retain their existing persistence. Operating
 profiles persist separately. Temporary source choices survive navigation/rotation
-in the current process; reopening restores the active saved profile. Period and
-custom-message choices remain UI drafts and can survive restored UI state.
-No TX state is restored or armed.
+in the current process; reopening restores the active saved profile. Manual drafts and completed-audio history are process-local. Applying a profile
+clears output selection/calibration; no pending or armed TX is restored.
 
 ## Chat
 

@@ -70,6 +70,10 @@ class PresentationEstimator(private val commandNanos: Long) {
 }
 
 interface ScheduledAudioPreview : AudioPreview {
+    /** Explicit bounded calibration output, never a sent FT8 message. */
+    suspend fun testTone(outputId: Int, frequencyHz: Float, peakAmplitude: Float) {
+        throw PreviewException("Test tone is unavailable on this output.")
+    }
     suspend fun measureLatency(outputId: Int): OutputLatency
     suspend fun playScheduled(slot: Ft8PcmSlot, outputId: Int, settings: PreviewSettings,
         plan: ScheduledSlot, clock: ReceiveClock, update: (PreviewReport) -> Unit)
