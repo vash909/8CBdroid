@@ -76,6 +76,7 @@ class ManualOperatingViewModelTest {
     @Test fun explicitEnableAndSendFreezeOnePayloadAndRecordOnlyACompleteSlotWithoutRepeating() = runTest(dispatcher) {
         val engine = Engine(); val player = Player(); val vm = model(engine, player); ready(vm)
         vm.send(); runCurrent(); assertEquals(0, player.slots)
+        vm.period(SlotPeriod.ODD)
         vm.enableTx(); assertTrue(vm.uiState.value.armed); assertEquals(0, player.slots)
         vm.send(); vm.send(); runCurrent()
         assertFalse(receiving); assertEquals(1, player.slots); assertTrue(vm.uiState.value.sent.isEmpty())
@@ -83,6 +84,7 @@ class ManualOperatingViewModelTest {
         assertFalse(vm.uiState.value.armed); assertFalse(vm.uiState.value.busy); assertTrue(receiving)
         val sent = vm.uiState.value.sent.single()
         assertEquals("CQ 1AT106", sent.text); assertEquals(27_265_000L, sent.referenceDialHz)
+        assertEquals(15_000L, sent.utcMillis % 30_000)
         assertEquals((CbMessageCodec.pack(sent.text) as PackResult.Encoded).payload, engine.encoded.single().first)
         assertEquals(1, player.slots); vm.send(); advanceTimeBy(60000); assertEquals(1, player.slots)
     }

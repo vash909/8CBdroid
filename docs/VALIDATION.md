@@ -342,13 +342,55 @@ checks. Radio VOX/PTT, RF QSOs, USB audio and continuous background operation
 are outside this evidence. Later changes and final APK checks are recorded in
 [PR #35](https://github.com/vash909/8CBdroid/pull/35).
 
+## Manual acoustic operation (PR #36)
+
+Samsung A51 / SM-A515F, Android 13 / ARM64, ran matching CI app/test/probe APKs
+for `700b6606a5cd9552d8767f1dfa1240e5862b69e1`, successful CI
+[42703999857](https://github.com/vash909/8CBdroid/actions/runs/42703999857).
+Local checks passed 972 JVM tests, lint and debug builds. Sixty-one manual
+text/payload expectations match the pinned independently generated desktop corpus.
+See [manual operation](MANUAL_OPERATION.md) for setup and limits.
+
+The physical PC-speaker/phone-microphone scenario received desktop-reference CQ,
+directed reply, report and RR73 messages. Operate's actual peer selection,
+calibration, Enable TX and Send one slot controls emitted reply, R-report and 73
+through the phone speaker. Each completed 180,000-frame slot disarmed TX and
+recovered the previously active receiver with old results/learned calls cleared.
+Warm receive context and fresh sessions after output were observed. This basic
+scenario used even output slots; both scheduler periods have separate earlier
+phone evidence, and the manual ViewModel's odd-slot selection is JVM-tested.
+
+All three actual PC-microphone recordings passed the pinned desktop known-time/
+frequency LDPC/CRC adapter with exact expected 77-bit payloads and all 79 observed
+tones. The reply's destination remains `<...>` in the deliberately unseeded
+adapter; its wire payload matches `<26AT101> 1AT106`. The other texts decoded as
+`26AT101 R-12` and `26AT101 73`. Estimated acoustic onset errors against UTC slot
++500 ms were +56.7/+74.2/+70.2 ms, with nearby capture-anchor spreads
+1.7/20.8/14.4 ms. These are finite acoustic bench observations, not DAC guarantees.
+NTP RTT was 23.3 ms with reported uncertainty 22.6 ms.
+
+Queued Stop, Stop during actual playback, edits, correction reset, real separate-
+app focus loss, navigation, retained Activity recreation and profile cleanup
+passed. Playback Stop cleanup took 111 ms in this observation; interrupted audio
+was not added to Sent. The explicit two-second test tone recovered RX without
+adding a message. Field/source and system microphone-permission denial/retry
+checks passed on an application payload identical to this tested revision.
+
+An earlier receive attempt observed a 338.9 ms hardware timestamp departure.
+The existing 10 ms guard stopped capture and discarded the incomplete audio;
+an explicit new session completed the full scenario. The guard was not relaxed.
+This does not characterize long-session capture reliability. Further final APK/
+UI checks are recorded in [PR #36](https://github.com/vash909/8CBdroid/pull/36).
+No radio, RF QSO, CAT/USB qualification, AutoSeq or persistent QSO logging is
+established by this acoustic scenario.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
   rates and large overlapping-signal workloads beyond the finite R09 corpus.
 - Sustained performance, memory peaks, thermal/battery behavior and other phones.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
-  acoustic radio VOX, CAT/PTT and complete radio QSOs. Bench speaker scheduling
+  CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
 - Android AutoSeq admission/progression and durable QSO logging.
 

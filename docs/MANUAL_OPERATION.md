@@ -87,6 +87,7 @@ permission and leave the phone unlocked near physical PC speakers and microphone
 Use the desktop compiler setup in [development](DEVELOPMENT.md), then run:
 
 ```bash
+source scripts/env.sh
 python3 scripts/phone_audio_checks.py --manual --output /path/to/new-private-directory
 ```
 

@@ -86,7 +86,7 @@ def main():
                     player = subprocess.Popen(['pw-play', '--volume', '0.5', str(incoming[stages[-1]] if args.manual else fixture)], stdout=audio_log, stderr=subprocess.STDOUT)
                     desktop_plays.append(dict(stage=stages[-1], target_utc=scheduled, launched_utc=time.time()))
                     scheduled = None
-                    print('Playing pinned desktop CQ acoustically.', flush=True)
+                    print('Playing pinned desktop audio acoustically.', flush=True)
                 if player is not None and player.poll() is not None:
                     assert player.returncode == 0, 'PC speaker playback failed.'
                     player = None
