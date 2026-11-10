@@ -102,3 +102,8 @@ Android playback counters alone are insufficient. These are acoustic software
 checks, not radio/RF observations or the complete desktop GUI/search pipeline.
 Keep recordings and settings backups private. See [validation](VALIDATION.md)
 for observed results and [UTC scheduling](UTC_AUDIO_SCHEDULING.md) for timing limits.
+
+The broader [acoustic interoperability suite](ACOUSTIC_INTEROP.md) checks complete
+calling/answering exchanges, numeric/slash peers, cold/warm hash context,
+attenuated/noisy input and foreign finals. It also runs the installed desktop
+decoder's full candidate search against physical recordings of phone output.

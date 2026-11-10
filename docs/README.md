@@ -16,6 +16,7 @@ implemented behavior, device evidence and checks still pending.
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
 | [Manual acoustic operation](MANUAL_OPERATION.md) | Explicit CB peer/messages, one-slot speaker sends, receive recovery and limits. |
+| [Acoustic desktop interoperability](ACOUSTIC_INTEROP.md) | Reproducible numeric/slash exchanges, hash resets, degraded input and independent desktop decodes of physical phone audio. |
 | [One-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md) | Measured output latency, even/odd slots and cancellation of stale work. |
 | [Coordinated phone audio](PHONE_AUDIO.md) | Exclusive microphone/speaker ownership, opt-in receive recovery and physical acoustic checks. |
 | [Speaker audio preview](AUDIO_PREVIEW.md) | Explicit generated-slot playback, level/ramps, Stop, focus and output lifetime. |

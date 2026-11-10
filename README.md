@@ -137,6 +137,11 @@ an invented peer. Actual phone-exported CQ and both directed hash orientations
 also passed file decoding in the complete WSJT-CB desktop GUI; see the
 [R07 closure evidence](docs/VALIDATION.md#r07-closure-checks-pr-26).
 
+The [acoustic interoperability suite](docs/ACOUSTIC_INTEROP.md) provides repeatable
+phone/desktop exchange checks, including numeric/slash calls, hash-session resets
+and degraded input. It independently decodes recordings of the phone speaker;
+it does not enable automatic QSO progression.
+
 ## Documentation and contributions
 
 Start with the [documentation index](docs/README.md),

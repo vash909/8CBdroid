@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "station": "1AT106",
+  "cases_sha256": "dd7acf7a1f0e8e30854eeb87352b5530f3a8812a463f747a8d620b0d99d19ef7",
+  "packing_sources_sha256": "d96a6e40e24547672a783f8dbfeff879cd769009e55090a0e7da574d45343eee",
+  "steps": [
+    {
+      "id": "cold-trailing",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": false,
+      "payload77": "01101100101100000000000000000000000010001111001110110000011010110100001000100",
+      "expected_text": "26AT101 <...>"
+    },
+    {
+      "id": "learn-sender",
+      "action": "receive",
+      "message": "CQ 161XZ085",
+      "selectable": true,
+      "payload77": "01101100101100000000000000000000111010001111010111001100101111000000000001100",
+      "expected_text": "CQ 161XZ085"
+    },
+    {
+      "id": "warm-trailing",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": true,
+      "payload77": "01101100101100000000000000000000000010001111001110110000011010110100001000100",
+      "expected_text": "26AT101 <161XZ085>"
+    },
+    {
+      "id": "leading-local",
+      "action": "receive",
+      "message": "<1AT106> 26AT101",
+      "selectable": true,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "expected_text": "<1AT106> 26AT101"
+    },
+    {
+      "id": "wrong-peer-final",
+      "action": "receive",
+      "message": "161XZ085 RR73",
+      "selectable": false,
+      "payload77": "00000111000101010011110101101011111001100100010101000001110000000100100000000",
+      "expected_text": "161XZ085 RR73"
+    },
+    {
+      "id": "reset-context",
+      "action": "reset"
+    },
+    {
+      "id": "cold-again",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": false,
+      "payload77": "01101100101100000000000000000000000010001111001110110000011010110100001000100",
+      "expected_text": "26AT101 <...>"
+    },
+    {
+      "id": "numeric-weak",
+      "action": "receive",
+      "message": "CQ 001AB123",
+      "selectable": true,
+      "attenuation_db": 18,
+      "payload77": "11100100111100000000000000000000011011011000100000010010100000000011100001100",
+      "expected_text": "CQ 001AB123"
+    },
+    {
+      "id": "numeric-reply",
+      "action": "send",
+      "kind": "REPLY",
+      "message": "<001AB123> 1AT106",
+      "peer": "001AB123",
+      "period": "ODD",
+      "payload77": "11100100111100000000000000000000000000000010101110100100110110001101010000100",
+      "desktop_cold_text": "<...> 1AT106"
+    },
+    {
+      "id": "numeric-report",
+      "action": "receive",
+      "message": "1AT106 -07",
+      "selectable": false,
+      "payload77": "00000000000000000000011010010101110011010011011111111110011101010011010000000",
+      "expected_text": "1AT106 -07"
+    },
+    {
+      "id": "numeric-roger",
+      "action": "send",
+      "kind": "ROGER",
+      "message": "001AB123 R-07",
+      "peer": "001AB123",
+      "period": "ODD",
+      "payload77": "00000011010110010011111101001101110000111111111010000010101010110101010000000",
+      "desktop_cold_text": "001AB123 R-07"
+    },
+    {
+      "id": "numeric-final",
+      "action": "receive",
+      "message": "1AT106 RR73",
+      "selectable": false,
+      "payload77": "00000000000000010001010010010011101010110010111110101010000100101000100000000",
+      "expected_text": "1AT106 RR73"
+    },
+    {
+      "id": "numeric-signoff",
+      "action": "send",
+      "kind": "SIGNOFF",
+      "message": "001AB123 73",
+      "peer": "001AB123",
+      "period": "ODD",
+      "payload77": "00000000000000000111110001101000011000111000010110000011100001111100100000000",
+      "desktop_cold_text": "001AB123 73"
+    },
+    {
+      "id": "slash-cq",
+      "action": "send",
+      "kind": "CQ",
+      "message": "CQ 1AT106",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN",
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "desktop_cold_text": "CQ 1AT106"
+    },
+    {
+      "id": "slash-reply",
+      "action": "receive",
+      "message": "<1AT106> 999ZZ/ZZ",
+      "selectable": true,
+      "payload77": "10000111110100000000000000000100010001100110110111101110001010000100000000100",
+      "expected_text": "<1AT106> 999ZZ/ZZ"
+    },
+    {
+      "id": "slash-report",
+      "action": "send",
+      "kind": "REPORT",
+      "message": "999ZZ/ZZ -07",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN",
+      "payload77": "00000000110010111111100100100011100110111100011000101110000111011001010000000",
+      "desktop_cold_text": "999ZZ/ZZ -07"
+    },
+    {
+      "id": "slash-roger",
+      "action": "receive",
+      "message": "1AT106 R-07",
+      "selectable": false,
+      "payload77": "00000000000000010001010010010011101010110010111110101010100110100001010000000",
+      "expected_text": "1AT106 R-07"
+    },
+    {
+      "id": "slash-final",
+      "action": "send",
+      "kind": "RR73",
+      "message": "999ZZ/ZZ RR73",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN",
+      "payload77": "00100001011101101101111111010111100011101000001101111011101100100100100000000",
+      "desktop_cold_text": "999ZZ/ZZ RR73"
+    },
+    {
+      "id": "slash-signoff",
+      "action": "receive",
+      "message": "1AT106 73",
+      "selectable": false,
+      "payload77": "00000000000000000000000000101000001000110101110011000010111110001111100000000",
+      "expected_text": "1AT106 73"
+    },
+    {
+      "id": "slash-noise",
+      "action": "receive",
+      "message": "CQ 999ZZ/ZZ",
+      "selectable": true,
+      "noise_snr_db": 0,
+      "noise_seed": 20261110,
+      "payload77": "01111001101100000000000000000100010001100110110111101110001010000100000001100",
+      "expected_text": "CQ 999ZZ/ZZ"
+    },
+    {
+      "id": "foreign-final-after-exchange",
+      "action": "receive",
+      "message": "001AB123 RR73",
+      "selectable": false,
+      "payload77": "00000011010110010011111101001101110000111111111010000010001000111100100000000",
+      "expected_text": "001AB123 RR73"
+    }
+  ]
+}
