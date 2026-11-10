@@ -22,6 +22,9 @@ import time
 import uuid
 import wave
 
+import numpy as np
+from scipy.signal import correlate, hilbert, resample_poly
+
 import wsjtcb_channel as channel
 import wsjtcb_pcm as pcm_reference
 
@@ -57,8 +60,6 @@ def degraded_wave(data, step):
 
 
 def analyze(output, fixture, report, channel_exe, decoder, jt9):
-    import numpy as np
-    from scipy.signal import correlate, hilbert, resample_poly
     expected = {s['id']: s for s in fixture['steps']}
     results = []
     for event in report['events']:
@@ -124,10 +125,13 @@ def main():
     parser.add_argument('--ntp-port', type=int, default=123)
     parser.add_argument('--analyze-only', action='store_true', help='Recheck retained physical captures without playing or recording audio')
     args = parser.parse_args()
+    args.jt9 = args.jt9.resolve()
+    assert args.jt9.is_file() and os.access(args.jt9, os.X_OK), 'Provide an executable WSJT-CB jt9.'
     output = args.output.resolve()
     if args.analyze_only:
         report = json.loads((output/'phone-report.json').read_text())
         assert report['fixture_sha256'] == hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
+        assert report['desktop_binary_sha256'] == hashlib.sha256(args.jt9.read_bytes()).hexdigest()
         fixture = json.loads(FIXTURE.read_text())
         report['independent_captures'] = analyze(output, fixture, report,
             output/'reference/channel', output/'reference/pcm_decode', args.jt9.resolve())
@@ -248,7 +252,7 @@ def main():
             process.terminate(); process.wait(timeout=4)
         for path in output.rglob('*'):
             if path.is_file():
-                path.chmod(0o600)
+                path.chmod(0o700 if path.stat().st_mode & 0o111 else 0o600)
 
 
 if __name__ == '__main__':

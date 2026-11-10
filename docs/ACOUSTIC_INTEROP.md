@@ -48,6 +48,16 @@ substitute for its CB message handling. Select a physical PC microphone, not a
 speaker monitor or virtual loopback. Position the unlocked phone near the PC
 speakers and microphone at audible, unclipped levels.
 
+If NumPy/SciPy are absent, use an isolated host environment:
+
+```bash
+python3 -m venv .tooling/audio-host
+.tooling/audio-host/bin/python -m pip install numpy scipy
+source .tooling/audio-host/bin/activate
+```
+
+Missing analysis dependencies fail before any phone operation or audio playback.
+
 Install matching app/test APKs. Save station `1AT106` with a valid locator,
 apply a Phone input/output profile, grant microphone permission and open Operate.
 Tests do not edit persistent station/profile settings. Keep the app visible and
