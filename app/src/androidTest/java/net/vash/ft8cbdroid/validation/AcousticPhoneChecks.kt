@@ -64,7 +64,7 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
             val profiles = main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
             await("station and Phone profile") { main { profiles.uiState.value.ready && operating.uiState.value.available && operating.uiState.value.outputs.isNotEmpty() } }
             check(main { operating.uiState.value.station?.callsign == cases.getString("station") }) { "Save station 1AT106 and apply a Phone input/output profile first." }
-            val measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
+            var measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
             main { time.clock.apply(measurement) }
             PhoneNavigation.click(instrumentation, main { operating.uiState.value.outputs.single().label })
             PhoneNavigation.click(instrumentation, "Start RX")
@@ -82,6 +82,10 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
                     "reset" -> {
                         main { input.stop(clear = true) }
                         await("input released") { main { input.uiState.value.phase == CapturePhase.IDLE } }
+                        // Renew only at the explicit session boundary, never during RX/TX work.
+                        measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
+                        main { time.clock.apply(measurement) }
+                        event.put("time_refreshed", true)
                         main { input.requestStart(true) }; receiving()
                         check(main { input.uiState.value.live.rows.isEmpty() && input.uiState.value.live.learnedCalls == 0 })
                     }

@@ -62,7 +62,9 @@ timeout 1200 python3 scripts/acoustic_checks.py \
 
 Use `--ntp-host HOST --ntp-port PORT` for a real NTP endpoint. The suite measures
 and applies time within the test process. Each run has unique acknowledgements;
-received payloads must belong to the precise scheduled UTC slot. Failed audio,
+the explicit RX restart also renews NTP before the two complete exchanges, so
+the ten-minute correction expiry remains enforced throughout the longer bench.
+Received payloads must belong to the precise scheduled UTC slot. Failed audio,
 capture or timestamp guards fail the scenario rather than silently retrying or
 weakening safety checks. Stop and restart explicitly after correcting setup.
 
