@@ -100,6 +100,7 @@ class WaveformPhoneChecks : Instrumentation() {
     }
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; ntpHost = arguments?.getString("ntp_host") ?: "time.cloudflare.com"; ntpPort = arguments?.getString("ntp_port")?.toInt() ?: 123; start() }
     override fun onStart() {
+        if (scenario == "acoustic") { AcousticPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "manual-audio") { ManualPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "phone-audio") {
             PhoneAudioChecks(this, previewRun, ntpHost, ntpPort).run()

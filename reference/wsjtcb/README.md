@@ -46,6 +46,13 @@ packing/message corpora; this predicate TSV alone does not establish its behavio
 
 ## Reproduce
 
+`acoustic-cases.json` supplies complete physical phone/desktop exchange inputs.
+`scripts/wsjtcb_acoustic.py --check` regenerates their payloads and cold/warm
+receive text with the original pinned packer/unpacker. The expected data is
+packaged only in the Android test APK, at `app/src/androidTest/assets/acoustic.json`.
+See [acoustic interoperability](../../docs/ACOUSTIC_INTEROP.md) for actual audio
+setup and independent desktop search of physical phone-speaker recordings.
+
 Use the complete sequential command list and host prerequisites in
 [development](../../docs/DEVELOPMENT.md#desktop-reference-and-native-checks).
 Text predicates/packing need GNU Fortran; QSO traces additionally need C++17,

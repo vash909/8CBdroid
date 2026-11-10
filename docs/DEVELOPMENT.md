@@ -100,6 +100,7 @@ timeout 180 python3 scripts/wsjtcb_packing.py --check
 timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
 timeout 180 python3 scripts/wsjtcb_qso.py --check
 timeout 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
+timeout 180 python3 scripts/wsjtcb_acoustic.py --check
 timeout 60 python3 scripts/wsjtcb_codec.py --check
 timeout 180 python3 scripts/wsjtcb_channel.py --check
 timeout 60 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release

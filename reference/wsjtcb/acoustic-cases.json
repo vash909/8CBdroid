@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "station": "1AT106",
+  "steps": [
+    {
+      "id": "cold-trailing",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": false
+    },
+    {
+      "id": "learn-sender",
+      "action": "receive",
+      "message": "CQ 161XZ085",
+      "selectable": true
+    },
+    {
+      "id": "warm-trailing",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": true
+    },
+    {
+      "id": "leading-local",
+      "action": "receive",
+      "message": "<1AT106> 26AT101",
+      "selectable": true
+    },
+    {
+      "id": "wrong-peer-final",
+      "action": "receive",
+      "message": "161XZ085 RR73",
+      "selectable": false
+    },
+    {
+      "id": "reset-context",
+      "action": "reset"
+    },
+    {
+      "id": "cold-again",
+      "action": "receive",
+      "message": "26AT101 <161XZ085>",
+      "selectable": false
+    },
+    {
+      "id": "numeric-weak",
+      "action": "receive",
+      "message": "CQ 001AB123",
+      "selectable": true,
+      "attenuation_db": 18
+    },
+    {
+      "id": "numeric-reply",
+      "action": "send",
+      "kind": "REPLY",
+      "message": "<001AB123> 1AT106",
+      "peer": "001AB123",
+      "period": "ODD"
+    },
+    {
+      "id": "numeric-report",
+      "action": "receive",
+      "message": "1AT106 -07",
+      "selectable": false
+    },
+    {
+      "id": "numeric-roger",
+      "action": "send",
+      "kind": "ROGER",
+      "message": "001AB123 R-07",
+      "peer": "001AB123",
+      "period": "ODD"
+    },
+    {
+      "id": "numeric-final",
+      "action": "receive",
+      "message": "1AT106 RR73",
+      "selectable": false
+    },
+    {
+      "id": "numeric-signoff",
+      "action": "send",
+      "kind": "SIGNOFF",
+      "message": "001AB123 73",
+      "peer": "001AB123",
+      "period": "ODD"
+    },
+    {
+      "id": "slash-cq",
+      "action": "send",
+      "kind": "CQ",
+      "message": "CQ 1AT106",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN"
+    },
+    {
+      "id": "slash-reply",
+      "action": "receive",
+      "message": "<1AT106> 999ZZ/ZZ",
+      "selectable": true
+    },
+    {
+      "id": "slash-report",
+      "action": "send",
+      "kind": "REPORT",
+      "message": "999ZZ/ZZ -07",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN"
+    },
+    {
+      "id": "slash-roger",
+      "action": "receive",
+      "message": "1AT106 R-07",
+      "selectable": false
+    },
+    {
+      "id": "slash-final",
+      "action": "send",
+      "kind": "RR73",
+      "message": "999ZZ/ZZ RR73",
+      "peer": "999ZZ/ZZ",
+      "period": "EVEN"
+    },
+    {
+      "id": "slash-signoff",
+      "action": "receive",
+      "message": "1AT106 73",
+      "selectable": false
+    },
+    {
+      "id": "slash-noise",
+      "action": "receive",
+      "message": "CQ 999ZZ/ZZ",
+      "selectable": true,
+      "noise_snr_db": 0,
+      "noise_seed": 20261110
+    },
+    {
+      "id": "foreign-final-after-exchange",
+      "action": "receive",
+      "message": "001AB123 RR73",
+      "selectable": false
+    }
+  ]
+}
