@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import random
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -218,7 +219,11 @@ def main():
                             raise AssertionError('Unknown phone stage: '+str(stage))
                         stages.append(stage)
                         data = json.dumps(dict(utc_millis=(scheduled or 0)*1000)).encode()
-                        adb('exec-in', 'run-as', PACKAGE, 'tee', 'cache/acoustic-go-'+run+'-'+stage+'.tmp', data=data)
+                        # Join the remote writer before publishing; adb exec-in does not
+                        # reliably join it, and exec-out does not forward stdin EOF.
+                        temp = 'cache/acoustic-go-'+run+'-'+stage+'.tmp'
+                        script = 'printf %s ' + shlex.quote(data.decode()) + ' > ' + shlex.quote(temp)
+                        adb('shell', shlex.join(['run-as', PACKAGE, 'sh', '-c', script]))
                         adb('shell', 'run-as', PACKAGE, 'mv', 'cache/acoustic-go-'+run+'-'+stage+'.tmp', 'cache/acoustic-go-'+run+'-'+stage+'.json')
                         print('Phone stage:', stage, flush=True)
                 time.sleep(.03 if scheduled is not None and scheduled-time.time() < 1 else .2)
