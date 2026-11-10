@@ -37,6 +37,7 @@ AutoSeq, QSO log or sustained background operating service.
 | 131 channel vectors + 4 clean WAVs | Exact codewords/tones and independently generated desktop audio. Includes payloads whose text can be unsupported or lossy. |
 | 21 generated PCM cases | Seven payloads at three frequency/level pairs; original desktop LDPC/CRC/unpacker with supplied synchronization, plus waveform measurements. |
 | 12 recorded-slot cases | Four clean, four AWGN, two onset shifts, corrupted data with intact sync and noise-only rejection. AWGN SNR estimate within 3 dB at the injected test levels. |
+| 20 acoustic events + RX reset | Reproducible numeric/slash exchanges, cold/warm hashes, degraded input and foreign finals; physical acceptance results are recorded in [PR #37](https://github.com/vash909/8CBdroid/pull/37). |
 
 At the R08 tested commit, the Android check reported **755 JVM tests** (678 core,
 32 protocol, 45 app), lint success and both debug APKs built. The separate
@@ -384,10 +385,31 @@ UI checks are recorded in [PR #36](https://github.com/vash909/8CBdroid/pull/36).
 No radio, RF QSO, CAT/USB qualification, AutoSeq or persistent QSO logging is
 established by this acoustic scenario.
 
+## Broader acoustic interoperability suite (PR #37)
+
+The [acoustic bench guide](ACOUSTIC_INTEROP.md) defines the scenario inputs,
+independently generated desktop expectations and physical reproduction steps.
+Six phone outputs cover both even/odd periods and both initiating/answering roles.
+Fourteen incoming messages include an 18 dB attenuated CQ, deterministic noisy
+input, both hash orientations and finals for other calls. Every received message
+must leave manual peer/message selection and TX state unchanged.
+
+Acceptance requires physical microphone/speaker exchanges and independent
+decoding of all six phone recordings. The installed WSJT-CB `jt9` searches the
+timestamp-derived UTC recordings; the pinned known-time/frequency adapter
+separately checks exact payloads and observed tones. Synthetic preflight checks
+alone cannot satisfy this bench. Tested commits, CI artifacts, device identity,
+measurements and outcomes are recorded in [PR #37](https://github.com/vash909/8CBdroid/pull/37).
+The suite renews test time at safe idle boundaries when needed; it does not add
+automatic NTP refresh to the client or change its ten-minute correction expiry.
+No RF contact, AutoSeq or sustained-operation qualification follows from this
+finite acoustic matrix.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
-  rates and large overlapping-signal workloads beyond the finite R09 corpus.
+  rates and large overlapping-signal workloads beyond the finite reference and
+  acoustic corpora.
 - Sustained performance, memory peaks, thermal/battery behavior and other phones.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling

@@ -66,6 +66,12 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
             check(main { operating.uiState.value.station?.callsign == cases.getString("station") }) { "Save station 1AT106 and apply a Phone input/output profile first." }
             var measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
             main { time.clock.apply(measurement) }
+            val refreshes = JSONArray()
+            fun recordTime(reason: String) {
+                refreshes.put(JSONObject().put("reason", reason).put("monotonic_nanos", measurement.monotonicNanos)
+                    .put("rtt_ms", measurement.roundTripMillis).put("uncertainty_ms", measurement.uncertaintyMillis))
+            }
+            recordTime("start")
             PhoneNavigation.click(instrumentation, main { operating.uiState.value.outputs.single().label })
             PhoneNavigation.click(instrumentation, "Start RX")
             fun receiving() = await("live microphone") { main {
@@ -73,6 +79,14 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
                 input.uiState.value.phase == CapturePhase.CAPTURING && input.uiState.value.decodeLive
             } }
             receiving()
+            fun refreshTime(reason: String) {
+                check(main { !operating.uiState.value.busy && !operating.uiState.value.armed })
+                main { input.stop(clear = true) }
+                await("input released for time renewal") { main { input.uiState.value.phase == CapturePhase.IDLE } }
+                measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
+                main { time.clock.apply(measurement); input.requestStart(true) }
+                receiving(); recordTime(reason)
+            }
             val steps = cases.getJSONArray("steps")
             repeat(steps.length()) { index ->
                 val step = steps.getJSONObject(index)
@@ -80,13 +94,8 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
                 val event = JSONObject().put("id", id).put("action", step.getString("action"))
                 when (step.getString("action")) {
                     "reset" -> {
-                        main { input.stop(clear = true) }
-                        await("input released") { main { input.uiState.value.phase == CapturePhase.IDLE } }
-                        // Renew only at the explicit session boundary, never during RX/TX work.
-                        measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
-                        main { time.clock.apply(measurement) }
+                        refreshTime("context-reset")
                         event.put("time_refreshed", true)
-                        main { input.requestStart(true) }; receiving()
                         check(main { input.uiState.value.live.rows.isEmpty() && input.uiState.value.live.learnedCalls == 0 })
                     }
                     "receive" -> {
@@ -113,6 +122,12 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
                             .put("learned_calls", main { input.uiState.value.live.learnedCalls }).put("no_automatic_action", true)
                     }
                     "send" -> {
+                        // The full bench can exceed ten minutes. Renew at a safe boundary,
+                        // at most once per five minutes, never once per message or during TX.
+                        if (measurement.ageMillis(AndroidTimeSource.read()) >= 300_000) {
+                            refreshTime("five-minute-boundary")
+                            event.put("time_refreshed", true)
+                        }
                         main {
                             operating.peer(step.getString("peer")); operating.report("-07")
                             operating.choose(ManualMessage.valueOf(step.getString("kind")))
@@ -146,6 +161,7 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
             }
             stage("complete")
             val report = JSONObject().put("run", run).put("result", "PASS").put("events", events)
+                .put("time_measurements", refreshes)
                 .put("model", android.os.Build.MODEL).put("android", android.os.Build.VERSION.RELEASE)
                 .put("ntp_rtt_ms", measurement.roundTripMillis).put("ntp_uncertainty_ms", measurement.uncertaintyMillis)
             File(context.cacheDir, "acoustic-report.json").writeText(report.toString(2))
