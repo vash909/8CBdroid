@@ -119,6 +119,14 @@ automating a QSO, and document deliberate differences from these desktop outcome
 Successful reference regeneration is compatibility evidence, not permission to
 implement every observed outcome as an Android rule.
 
+## Android domain consumer
+
+The isolated [CB QSO model](../../docs/CB_QSO_PROGRESSION.md) uses the six-message
+relay's wire text, parser fields and independent payloads through a test-only TSV.
+Its sent callbacks and completion phases are explicit Android domain policy,
+not original desktop TX evidence. The shared JVM/phone checks do not connect
+live decode admission or automatic output.
+
 ## Historical R03c phone scope
 
 R03c added no screens or local FT8 runtime behavior. Its app smoke test checked

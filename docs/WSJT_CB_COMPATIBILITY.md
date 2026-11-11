@@ -103,8 +103,11 @@ For the two-non-standard-CB-call branch, the inspected desktop generates an
 initial hashed/full-call exchange, then destination-only signed reports,
 roger-reports and finals. R03b records these messages' payloads and actual decoded
 text; R03c verifies generated exchanges and receive-side QSO decisions. Do not apply a
-generic template to every message or mode. The current app previews encodings
-and decodes recorded slots, but has no runtime QSO progression or AutoSeq.
+generic template to every message or mode. The app supports explicit manual
+acoustic operation. An isolated [JVM QSO model](CB_QSO_PROGRESSION.md) now records
+exchange facts with explicit received/sent events and selected-peer context;
+it is not connected to live decoding or automatic output. Live admission and
+AutoSeq remain unimplemented.
 
 R03b also records lossy encodings: `1AT106 26AT101 -10` becomes free text
 `1AT106 26AT10`, and `<1AT106> 26AT101 -10` loses its report in type 4.
