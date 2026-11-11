@@ -33,7 +33,7 @@ object QsoProgressionReferenceChecks {
                 4 -> "RR73"
                 else -> "73"
             }
-            check(f[8] == parserSender && f[9].isEmpty()) { "Desktop parser fields $index" }
+            check(f[8] == parserSender.ifEmpty { "-" } && f[9] == "-") { "Desktop parser fields $index" }
             // In the long-call flow these parser tokens are not a complete sender identity.
             val report = if (kind in setOf(CbQsoMessage.REPORT, CbQsoMessage.ROGER)) -12 else null
             val before = sender.snapshot

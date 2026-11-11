@@ -30,14 +30,14 @@ def main():
     ]
     lines = [f"# WSJT-CB {reference['revision']}; qso.json SHA-256 {hashlib.sha256(source.read_bytes()).hexdigest()}",
              '# Wire text/parser results/payloads: desktop. Sent callbacks and phase expectations: Android policy.',
-             '# step\tsender\tkind\ttext ASCII hex\tpayload77\tlocal phase\tremote phase\tparser destination\tparser sender\tparser report']
+             '# step\tsender\tkind\ttext ASCII hex\tpayload77\tlocal phase\tremote phase\tparser destination\tparser sender\tparser report (- for empty)']
     for index, (kind, local_phase, remote_phase) in enumerate(policy):
         step = trace['steps'][index]
         assert step['op'] == 'relay'
         text = step['line'].split('~', 1)[1].strip()
         parsed = step['parsed']
         lines.append('\t'.join([str(index), step['from'], kind, text.encode('ascii').hex(), payloads[text],
-                                local_phase, remote_phase, parsed['call'], parsed['de_call'], parsed['report']]))
+                                local_phase, remote_phase, parsed['call'], parsed['de_call'] or '-', parsed['report'] or '-']))
     expected = '\n'.join(lines)+'\n'
     destination = ROOT/'core/src/test/resources/wsjtcb/qso-progression.tsv'
     if args.check:
