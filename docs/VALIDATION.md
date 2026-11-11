@@ -23,7 +23,9 @@ qualification or a statement that all possible checks passed.
 
 There is no implemented CAT/PTT,
 live radio TX,
-AutoSeq, QSO log or sustained background operating service.
+QSO log or sustained background operating service. Foreground acoustic AutoSeq
+is implemented with [reproducible qualification](AUTOSEQ.md); its feature PR
+records matching-artifact phone evidence, including any incomplete attempts.
 
 ## Reproducible coverage
 
@@ -415,7 +417,8 @@ Five shared safety scenarios also run in the separate Android probe. Broader JVM
 cases cover both roles, numeric/slash calls, report bounds, duplicate/late events,
 abort, peer replacement and stale tickets. Device/CI results belong in the feature
 PR. The [local advisor](QSO_ADVICE.md) now connects qualified live decoding and
-confirmed manual output; automatic audio remains unavailable.
+confirmed manual output. Explicit [foreground AutoSeq](AUTOSEQ.md) adds bounded
+automatic execution; its device evidence is recorded separately from these domain callbacks.
 
 ## Local decode admission and QSO advice
 
@@ -444,3 +447,26 @@ PR; synthetic callback traces alone do not qualify physical integration.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.
+
+
+## Foreground acoustic automatic execution
+
+`CbAutoSequence` applies explicit CQ/answer intent, three-transmission repeat
+limits, a two-minute no-progress timeout and a four-minute session limit. It
+consumes the existing qualified admission/model facts, never raw text or LAN.
+The foreground audio owner freezes each output and confirms actual playback.
+
+The native decoder now accepts a separately typed 14-second actual receive
+window without padding. Automatic output verifies and omits only generated
+zero tail padding, recording 161280 actual frames; manual output and WAV slots
+remain 180000. The unchanged echo guard and timestamp validation still apply.
+Periodic selected-NTP refresh stages successful observations for a safe boundary;
+failed requests retain the previous original expiry and show an accessible warning.
+GPS remains explicit. Tests cover policy limits, timing integrity and failures.
+
+[Physical reproduction](AUTOSEQ.md#reproduce-checks) requires eleven independently
+decoded outputs across calling, answering and no-response cases, an actual lost
+and repeated response, immediate following RX windows, a real NTP renewal and
+interruption/lifecycle checks. Device qualification is recorded in the feature
+PR; the implementation and offline probe alone do not establish an acoustic pass,
+radio/RF behavior, hardware support or durable QSO logging.

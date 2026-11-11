@@ -15,6 +15,7 @@ implemented behavior, device evidence and checks still pending.
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
+| [Foreground acoustic AutoSeq](AUTOSEQ.md) | Explicit automatic CQ/answer, bounded retries, immediate RX recovery and periodic NTP refresh. |
 | [Manual acoustic operation](MANUAL_OPERATION.md) | Explicit CB peer/messages, one-slot speaker sends, receive recovery and limits. |
 | [Acoustic desktop interoperability](ACOUSTIC_INTEROP.md) | Reproducible numeric/slash exchanges, hash resets, degraded input and independent desktop decodes of physical phone audio. |
 | [One-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md) | Measured output latency, even/odd slots and cancellation of stale work. |

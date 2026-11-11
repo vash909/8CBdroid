@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -95,6 +97,11 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                         style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
                 }
                 Column(horizontalAlignment = Alignment.End) {
+                    if (source == OperatingSource.LOCAL && time.refreshWarning != null) TextButton(
+                        onClick = { onDestination(AppDestination.TIME) },
+                        modifier = Modifier.semantics { contentDescription = "Time synchronization warning: ${time.refreshWarning}" }) {
+                        Text("⚠", color = MaterialTheme.colorScheme.error)
+                    }
                     TextButton(onClick = { onDestination(AppDestination.STATION) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(station.saved?.callsign?.takeIf { it.isNotBlank() } ?: "Set station")
                         station.saved?.grid?.takeIf { it.isNotBlank() }?.let { Text(" / $it", color = RadioColors.muted, style = MaterialTheme.typography.labelSmall) }
@@ -140,6 +147,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                         ManualPhase.WAITING -> "TX QUEUED"
                         ManualPhase.PLAYING -> "TX AUDIO"
                         ManualPhase.TONE -> "TEST TONE"
+                        ManualPhase.TIME_SYNC -> "TIME SYNC"
                         else -> "CLEANUP"
                     } else if (manual.armed) "TX ARMED" else "TX OFF", Modifier.padding(10.dp), style = MaterialTheme.typography.labelMedium, color = RadioColors.muted)
                 }

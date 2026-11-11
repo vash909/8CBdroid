@@ -70,3 +70,12 @@ It also exercises Stop, actual focus loss, correction reset, edits, navigation,
 retained recreation and profile cleanup. Run IDs reject stale acknowledgements.
 Independently decode both captured outputs and measure their onset; Android
 frame counts alone are insufficient. These checks observe phone audio; they do not establish radio keying or RF output.
+
+
+The automatic path uses this same exclusive owner and unchanged 500 ms echo
+guard. It plays the entire generated signal, omitting only verified zero tail
+padding and reporting its actual 161280 frames; manual/bench output remains
+180000 frames. A staged periodic NTP refresh can be adopted while input is
+released and before any output plan exists; only that validated immediate
+periodic successor can preserve a recovery request. Explicit reset/source
+changes still invalidate it. See [AutoSeq timing](AUTOSEQ.md#immediate-response-timing).

@@ -124,8 +124,20 @@ class MainActivity : ComponentActivity() {
                     app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
                         input.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING && input.decodeLive &&
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
-                }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls) }
+                }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls,
+                prepareAutomaticReceive = { previewCapture.prepareAutomaticReceive(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) },
+                applyPendingTime = {
+                    check(previewCapture.uiState.value.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE)
+                    check(audioCoordinator.phase.value == net.vash.ft8cbdroid.core.audio.PhoneAudioPhase.OUTPUT)
+                    check(manualViewModel.uiState.value.queuedUtcMillis == null && !bench.uiState.value.isPlaying)
+                    timeViewModel.applyPendingAtBoundary(audioPaused = true)
+                }) }
         })[ManualOperatingViewModel::class.java]
+        timeViewModel.idleBoundary {
+            val input = captureViewModel.uiState.value
+            input.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE && !input.outputBusy &&
+                !manualViewModel.uiState.value.busy && !manualViewModel.uiState.value.autoSequence.active && !bench.uiState.value.isPlaying
+        }
         val profilesViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
                 AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel, waveformViewModel, manualViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
@@ -147,6 +159,19 @@ class MainActivity : ComponentActivity() {
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
             val capture by captureViewModel.controls.collectAsStateWithLifecycle(initialValue = CaptureUiState())
             val time by timeViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(manual.frequency) {
+                audioOffset(manual.frequency)?.let { hz ->
+                    val view = captureViewModel.uiState.value.spectrumView
+                    if (view.txHz != hz) captureViewModel.spectrumView(view.copy(txHz = hz))
+                }
+            }
+            LaunchedEffect(capture.phase, capture.outputBusy, manual.busy, waveform.isPlaying) {
+                timeViewModel.operating(capture.phase != net.vash.ft8cbdroid.audio.CapturePhase.IDLE || capture.outputBusy || manual.busy || waveform.isPlaying)
+            }
+            LaunchedEffect(time.refreshPending, manual.busy, manual.autoSequence.active, capture.phase) {
+                if (time.refreshPending && !manual.busy && !manual.autoSequence.active && capture.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING)
+                    manualViewModel.refreshTime()
+            }
             LaunchedEffect(station.saved?.callsign) {
                 val call = station.saved?.callsign?.takeIf { it.isNotBlank() }
                 hashViewModel.changeStation(call)
@@ -176,7 +201,8 @@ class MainActivity : ComponentActivity() {
                     }, useSuggestion = { manualViewModel.useSuggestion()
                         audioOffset(manualViewModel.uiState.value.frequency)?.let { hz ->
                             captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(txHz = hz)) }
-                    }, resetQso = manualViewModel::resetQso),
+                    }, resetQso = manualViewModel::resetQso, startAutomatic = manualViewModel::startAutomatic,
+                    stopAutomatic = { manualViewModel.stop("AutoSeq stopped by operator.") }),
                 onLeaveOperate = { manualViewModel.stop("Left Operate. TX disabled.") },
                 profiles = profiles,
                 onSourceChange = { manualViewModel.stop("Source changed. TX disabled."); profilesViewModel.temporarySource(it == OperatingSource.LAN) },
@@ -267,6 +293,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        timeViewModel.foreground(false)
         manualViewModel.stop("App left the foreground. TX disabled.")
         waveformViewModel.stopPreview("Preview stopped because the app left the foreground.")
         timeViewModel.cancel()
@@ -275,6 +302,7 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations) lanViewModel.stop()
         super.onStop()
     }
+    override fun onStart() { super.onStart(); if (::timeViewModel.isInitialized) timeViewModel.foreground(true) }
 }
 
 @Composable

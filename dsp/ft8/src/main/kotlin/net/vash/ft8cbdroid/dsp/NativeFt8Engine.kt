@@ -16,10 +16,12 @@ class NativeFt8Engine : Ft8Engine {
             }
         }
 
-    override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile): Ft8DecodeResult = gate.run {
+    override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile): Ft8DecodeResult = decodeSamples(slot.toFloatArray(), profile)
+    override suspend fun decodeWindow(window: Ft8ReceiveWindow, profile: Ft8DecodeProfile): Ft8DecodeResult = decodeSamples(window.toFloatArray(), profile)
+    private suspend fun decodeSamples(samples: FloatArray, profile: Ft8DecodeProfile): Ft8DecodeResult = gate.run {
         withContext(Dispatchers.Default) {
             val start = System.nanoTime()
-            val result = nativeCall { id -> NativeBridge.decode(slot.toFloatArray(), profile.ordinal, id) }
+            val result = nativeCall { id -> NativeBridge.decode(samples, profile.ordinal, id) }
             Ft8DecodeResult(result.payloads.indices.map { i ->
                 Ft8DecodedFrame(Ft8Payload77.fromBytes(result.payloads[i]), result.times[i],
                     result.frequencies[i], result.scores[i], result.snrs[i].takeIf { it.isFinite() })

@@ -4,6 +4,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ReceiveTimeTest {
+    @Test fun periodicSuccessorAllowsPausedRecoveryButNeverRetargetsAnExistingMapping() {
+        val s = Source(); val clock = ReceiveClock(s)
+        clock.apply(sample(s).copy(source = "NTP: test")); val original = clock.snapshot()
+        s.advance(300_000)
+        clock.applyPeriodic(sample(s).copy(source = "NTP: test", utcNanos = s.now.unixMillis * 1_000_000 + 45_000_000))
+        assertTrue(clock.acceptsRecovery(original.revision))
+        rejects { original.validate(s.now, clock.revision) }
+        assertEquals(s.now.monotonicNanos + 600_000_000_000, clock.snapshot().expiresAtNanos)
+        clock.apply(sample(s)); assertFalse(clock.acceptsRecovery(original.revision))
+    }
+    @Test fun periodicSourceChangeAndLargeCorrectionKeepTheOriginalExpiry() {
+        val s = Source(); val clock = ReceiveClock(s); clock.apply(sample(s).copy(source = "NTP: test"))
+        val old = clock.snapshot(); s.advance(300_000)
+        for (next in listOf(sample(s), sample(s).copy(source = "NTP: other"),
+            sample(s).copy(source = "NTP: test", utcNanos = s.now.unixMillis * 1_000_000 + 91_000_000))) {
+            assertTrue(runCatching { clock.applyPeriodic(next) }.isFailure)
+            assertEquals(old.revision, clock.revision); assertEquals(old.expiresAtNanos, clock.snapshot().expiresAtNanos)
+        }
+    }
     private class Source(var now: ClockReading = ClockReading(10_000_000_000, 1_800_000_000_000)) : TimeSource {
         override fun read() = now
         fun advance(ms: Long) { now = ClockReading(now.monotonicNanos + ms * 1_000_000, now.unixMillis + ms) }

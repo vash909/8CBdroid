@@ -45,8 +45,13 @@ access area. The list was checked on 2026-11-06.
 | Africa | `time.nmisa.org` | [NMISA's NTP registry entry](https://support.ntp.org/Servers/PublicTimeServer001771); intended service area South Africa. |
 | Oceania | `pool.msltime.measurement.govt.nz` | [MSL, New Zealand](https://www.measurement.govt.nz/about-us/official-new-zealand-time/about-time); connections outside NZ are blocked. |
 
-NTP is an explicit one-shot request with no background polling or automatic
-server failover. All requests are separated by at least 64 seconds in the client;
+Initial NTP measurement/application is explicit. The selected, applied NTP source
+then refreshes nominally every five minutes while the app is visible, with no
+automatic server failover. Successful measurements wait for a safe audio boundary;
+queued/playing output is never retargeted. Corrections over 50 ms need explicit
+application. A compact accessible warning identifies failed refresh/expiry; a
+failure keeps the old measurement only until its original ten-minute expiry.
+GPS starts no periodic network work. See [AutoSeq time renewal](AUTOSEQ.md#time-renewal). All requests are separated by at least 64 seconds in the client;
 NICT additionally has its own 256-second limit. DNS has a three-second caller
 deadline and one bounded worker; if the OS resolver remains blocked, further DNS
 work is rejected rather than accumulating threads. UDP receive has a separate

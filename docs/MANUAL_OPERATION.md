@@ -3,7 +3,8 @@
 **Operate** sends one FT8 message at a time through the built-in phone speaker
 and receives through the built-in microphone. A radio can use this acoustic
 path with its own VOX settings; set its dial, sideband, audio levels and VOX
-manually. There is no CAT/PTT feedback, AutoSeq or QSO log. LAN remains read-only.
+manually. There is no CAT/PTT feedback or QSO log. This guide covers manual output;
+[AutoSeq](AUTOSEQ.md) is a separate explicit start. LAN remains read-only.
 
 ## Prepare
 

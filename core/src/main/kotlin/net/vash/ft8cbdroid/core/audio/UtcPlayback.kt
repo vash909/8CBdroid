@@ -70,6 +70,11 @@ class PresentationEstimator(private val commandNanos: Long) {
 }
 
 interface ScheduledAudioPreview : AudioPreview {
+    /** Play the entire generated signal; omit only its verified all-zero final padding. */
+    suspend fun playWaveform(slot: Ft8PcmSlot, outputId: Int, plan: ScheduledSlot, clock: ReceiveClock,
+        update: (PreviewReport) -> Unit) {
+        throw PreviewException("Automatic acoustic output is unavailable on this backend.")
+    }
     /** Explicit bounded calibration output, never a sent FT8 message. */
     suspend fun testTone(outputId: Int, frequencyHz: Float, peakAmplitude: Float) {
         throw PreviewException("Test tone is unavailable on this output.")
@@ -77,4 +82,27 @@ interface ScheduledAudioPreview : AudioPreview {
     suspend fun measureLatency(outputId: Int): OutputLatency
     suspend fun playScheduled(slot: Ft8PcmSlot, outputId: Int, settings: PreviewSettings,
         plan: ScheduledSlot, clock: ReceiveClock, update: (PreviewReport) -> Unit)
+}
+
+/** No active sample may be trimmed, and the caller records the actual 161280-frame duration. */
+fun acousticWaveform(slot: Ft8PcmSlot): FloatArray {
+    val samples = slot.toFloatArray()
+    require(samples.take(9600).all { it == 0f } && samples.drop(161280).all { it == 0f }) {
+        "Automatic output requires the original FT8 leading and trailing silence."
+    }
+    require(samples.sliceArray(9600 until 161280).any { it != 0f }) { "An empty waveform cannot be transmitted." }
+    return samples.copyOf(161280)
+}
+
+/** A response is fixed to this upcoming boundary; a missed deadline never becomes a late send. */
+fun planResponseSlot(clock: ReceiveClock, latency: OutputLatency, outputId: Int, utcMillis: Long): ScheduledSlot {
+    require(utcMillis % 15_000 == 0L)
+    val mapping = clock.snapshot(); val now = clock.source.read()
+    latency.validate(now.monotonicNanos, outputId)
+    val first = mapping.anchor.monotonicNanos + utcMillis * 1_000_000L - mapping.utcNanos - 300_000_000L
+    val command = first - latency.nanos
+    if (command - now.monotonicNanos < 100_000_000L) throw SchedulingException("The automatic response deadline was missed. AutoSeq stopped.")
+    if (mapping.expiresAtNanos != null && first + 15_000_000_000L >= mapping.expiresAtNanos)
+        throw SchedulingException("Time correction will expire before this transmission finishes.")
+    return ScheduledSlot(utcMillis, first, command, mapping, latency)
 }

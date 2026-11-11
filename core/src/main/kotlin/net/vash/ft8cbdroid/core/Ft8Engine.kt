@@ -41,6 +41,19 @@ class Ft8PcmSlot private constructor(private val samples: FloatArray) {
     }
 }
 
+/** Fourteen seconds actually captured from a UTC boundary. No invented or padded tail. */
+class Ft8ReceiveWindow private constructor(private val samples: FloatArray) {
+    fun toFloatArray() = samples.copyOf()
+    companion object {
+        const val sampleCount = 168_000
+        fun fromSamples(samples: FloatArray): Ft8ReceiveWindow {
+            require(samples.size == sampleCount) { "Expected 14 seconds of captured 12 kHz PCM" }
+            require(samples.all { it.isFinite() && it in -1f..1f })
+            return Ft8ReceiveWindow(samples.copyOf())
+        }
+    }
+}
+
 /** CRC/LDPC-valid channel frame; this does not establish a valid CB peer. */
 data class Ft8DecodedFrame(
     val payload: Ft8Payload77,
@@ -68,5 +81,8 @@ data class Ft8DecodeResult(
 /** Complete-slot channel operations; no text codec, device audio or RF access. */
 interface Ft8Engine {
     suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): Ft8DecodeResult
+    suspend fun decodeWindow(window: Ft8ReceiveWindow, profile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD): Ft8DecodeResult {
+        throw UnsupportedOperationException("Early receive windows are unavailable on this engine.")
+    }
     suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float = .4f): Ft8PcmSlot
 }

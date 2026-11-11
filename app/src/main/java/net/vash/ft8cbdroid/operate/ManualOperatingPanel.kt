@@ -22,13 +22,21 @@ data class ManualActions(
     val enable: () -> Unit = {}, val send: () -> Unit = {},
     val selectPeer: (ManualPeer) -> Unit = {},
     val useSuggestion: () -> Unit = {}, val resetQso: () -> Unit = {},
+    val startAutomatic: (Boolean) -> Unit = {}, val stopAutomatic: () -> Unit = {},
 )
 
 @Composable
 fun ManualOperatingPanel(state: ManualOperatingState, actions: ManualActions) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Manual audio operation", style = MaterialTheme.typography.titleMedium)
+        Text("Phone audio operation", style = MaterialTheme.typography.titleMedium)
         Text("Phone speaker → radio microphone / VOX. Set the radio dial and mode manually. Audio output does not confirm radio TX or a completed QSO. Keep this page visible.", style = MaterialTheme.typography.bodySmall)
+        Text("AutoSeq: ${state.autoSequence.reason} · sent ${state.autoSequence.transmissions}")
+        if (state.autoSequence.active) OutlinedButton(onClick = actions.stopAutomatic) { Text("Stop AutoSeq") }
+        else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { actions.startAutomatic(true) }, enabled = state.canArm) { Text("Auto CQ") }
+            OutlinedButton(onClick = { actions.startAutomatic(false) }, enabled = state.canArm && state.peer.isNotEmpty()) { Text("Auto answer") }
+        }
+        Text("AutoSeq stays on this page: three sends per message, a two-minute no-progress timeout and a four-minute session limit. Edits or Stop cancel it; it never restarts itself.", style = MaterialTheme.typography.bodySmall)
         state.qso?.let { qso ->
             Text("QSO: ${qso.phase.name.lowercase().replace('_', ' ')} · ${qso.peer ?: "No peer"}")
             state.suggestion?.let { suggestion ->

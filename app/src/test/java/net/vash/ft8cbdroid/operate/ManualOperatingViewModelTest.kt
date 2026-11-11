@@ -64,12 +64,22 @@ class ManualOperatingViewModelTest {
             }
             update(PreviewReport("Speaker", 12000, 180000, 180000, 2.0, plan.utcMillis))
         }
+        override suspend fun playWaveform(slot: Ft8PcmSlot, outputId: Int, plan: ScheduledSlot, clock: ReceiveClock, update: (PreviewReport) -> Unit) {
+            slots++; lastPlan = plan
+            while (plan.remaining(clock) > 0) delay(5)
+            repeat(1344) {
+                plan.validate(clock)
+                if (fail) throw PreviewException("Audio focus interrupted.")
+                update(PreviewReport("Speaker", 12000, 161280, it * 120L, 2.0, plan.utcMillis)); delay(10)
+            }
+            update(PreviewReport("Speaker", 12000, 161280, 161280, 2.0, plan.utcMillis))
+        }
         override fun close() {}
     }
     private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow()): ManualOperatingViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer {
-            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx)
+            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {})
         } })[ManualOperatingViewModel::class.java]
     }
     private fun sync() { val r = source.read(); clock.apply(TimeMeasurement("NTP/test", r.monotonicNanos, r.unixMillis * 1_000_000, 1.0, r)) }
@@ -169,6 +179,61 @@ class ManualOperatingViewModelTest {
         session.learnCall("26AT101"); session.learnCall("161XZ085"); session.commitPending()
         return LiveDecodeRow(RecordedDecode(Ft8DecodedFrame(encoded.payload, .5f, 1500f, 10, -12f), session.unpack(encoded.payload),
             Instant.ofEpochMilli(slot), Instant.ofEpochMilli(slot + 500), 0f, setOf(RecordedDecodeFlag.CRC_LDPC_VALID)), "NTP/test", 1.0)
+    }
+    private fun automaticInput() = liveInput().copy(earlyWindows = true)
+    private suspend fun TestScope.at(ms: Long) { advanceTimeBy(ms - scheduler.currentTime); runCurrent() }
+    @Test fun automaticCallingConsumesEarlyQualifiedRepliesAndConfirmsOnlyActualWaveforms() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); vm.startAutomatic(true); runCurrent(); assertTrue(vm.uiState.value.autoSequence.active)
+        at(44_000); assertEquals("CQ 1AT106", vm.uiState.value.sent.single().text)
+        suspend fun incoming(time: Long, slot: Long, text: String, run: Long) {
+            at(time)
+            rx.value = rx.value.copy(receiveRun = run, receiveStartedUtcMillis = 1_800_000_000_000L + slot - 1000,
+                live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_000_000L + slot,
+                    rows = listOf(decoded(text, 1_800_000_000_000L + slot).copy(capturedSamples = 168000))))
+            runCurrent()
+        }
+        incoming(59_200, 45_000, "<1AT106> 26AT101", 2)
+        at(74_000); assertEquals("26AT101 -12", vm.uiState.value.sent.first().text)
+        incoming(89_200, 75_000, "1AT106 R-07", 3)
+        at(104_000); assertEquals("26AT101 RR73", vm.uiState.value.sent.first().text)
+        incoming(119_200, 105_000, "1AT106 73", 4)
+        assertEquals(CbQsoPhase.COMPLETE, vm.uiState.value.qso?.phase)
+        at(119_240)
+        assertFalse(vm.uiState.value.autoSequence.active); assertTrue(vm.uiState.value.autoSequence.completed)
+        assertEquals(3, vm.uiState.value.sent.size); assertTrue(vm.uiState.value.sent.all { it.frames == 161280L })
+        assertFalse(vm.uiState.value.armed); at(180_000); assertEquals(3, player.slots)
+    }
+    @Test fun automaticStopEditsClockLossAndBackendFailureCannotRepeatOrRearm() = runTest(dispatcher) {
+        for (change in listOf<(ManualOperatingViewModel) -> Unit>({ it.stop() }, { it.frequency("1200") }, { clock.reset() })) {
+            receiving = true; sync()
+            val rx = MutableStateFlow(automaticInput().copy(receiveTimeRevision = clock.revision,
+                receiveStartedUtcMillis = source.read().unixMillis))
+            val player = Player(); val vm = model(player = player, rx = rx); ready(vm); vm.startAutomatic(true); runCurrent()
+            repeat(2000) { if (vm.uiState.value.busy) return@repeat; advanceTimeBy(20); runCurrent() }
+            assertTrue(vm.uiState.value.busy)
+            change(vm); runCurrent(); advanceTimeBy(60_000); runCurrent()
+            assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed); assertTrue(vm.uiState.value.sent.isEmpty())
+        }
+    }
+    @Test fun automaticAnswerCompletesAfterTheConfirmed73AndNeverRestartsCalling() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.ODD)); vm.startAutomatic(false); runCurrent()
+        at(29_000); assertEquals("<26AT101> 1AT106", vm.uiState.value.sent.single().text)
+        at(44_200)
+        rx.value = rx.value.copy(receiveRun = 2, receiveStartedUtcMillis = 1_800_000_029_000,
+            live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_030_000,
+                rows = listOf(decoded("1AT106 -07", 1_800_000_030_000).copy(capturedSamples = 168000))))
+        runCurrent(); at(59_000); assertEquals("26AT101 R-12", vm.uiState.value.sent.first().text)
+        at(74_200)
+        rx.value = rx.value.copy(receiveRun = 3, receiveStartedUtcMillis = 1_800_000_059_000,
+            live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_060_000,
+                rows = listOf(decoded("1AT106 RR73", 1_800_000_060_000).copy(capturedSamples = 168000))))
+        runCurrent(); at(89_000)
+        assertEquals("26AT101 73", vm.uiState.value.sent.first().text)
+        assertEquals(CbQsoPhase.COMPLETE, vm.uiState.value.qso?.phase)
+        assertTrue(vm.uiState.value.autoSequence.completed); assertFalse(vm.uiState.value.autoSequence.active)
+        assertFalse(vm.uiState.value.armed); at(150_000); assertEquals(3, player.slots)
     }
     @Test fun qualifiedLiveReportSuggestsRReportWithoutChangingOrArmingManualTx() = runTest(dispatcher) {
         val rx = MutableStateFlow(liveInput()); val player = Player(); val vm = model(player = player, rx = rx)

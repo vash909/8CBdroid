@@ -7,6 +7,8 @@ import android.os.SystemClock
 import kotlinx.coroutines.runBlocking
 import net.vash.ft8cbdroid.core.Ft8Payload77
 import net.vash.ft8cbdroid.core.Ft8PcmSlot
+import net.vash.ft8cbdroid.core.Ft8ReceiveWindow
+import net.vash.ft8cbdroid.core.Ft8DecodeProfile
 import net.vash.ft8cbdroid.core.message.CbMessageCodec
 import net.vash.ft8cbdroid.core.message.PackResult
 import net.vash.ft8cbdroid.core.message.UnpackResult
@@ -74,6 +76,7 @@ class OfflineEngineProbe : Instrumentation() {
                 val engine = NativeFt8Engine()
                 val generator = OfflineFt8Generator(engine)
                 var generatedCount = 0
+                var earlyCount = 0
                 for (text in listOf("CQ 1AT106", "<1AT106> 26AT101", "26AT101 <1AT106>", "26AT101 R-10")) {
                     val expected = CbMessageCodec.pack(text) as PackResult.Encoded
                     for ((frequency, level) in listOf(200f to .01f, 1000f to .4f, 2900f to 1f)) {
@@ -86,6 +89,8 @@ class OfflineEngineProbe : Instrumentation() {
                         check(header.getInt(24) == 12000 && header.getShort(22).toInt() == 1)
                         check(result.waveform.pcm.toFloatArray().maxOf { abs(it) } <= level + .00001f)
                         check(engine.decode(result.waveform.pcm).frames.map { it.payload } == listOf(expected.payload))
+                        check(engine.decodeWindow(Ft8ReceiveWindow.fromSamples(result.waveform.pcm.toFloatArray().copyOf(168000))).frames.map { it.payload } == listOf(expected.payload))
+                        earlyCount++
                         if (text == "CQ 1AT106" && frequency == 1000f) {
                             java.io.File(context.filesDir, "r07-generated.wav").writeBytes(wav)
                             report.putString("generated_wav_sha256", MessageDigest.getInstance("SHA-256")
@@ -98,6 +103,7 @@ class OfflineEngineProbe : Instrumentation() {
                 val corpus = JSONObject(context.assets.open("channel.json").bufferedReader().use { it.readText() })
                 val waves = corpus.getJSONArray("waves")
                 val timings = mutableListOf<Long>()
+                val earlyTimings = mutableListOf<Long>()
                 repeat(waves.length()) { i ->
                     val fixture = waves.getJSONObject(i)
                     val bytes = context.assets.open(fixture.getString("file")).use { it.readBytes() }
@@ -114,7 +120,16 @@ class OfflineEngineProbe : Instrumentation() {
                     check(frame.payload.toBitString() == fixture.getString("payload77")) { "Desktop payload mismatch" }
                     check(abs(frame.audioFrequencyHz - fixture.getDouble("frequency_hz")) <= 6.25)
                     check(abs(frame.startSecondsInSlot - fixture.getDouble("lead_seconds")) <= .16)
+                    for (profile in Ft8DecodeProfile.entries) {
+                        val begin = SystemClock.elapsedRealtime()
+                        val early = engine.decodeWindow(Ft8ReceiveWindow.fromSamples(pcm.toFloatArray().copyOf(168000)), profile)
+                        earlyTimings += SystemClock.elapsedRealtime() - begin
+                        check(early.frames.single().payload == frame.payload)
+                        earlyCount++
+                    }
                 }
+                report.putInt("early_receive_windows", earlyCount)
+                report.putString("early_receive_ms", earlyTimings.joinToString(","))
                 val recordings = JSONObject(context.assets.open("recordings.json").bufferedReader().use { it.readText() })
                 val recordingCases = recordings.getJSONArray("cases")
                 val recordingDecoder = RecordedSlotDecoder(engine)
