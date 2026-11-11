@@ -101,13 +101,20 @@ def analyze(output, report, encoder, packer, decoder, jt9):
             normalized = normalized/max(abs(normalized))*.7
             aligned = directory/f'output-{index+1}-aligned.wav'
             pcm_reference.write_wave(aligned, normalized)
-            original = subprocess.check_output([str(decoder), str(aligned), str(frequency)], text=True, timeout=20).strip()
+            original = subprocess.check_output([str(decoder), str(aligned), str(frequency), ".8", "acoustic"], text=True, timeout=20).strip()
             decoded_bits, tones, _, _ = original.split('|')
-            assert decoded_bits == bits and tones == expected_tones
+            # Acoustic noise may change hard decisions that the original LDPC/CRC
+            # decoder corrects. Require the exact recovered payload and retain
+            # every observed symbol error as evidence.
+            # The independent full desktop candidate search above supplies sync.
+            assert decoded_bits == bits
+            assert len(tones) == len(expected_tones) == 79
+            tone_errors = [i for i, (a, b) in enumerate(zip(tones, expected_tones)) if a != b]
             captures.append(dict(role=role['role'], index=index+1, text=slot['text'], payload77=bits,
                 utc_millis=slot['utc_millis'], frequency_hz=frequency, actual_played_frames=slot['frames'],
                 acoustic_error_ms=error, capture_anchor_spread_ms=spread, peak=peak, sync_score=score,
-                desktop_texts=texts, original_tones79=tones))
+                desktop_texts=texts, original_tones79=tones, expected_tones79=expected_tones,
+                corrected_hard_tone_indices=tone_errors))
             print('Independent physical decode:', role['role'], index+1, slot['text'], flush=True)
     return captures
 
@@ -135,14 +142,78 @@ def validate_roles(report, plays):
             assert any(r['utc_millis'] == utc and r['text'] == text and r['captured_samples'] == 162000 for r in role['received']), (role['role'], text, utc)
 
 
+def time_recovery(output):
+    """Repeat only real NTP failure/UI recovery; this does not qualify audio."""
+    output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    env = dict(os.environ, ADB_LIBUSB='1'); run = uuid.uuid4().hex
+    def adb(*command):
+        return subprocess.check_output(['adb', *command], env=env, timeout=12)
+    def read(name):
+        try: return json.loads(adb('exec-out', 'run-as', PACKAGE, 'cat', 'cache/'+name))
+        except (ValueError, subprocess.CalledProcessError): return {}
+    original = None; restored = False; process = None; stages = []
+    def restore():
+        nonlocal restored
+        if original is not None and not restored:
+            for service, key in [('wifi', 'wifi_on'), ('data', 'mobile_data')]:
+                adb('shell', 'svc', service, 'enable' if original[key] == '1' else 'disable')
+            for key, value in original.items():
+                assert adb('shell', 'settings', 'get', 'global', key).decode().strip() == value
+            restored = True
+            (output/'network-restored.json').write_text(json.dumps(dict(restored=True, original=original)))
+    def terminate(*_): raise KeyboardInterrupt('NTP qualification interrupted')
+    signal.signal(signal.SIGTERM, terminate)
+    try:
+        with (output/'instrumentation.log').open('w') as log:
+            process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
+                '-e', 'scenario', 'automatic-time', '-e', 'preview_run', run,
+                PACKAGE+'.test/'+PACKAGE+'.validation.WaveformPhoneChecks'], env=env, stdout=log, stderr=subprocess.STDOUT)
+            deadline = time.monotonic()+800
+            while process.poll() is None:
+                assert time.monotonic() < deadline, 'NTP recovery exceeded 800 seconds'
+                ready = read('autoseq-ready.json'); stage = ready.get('stage')
+                if ready.get('run') == run and stage not in stages:
+                    if stage == 'ntp-offline':
+                        original = {key: adb('shell', 'settings', 'get', 'global', key).decode().strip() for key in ['wifi_on', 'mobile_data']}
+                        assert all(value in ['0', '1'] for value in original.values())
+                        (output/'network-original.json').write_text(json.dumps(original))
+                        adb('shell', 'svc', 'wifi', 'disable'); adb('shell', 'svc', 'data', 'disable')
+                    else:
+                        assert stage == 'ntp-online' and stages == ['ntp-offline']
+                        restore()
+                    stages.append(stage)
+                    adb('shell', 'run-as', PACKAGE, 'touch', f'cache/autoseq-go-{run}-{stage}')
+                    print('Real NTP phase:', stage, flush=True)
+                time.sleep(.3)
+        text = (output/'instrumentation.log').read_text()
+        assert process.returncode == 0 and 'autoseq_result=PASS' in text and 'INSTRUMENTATION_CODE: -1' in text, text
+        report = read('autoseq-report.json')
+        assert report['run'] == run and report['scope'] == 'time-recovery' and report['result'] == 'PASS'
+        assert report['real_ntp_failure_warning_and_manual_recovery'] and report['failed_refresh_preserved_expiry']
+        assert report['roles'] == [] and report['guards'] == [] and restored
+        (output/'report.json').write_text(json.dumps(report, indent=2))
+        print('Real periodic NTP failure, original expiry, warning navigation and explicit recovery PASS.', flush=True)
+    finally:
+        restore()
+        if process is not None and process.poll() is None:
+            adb('shell', 'am', 'force-stop', '--user', '0', PACKAGE)
+            process.terminate(); process.wait(timeout=4)
+        for path in output.glob('*'):
+            if path.is_file(): path.chmod(0o600)
+
+
 def main():
-    import numpy as np
-    from scipy.signal import resample_poly
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--jt9', required=True, type=Path)
-    parser.add_argument('--analyze-only', action='store_true')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--analyze-only', action='store_true')
+    modes.add_argument('--time-only', action='store_true', help='Repeat only actual NTP failure/recovery; no audio qualification')
     args = parser.parse_args(); output = args.output.resolve(); jt9 = args.jt9.resolve()
+    if args.time_only:
+        time_recovery(output); return
+    import numpy as np
+    from scipy.signal import resample_poly
     assert jt9.is_file() and os.access(jt9, os.X_OK)
     if args.analyze_only:
         report = json.loads((output/'phone-report.json').read_text())

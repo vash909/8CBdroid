@@ -91,15 +91,19 @@ recreation. The PC decodes each actual phone waveform with installed WSJT-CB
 before supplying its response, using a genuine 15-second observation ending at
 slot +13.4 seconds, with desktop depth 1 for the live response decision. All eleven
 recordings must also pass depth-2 desktop candidate search,
-independent original packing/LDPC/CRC and all 79 tones, plus measured onset and
-timestamp-anchor checks. Keep reports and ambient recordings private. Failed or
+independent original packing/LDPC/CRC with the exact recovered 77-bit payload,
+desktop candidate synchronization, and measured onset/timestamp-anchor checks. All 79
+observed hard tones and any LDPC-corrected symbol errors are retained in the
+report; acoustic noise need not leave every hard decision error-free. Keep reports and ambient recordings private. Failed or
 partial attempts do not constitute a full pass. An analysis-only replay uses
 `--analyze-only` with the same output and decoder.
 
 The test requires USB ADB. Its final time scenario saves/disables phone Wi-Fi
 and mobile data, observes a real periodic failure and the warning link, restores
 the original network states and respects the server request interval before an
-explicit NTP retry/application. No network or debug-phone settings are saved in
+explicit NTP retry/application. Use `--time-only` with a fresh output directory to
+repeat this isolated phase against an unchanged app APK; keep its result separate
+from the operating/audio report. No network or debug-phone settings are saved in
 the public source tree. Time recovery must leave RX/TX and AutoSeq stopped.
 
 The relevant PR records tested commit, CI, device, results and limitations.

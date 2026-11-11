@@ -117,6 +117,23 @@ def main():
             invalid = subprocess.run([str(probe), 'wave', cases[0]['pack77']['payload77'], frequency, level,
                                       str(directory / 'invalid.f32')], capture_output=True, timeout=5)
             assert invalid.returncode != 0
+        # A physical-channel check must permit corrected hard-decision errors,
+        # while clean waveform qualification keeps its strict sync/tone checks.
+        clean = array.array('h')
+        with wave.open(str(wav), 'rb') as source:
+            clean.frombytes(source.readframes(180000))
+        if sys.byteorder != 'little': clean.byteswap()
+        damaged = [x / 32768 for x in clean]
+        for symbol in [0, 12]:
+            start = 9600 + symbol * 1920
+            wrong = (int(tones_by_payload[bits][symbol]) + 1) % 8
+            for j in range(1920):
+                damaged[start+j] = .4 * math.sin(2*math.pi*(2900+wrong*6.25)*j/12000)
+        noisy = directory / 'correctable-symbol-errors.wav'
+        write_wave(noisy, damaged)
+        assert subprocess.run([str(decoder), str(noisy), '2900'], capture_output=True, timeout=15).returncode != 0
+        recovered = subprocess.check_output([str(decoder), str(noisy), '2900', '.8', 'acoustic'], text=True, timeout=15).strip().split('|')
+        assert recovered[0] == bits and recovered[1] != tones_by_payload[bits]
         silent = directory / 'silence.wav'
         write_wave(silent, [0] * 180000)
         assert subprocess.run([str(decoder), str(silent), '1000'], capture_output=True, timeout=15).returncode != 0

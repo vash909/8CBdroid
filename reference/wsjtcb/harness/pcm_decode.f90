@@ -12,7 +12,9 @@ program pcm_decode_reference
   character(len=1024) :: path, argument
   character(len=77) :: bits
   character(len=37) :: text
-  logical :: success
+  logical :: success, acoustic
+  call get_command_argument(4,argument)
+  acoustic=trim(argument)=="acoustic"
   gray=[0,1,3,2,5,6,4,7]
   sync=[3,1,4,0,6,5,2]
   call get_command_argument(1,path)
@@ -62,7 +64,12 @@ program pcm_decode_reference
            maxval(powers(gray),mask=.not.btest([(j,j=0,7)],k)))/maxval(powers))
     enddo
   enddo
-  if(any(tones(1:7)/=sync).or.any(tones(37:43)/=sync).or.any(tones(73:79)/=sync)) stop 3
+  ! Clean generated fixtures require every sync hard decision. Physical audio
+  ! also uses the full desktop candidate search; let LDPC/CRC qualify this
+  ! supplied-time adapter while retaining all observed hard tones for reporting.
+  if(.not.acoustic) then
+    if(any(tones(1:7)/=sync).or.any(tones(37:43)/=sync).or.any(tones(73:79)/=sync)) stop 3
+  endif
   mask=0
   call bpdecode174_91var(llr,mask,30,message77,codeword,harderrors,iteration)
   if(harderrors<0) stop 4
