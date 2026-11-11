@@ -442,8 +442,8 @@ PR; synthetic callback traces alone do not qualify physical integration.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
-- Automatic audio execution, repeated/lost-message operating policies and durable
-  QSO logging. Current advice requires explicit application and one-slot sends.
+- Durable QSO logging and automation through the deferred CAT/USB backends.
+  Foreground acoustic AutoSeq has the separate finite qualification described below.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.
