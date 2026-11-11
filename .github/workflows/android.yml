@@ -21,13 +21,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install reference compiler
         run: |
-          for apt_source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
-            if [ -f "$apt_source" ]; then
-              sudo sed -i -E 's@https?://azure\.archive\.ubuntu\.com/ubuntu@https://archive.ubuntu.com/ubuntu@g' "$apt_source"
+          apt_mirror=''
+          for candidate in azure.archive.ubuntu.com archive.ubuntu.com; do
+            if timeout 8 getent ahostsv4 "$candidate" >/dev/null; then
+              apt_mirror="$candidate"
+              break
             fi
           done
-          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
-          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
+          if [ -z "$apt_mirror" ]; then
+            echo "No Ubuntu package mirror could be resolved. Retry the job after DNS recovery."
+            exit 1
+          fi
+          echo "Using Ubuntu mirror: $apt_mirror"
+          for apt_source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i -E "s@https?://(azure\\.archive|archive)\\.ubuntu\\.com/ubuntu@https://${apt_mirror}/ubuntu@g" "$apt_source"
+            fi
+          done
+          sudo timeout 150 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update --error-on=any
+          sudo timeout 180 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 install --no-install-recommends -y gfortran g++ pkg-config qtbase5-dev libboost-dev cmake ninja-build
       - name: Check Hamlib catalog and software-only Dummy backend
         run: bash scripts/check_hamlib.sh
       - name: Check pinned desktop compatibility fixtures
