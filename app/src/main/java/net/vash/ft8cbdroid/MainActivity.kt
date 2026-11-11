@@ -126,6 +126,7 @@ class MainActivity : ComponentActivity() {
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
                 }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls,
                 prepareAutomaticReceive = { previewCapture.prepareAutomaticReceive(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) },
+                awaitAutomaticRecovery = { previewCapture.awaitAutomaticRecovery() },
                 applyPendingTime = {
                     check(previewCapture.uiState.value.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE)
                     check(audioCoordinator.phase.value == net.vash.ft8cbdroid.core.audio.PhoneAudioPhase.OUTPUT)

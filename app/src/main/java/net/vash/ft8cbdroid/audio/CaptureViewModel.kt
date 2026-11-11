@@ -125,6 +125,13 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         withTimeout(5000) { uiState.first { it.phase == CapturePhase.CAPTURING || it.error != null } }
         require(state.value.phase == CapturePhase.CAPTURING && state.value.error == null) { state.value.error ?: "Could not start live RX." }
     }
+    /** Wait for the coordinator's existing recovery; never start a stopped receiver here. */
+    suspend fun awaitAutomaticRecovery() {
+        withTimeout(5000) { uiState.first { it.phase != CapturePhase.STARTING || it.error != null } }
+        require(state.value.phase == CapturePhase.CAPTURING && state.value.error == null && state.value.earlyWindows) {
+            state.value.error ?: "Microphone recovery failed. AutoSeq off."
+        }
+    }
     fun assembleUtc(enabled: Boolean) {
         if (!state.value.canConfigure || clock == null) return
         recoveryRevision++

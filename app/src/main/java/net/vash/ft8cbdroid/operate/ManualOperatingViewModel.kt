@@ -57,6 +57,7 @@ class ManualOperatingViewModel(
     private val reception: Flow<CaptureUiState> = emptyFlow(),
     private val prepareAutomaticReceive: suspend () -> Unit = { throw IllegalStateException("Automatic reception is unavailable.") },
     private val applyPendingTime: () -> Boolean = { false },
+    private val awaitAutomaticRecovery: suspend () -> Unit = {},
 ) : ViewModel() {
     private val state = MutableStateFlow(ManualOperatingState())
     val uiState = state.asStateFlow()
@@ -389,6 +390,9 @@ class ManualOperatingViewModel(
                     if (applyPendingTime()) qsoClockRevision = clock.revision
                     action(ticket)
                 }
+                // Keep ownership busy until the receiver actually recovers, before the
+                // policy can mistake asynchronous STARTING/IDLE notifications for Stop.
+                if (resumed && state.value.autoSequence.active) awaitAutomaticRecovery()
                 if (!resumed) state.value = state.value.copy(notice = "${state.value.notice.orEmpty()} Start RX explicitly to receive.")
             } catch (_: TimeoutCancellationException) {
                 state.value = state.value.copy(error = "Audio preparation timed out. Start RX and retry explicitly.")

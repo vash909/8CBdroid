@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePhase
 import net.vash.ft8cbdroid.core.qso.CbQsoPhase
@@ -29,12 +30,13 @@ class ManualOperatingViewModelTest {
     private var receiving = true
     private var recoveries = 0
     private var pauseMillis = 0L
+    private var recoverInput: (() -> Unit)? = null
     private val coordinator = PhoneAudioCoordinator(object : PhoneAudioReceiver {
         override fun blockStarts(blocked: Boolean) {}
         override suspend fun pause(): (() -> Boolean)? {
             val wasReceiving = receiving; receiving = false
             delay(pauseMillis)
-            return if (wasReceiving) { { receiving = true; recoveries++; true } } else null
+            return if (wasReceiving) { { if (recoverInput == null) receiving = true else recoverInput?.invoke(); recoveries++; true } } else null
         }
     })
     private class Engine : Ft8Engine {
@@ -80,10 +82,10 @@ class ManualOperatingViewModelTest {
         }
         override fun close() {}
     }
-    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow()): ManualOperatingViewModel {
+    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow(), recovery: suspend () -> Unit = {}): ManualOperatingViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer {
-            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {})
+            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {}, awaitAutomaticRecovery = recovery)
         } })[ManualOperatingViewModel::class.java]
     }
     private fun sync() { val r = source.read(); clock.apply(TimeMeasurement("NTP/test", r.monotonicNanos, r.unixMillis * 1_000_000, 1.0, r)) }
@@ -186,6 +188,28 @@ class ManualOperatingViewModelTest {
     }
     private fun automaticInput() = liveInput().copy(earlyWindows = true)
     private suspend fun TestScope.at(ms: Long) { advanceTimeBy(ms - scheduler.currentTime); runCurrent() }
+    @Test fun automaticOutputWaitsForRealRecoveryAndStopCancelsThatWaitWithoutRearming() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player()
+        val vm = model(player = player, rx = rx, recovery = { rx.first { it.phase == CapturePhase.CAPTURING } })
+        ready(vm)
+        recoverInput = {
+            rx.value = rx.value.copy(phase = CapturePhase.STARTING)
+            launch { delay(500); receiving = true; rx.value = rx.value.copy(phase = CapturePhase.CAPTURING) }
+        }
+        vm.startAutomatic(true); runCurrent(); at(43_700)
+        assertTrue(vm.uiState.value.busy); assertTrue(vm.uiState.value.autoSequence.active)
+        at(44_200)
+        assertFalse(vm.uiState.value.busy); assertTrue(vm.uiState.value.autoSequence.active)
+        assertNull(vm.uiState.value.error); assertEquals(1, vm.uiState.value.sent.size)
+        at(58_700)
+        rx.value = rx.value.copy(live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_045_000))
+        runCurrent(); at(73_700)
+        assertTrue(vm.uiState.value.busy)
+        vm.stop(); runCurrent(); at(75_000)
+        assertFalse(vm.uiState.value.busy); assertFalse(vm.uiState.value.autoSequence.active)
+        assertFalse(vm.uiState.value.armed); assertEquals(2, vm.uiState.value.sent.size)
+        at(110_000); assertEquals(2, player.slots)
+    }
     @Test fun immediateResponseReservesTimeForActualInputCleanupAndWaveformGeneration() = runTest(dispatcher) {
         val rx = MutableStateFlow(automaticInput()); val player = Player()
         val engine = Engine().also { it.encodeMillis = 100 }
