@@ -89,7 +89,7 @@ class OfflineEngineProbe : Instrumentation() {
                         check(header.getInt(24) == 12000 && header.getShort(22).toInt() == 1)
                         check(result.waveform.pcm.toFloatArray().maxOf { abs(it) } <= level + .00001f)
                         check(engine.decode(result.waveform.pcm).frames.map { it.payload } == listOf(expected.payload))
-                        check(engine.decodeWindow(Ft8ReceiveWindow.fromSamples(result.waveform.pcm.toFloatArray().copyOf(168000))).frames.map { it.payload } == listOf(expected.payload))
+                        check(engine.decodeWindow(Ft8ReceiveWindow.fromSamples(result.waveform.pcm.toFloatArray().copyOf(Ft8ReceiveWindow.sampleCount))).frames.map { it.payload } == listOf(expected.payload))
                         earlyCount++
                         if (text == "CQ 1AT106" && frequency == 1000f) {
                             java.io.File(context.filesDir, "r07-generated.wav").writeBytes(wav)
@@ -122,7 +122,7 @@ class OfflineEngineProbe : Instrumentation() {
                     check(abs(frame.startSecondsInSlot - fixture.getDouble("lead_seconds")) <= .16)
                     for (profile in Ft8DecodeProfile.entries) {
                         val begin = SystemClock.elapsedRealtime()
-                        val early = engine.decodeWindow(Ft8ReceiveWindow.fromSamples(pcm.toFloatArray().copyOf(168000)), profile)
+                        val early = engine.decodeWindow(Ft8ReceiveWindow.fromSamples(pcm.toFloatArray().copyOf(Ft8ReceiveWindow.sampleCount)), profile)
                         earlyTimings += SystemClock.elapsedRealtime() - begin
                         check(early.frames.single().payload == frame.payload)
                         earlyCount++
