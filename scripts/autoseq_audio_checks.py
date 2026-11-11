@@ -24,6 +24,7 @@ import wsjtcb_pcm as pcm_reference
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = 'net.vash.ft8cbdroid'
+LIVE_WINDOW_LEAD_MILLIS = 1600
 TEXTS = {'cq': 'CQ 26AT101', 'reply': '<1AT106> 26AT101', 'report': '1AT106 -07',
          'roger': '1AT106 R-07', 'final': '1AT106 RR73', 'signoff': '1AT106 73'}
 
@@ -180,9 +181,9 @@ def main():
             (output/'network-restored.json').write_text(json.dumps(dict(restored=True, original=network_original)))
     def online_decode(item):
         directory = output/item['role']; slot = item['slot']
-        if time.time() < slot['utc_millis']/1000+13.8: return False
+        if time.time() < slot['utc_millis']/1000+15-LIVE_WINDOW_LEAD_MILLIS/1000: return False
         rows = [json.loads(line) for line in (directory/'scheduled.timestamps.jsonl').read_text().splitlines()]
-        target = slot['utc_millis']*1_000_000-1_200_000_000
+        target = (slot['utc_millis']-LIVE_WINDOW_LEAD_MILLIS)*1_000_000
         anchor = min(rows, key=lambda r: abs(r['end_utc_ns']-target))
         first = round(anchor['end_frame']+(target-anchor['end_utc_ns'])*48000/1e9)
         path = directory/'scheduled.wav'
@@ -195,14 +196,14 @@ def main():
         captured = directory/f'online-{item["index"]+1}.wav'
         pcm_reference.write_wave(captured, resample_poly(raw, 1, 4))
         started = time.time()
-        decoded = subprocess.run([str(jt9), '-8', '-p', '15', '-m', '1', '-w', '0', '-d', '2',
+        decoded = subprocess.run([str(jt9), '-8', '-p', '15', '-m', '1', '-w', '0', '-d', '1',
             '-a', str(directory), '-t', str(directory), '-c', '26AT101', '-x', '1AT106', str(captured)],
             capture_output=True, text=True, timeout=10, check=True)
         texts = [' '.join(line.split('~', 1)[1].split()) for line in decoded.stdout.splitlines() if '~' in line]
         captured.with_suffix('.jt9.txt').write_text(decoded.stdout+decoded.stderr)
         assert slot['text'] in texts, decoded.stdout
         online.append(dict(role=item['role'], index=item['index']+1, text=slot['text'],
-            started_utc=started, completed_utc=time.time(), actual_window_start_utc_millis=slot['utc_millis']-1200))
+            started_utc=started, completed_utc=time.time(), actual_window_start_utc_millis=slot['utc_millis']-LIVE_WINDOW_LEAD_MILLIS))
         if item['response'] is not None: schedule(item['response'], slot['utc_millis']/1000+15)
         print('Live desktop decode:', item['role'], item['index']+1, slot['text'], flush=True)
         return True
