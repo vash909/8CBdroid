@@ -89,7 +89,8 @@ whole-cycle delay fails acceptance. It observes a real five-minute NTP renewal,
 then checks queued/playing Stop, edits, clock reset, focus, navigation and retained
 recreation. The PC decodes each actual phone waveform with installed WSJT-CB
 before supplying its response, using a genuine 15-second observation ending at
-slot +13.4 seconds, with desktop depth 1 for the live response decision. All eleven
+slot +13.4 seconds. It tries desktop depth 1 first, with a depth-2 retry on the
+same samples only while the fixed next-response deadline allows. All eleven
 recordings must also pass depth-2 desktop candidate search,
 independent original packing/LDPC/CRC with the exact recovered 77-bit payload,
 desktop candidate synchronization, and measured onset/timestamp-anchor checks. All 79
