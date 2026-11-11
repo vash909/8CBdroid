@@ -60,6 +60,7 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
         val result = Bundle(); val report = JSONObject(); var code = Activity.RESULT_CANCELED
         try {
             require(run.matches(Regex("[a-zA-Z0-9-]{1,64}")))
+            report.put("run", run).put("result", "RUNNING")
             var activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             current = activity
@@ -88,11 +89,27 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
                 check(input.uiState.value.error == null) { input.uiState.value.error.orEmpty() }
                 input.uiState.value.phase == CapturePhase.CAPTURING && input.uiState.value.decodeLive
             } }
-            fun prepare() {
+            fun prepare(direct: Boolean = false) {
                 main { model.stop(); input.stop(clear = true) }; idle()
-                PhoneNavigation.click(instrumentation, "Calibrate speaker")
+                if (direct) main { model.calibrate() } else PhoneNavigation.click(instrumentation, "Calibrate speaker")
                 await("speaker timing") { main { !model.uiState.value.busy && model.uiState.value.latency != null } }
-                PhoneNavigation.click(instrumentation, "Start RX"); receiving()
+                if (direct) main { input.requestStart(true) } else PhoneNavigation.click(instrumentation, "Start RX")
+                receiving()
+            }
+            fun measureTimeFromUi() {
+                fun measure() {
+                    PhoneNavigation.click(instrumentation, "Measure NTP")
+                    await("NTP request completed") { main { time.uiState.value.busy == null } }
+                }
+                measure()
+                if (main { time.uiState.value.error?.startsWith("Wait ") == true }) {
+                    SystemClock.sleep(if (server == "ntp.nict.jp") 257000 else 65000)
+                    measure()
+                }
+                check(main { time.uiState.value.error == null && time.uiState.value.measurement != null }) { main { time.uiState.value.error.orEmpty() } }
+                PhoneNavigation.click(instrumentation, "Apply measured time")
+                check(main { time.uiState.value.refreshWarning == null && !model.uiState.value.autoSequence.active && !model.uiState.value.armed })
+                previousRevision = time.clock.revision
             }
             fun progress(role: String, since: Long): JSONObject = main {
                 val value = model.uiState.value; val rx = input.uiState.value
@@ -151,12 +168,17 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
                 } else check(main { model.uiState.value.qso?.phase == CbQsoPhase.COMPLETE && model.uiState.value.autoSequence.completed })
                 repeat(sends.length()) { i -> check(sends.getJSONObject(i).getLong("frames") == 161280L) }
                 last.put("received", JSONArray(observedReceives.values.toList()))
-                roles.put(last); stage("done-$role")
+                roles.put(last)
+                report.put("roles", roles).put("periodic_ntp_refreshes", clockEvents)
+                publish("autoseq-report", report)
+                stage("done-$role")
             }
             report.put("roles", roles).put("periodic_ntp_refreshes", clockEvents)
             check(clockEvents.length() > 0) { "The physical suite did not observe a real five-minute NTP refresh" }
             fun startGuard() {
-                prepare(); PhoneNavigation.click(instrumentation, "Auto CQ")
+                // UI calibration/start were covered in all three roles; reuse the same
+                // real backend commands here without repeated setup scrolling.
+                prepare(direct = true); main { model.startAutomatic(true) }
                 await("guard AutoSeq active") { main { model.uiState.value.autoSequence.active } }
             }
             val guards = JSONArray()
@@ -185,15 +207,18 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
                 check(main { !model.uiState.value.armed && model.uiState.value.sent.size == before })
                 SystemClock.sleep(700); check(main { !model.uiState.value.autoSequence.active })
                 guards.put(guard)
+                report.put("guards", guards); publish("autoseq-report", report)
                 if (guard == "navigation") PhoneNavigation.click(instrumentation, "Operate")
                 if (guard == "focus-loss") { SystemClock.sleep(1800); main { activity.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)) } }
                 if (guard == "clock-reset") {
-                    val observation = runBlocking { UdpNtpClient(AndroidTimeSource).measure(server) }
-                    main { time.clock.apply(observation) }; previousRevision = time.clock.revision
+                    await("clock reset warning") { main { time.uiState.value.refreshWarning != null } }
+                    PhoneNavigation.click(instrumentation, "⚠")
+                    measureTimeFromUi()
+                    PhoneNavigation.click(instrumentation, "Operate")
                 }
             }
             await("idle time refresh") { main { !time.uiState.value.refreshPending && !time.uiState.value.refreshing && !model.uiState.value.busy } }
-            check(main { time.uiState.value.refreshWarning == null }) { "A pre-existing time warning must be resolved before the offline scenario." }
+            check(main { time.uiState.value.refreshWarning == null }) { main { "Unexpected time warning before offline scenario: ${time.uiState.value.refreshWarning}" } }
             stage("ntp-offline")
             val expiry = main { time.clock.snapshot().expiresAtNanos }
             await("actual periodic NTP failure", 330000) { main { time.uiState.value.refreshWarning != null } }
@@ -203,11 +228,7 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
             stage("ntp-online")
             // Respect the real client's per-host request interval after the failed refresh.
             SystemClock.sleep(if (server == "ntp.nict.jp") 257000 else 65000)
-            PhoneNavigation.click(instrumentation, "Measure NTP")
-            await("real network recovery") { main { time.uiState.value.busy == null && time.uiState.value.measurement != null } }
-            check(main { time.uiState.value.error == null }) { main { time.uiState.value.error.orEmpty() } }
-            PhoneNavigation.click(instrumentation, "Apply measured time")
-            check(main { time.uiState.value.refreshWarning == null && !model.uiState.value.autoSequence.active && !model.uiState.value.armed })
+            measureTimeFromUi()
             check(main { input.uiState.value.phase == CapturePhase.IDLE })
             report.put("real_ntp_failure_warning_and_manual_recovery", true).put("failed_refresh_preserved_expiry", true)
             report.put("guards", guards).put("result", "PASS").put("model", android.os.Build.MODEL)
@@ -215,6 +236,8 @@ class AutomaticPhoneChecks(private val instrumentation: Instrumentation, private
             File(context.cacheDir, "autoseq-report.json").writeText(report.toString(2))
             result.putString("autoseq_report", report.toString()); result.putString("autoseq_result", "PASS"); code = Activity.RESULT_OK
         } catch (error: Throwable) {
+            report.put("failure", "${error.javaClass.simpleName}: ${error.message}")
+            publish("autoseq-report", report)
             result.putString("autoseq_failure", "${error.javaClass.simpleName}: ${error.message}; ${error.stackTrace.take(3)}; manual=${operating?.uiState?.value}; capture=${capture?.uiState?.value?.copy(spectrum = SpectrumState())}")
         } finally {
             observer?.cancel()

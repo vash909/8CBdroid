@@ -78,7 +78,7 @@ PipeWire tools and an installed **WSJT-CB** `jt9` decoder:
 
 ```bash
 source scripts/env.sh
-timeout 1200 python3 scripts/autoseq_audio_checks.py \
+timeout 1500 python3 scripts/autoseq_audio_checks.py \
   --output /tmp/8cbdroid-autoseq --jt9 /path/to/wsjt-cb/jt9
 ```
 

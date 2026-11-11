@@ -223,9 +223,9 @@ def main():
             process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
                 '-e', 'scenario', 'automatic-audio', '-e', 'preview_run', run,
                 PACKAGE+'.test/'+PACKAGE+'.validation.WaveformPhoneChecks'], env=env, stdout=log, stderr=subprocess.STDOUT)
-            deadline = time.monotonic()+1100
+            deadline = time.monotonic()+1400
             while process.poll() is None:
-                assert time.monotonic() < deadline, 'Automatic phone checks exceeded 1100 seconds'
+                assert time.monotonic() < deadline, 'Automatic phone checks exceeded 1400 seconds'
                 if recorder is not None: assert recorder.poll() is None, 'Physical recording ended prematurely'
                 if scheduled is not None and time.time() >= scheduled[1]:
                     name, target = scheduled; assert time.time()-target < .2
@@ -296,6 +296,10 @@ def main():
     finally:
         restore_network()
         stop_recorder()
+        partial = read('autoseq-report.json')
+        if partial.get('run') == run:
+            partial.update(desktop_plays=plays, live_desktop_decodes=online, physical_source=source_name)
+            (output/'phone-checkpoint.json').write_text(json.dumps(partial, indent=2))
         if player is not None and player.poll() is None: player.terminate(); player.wait(timeout=3)
         if process is not None and process.poll() is None:
             adb('shell', 'am', 'force-stop', '--user', '0', PACKAGE, check=False); process.terminate(); process.wait(timeout=4)
