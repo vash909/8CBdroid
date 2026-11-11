@@ -22,8 +22,10 @@ jobs:
       - name: Install reference compiler
         run: |
           apt_mirror=''
-          for candidate in azure.archive.ubuntu.com archive.ubuntu.com; do
-            if timeout 8 getent ahostsv4 "$candidate" >/dev/null; then
+          for candidate in azure.archive.ubuntu.com archive.ubuntu.com mirrors.kernel.org; do
+            if timeout 8 getent ahostsv4 "$candidate" >/dev/null &&
+              curl --fail --location --silent --show-error --connect-timeout 5 --max-time 12 \
+                "https://${candidate}/ubuntu/dists/noble/InRelease" --output /dev/null; then
               apt_mirror="$candidate"
               break
             fi
@@ -35,7 +37,7 @@ jobs:
           echo "Using Ubuntu mirror: $apt_mirror"
           for apt_source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
             if [ -f "$apt_source" ]; then
-              sudo sed -i -E "s@https?://(azure\\.archive|archive)\\.ubuntu\\.com/ubuntu@https://${apt_mirror}/ubuntu@g" "$apt_source"
+              sudo sed -i -E "s@https?://(azure\\.archive|archive|security)\\.ubuntu\\.com/ubuntu@https://${apt_mirror}/ubuntu@g" "$apt_source"
             fi
           done
           sudo timeout 150 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update --error-on=any
