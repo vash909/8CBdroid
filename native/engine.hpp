@@ -10,7 +10,7 @@
 namespace eightcb {
 constexpr int sample_rate = 12000;
 constexpr int slot_samples = 180000;
-constexpr int early_window_samples = 168000;
+constexpr int early_window_samples = 162000;
 using Payload = std::array<uint8_t, 10>;
 using Tones = std::array<uint8_t, 79>;
 struct Frame {

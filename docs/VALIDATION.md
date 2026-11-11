@@ -456,7 +456,7 @@ limits, a two-minute no-progress timeout and a four-minute session limit. It
 consumes the existing qualified admission/model facts, never raw text or LAN.
 The foreground audio owner freezes each output and confirms actual playback.
 
-The native decoder now accepts a separately typed 14-second actual receive
+The native decoder now accepts a separately typed 13.5-second actual receive
 window without padding. Automatic output verifies and omits only generated
 zero tail padding, recording 161280 actual frames; manual output and WAV slots
 remain 180000. The unchanged echo guard and timestamp validation still apply.

@@ -34,7 +34,7 @@ class CbAutoSequence(private val startedUtcMillis: Long, firstTxUtcMillis: Long,
         }
         if (busy || pending != null) return null
         val target = requireNotNull(state.nextTxUtcMillis)
-        if (now < target - 1000) return null
+        if (now < target - 1500) return null
         if (state.repeatCount >= 3) { stop("AutoSeq stopped after three transmissions of the same message."); return null }
         if (now >= target - 400) { stop("The automatic response deadline was missed. AutoSeq off."); return null }
         if (state.transmissions > 0 && (decodedSlot == null || decodedSlot < target - 15_000)) return null

@@ -78,7 +78,7 @@ extern "C" JNIEXPORT jobject JNICALL
 Java_net_vash_ft8cbdroid_dsp_NativeBridge_decode(JNIEnv* env, jobject, jfloatArray samples, jint profile, jlong id) {
     try {
         if (!samples || (env->GetArrayLength(samples)!=eightcb::slot_samples && env->GetArrayLength(samples)!=eightcb::early_window_samples))
-            throw std::invalid_argument("Expected 14 or 15 seconds of actual 12 kHz PCM");
+            throw std::invalid_argument("Expected 13.5 or 15 seconds of actual 12 kHz PCM");
         std::vector<float> pcm(env->GetArrayLength(samples));
         env->GetFloatArrayRegion(samples,0,pcm.size(),pcm.data());
         auto decoded=eightcb::decode_slot(pcm,profile,cancellation(call_for(id)));

@@ -87,7 +87,7 @@ class UtcSlotAssembler(clock: ReceiveClock, completed: (CompletedUtcSlot) -> Uni
 data class CompletedReceiveWindow(val utcStartMillis: Long, val pcm: Ft8ReceiveWindow,
     val source: String, val uncertaintyMillis: Double?)
 
-/** An early decision uses 14 seconds of genuine input; the unused final second is never fabricated. */
+/** An early decision uses 13.5 seconds of genuine input; the unused final 1.5 seconds is never fabricated. */
 class UtcReceiveWindowAssembler(clock: ReceiveClock, completed: (CompletedReceiveWindow) -> Unit) {
     private val builder = UtcWindowBuilder(clock, Ft8ReceiveWindow.sampleCount) { utc, samples, source, uncertainty ->
         completed(CompletedReceiveWindow(utc, Ft8ReceiveWindow.fromSamples(samples), source, uncertainty))

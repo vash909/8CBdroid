@@ -20,7 +20,7 @@ def trace():
         for index, name in expected:
             utc = item['sent'][index]['utc_millis']+15000
             text = checks.TEXTS[name]
-            item['received'].append(dict(utc_millis=utc, text=text, captured_samples=168000))
+            item['received'].append(dict(utc_millis=utc, text=text, captured_samples=162000))
             plays.append(dict(role=item['role'], utc_millis=utc, text=text))
     return dict(roles=[calling, answering, quiet]), plays
 

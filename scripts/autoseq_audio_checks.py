@@ -131,7 +131,7 @@ def validate_roles(report, plays):
         for index, text in expected:
             utc = sent[index]['utc_millis']+15000
             assert any(p['role'] == role['role'] and p['utc_millis'] == utc and p['text'] == text for p in plays)
-            assert any(r['utc_millis'] == utc and r['text'] == text and r['captured_samples'] == 168000 for r in role['received']), (role['role'], text, utc)
+            assert any(r['utc_millis'] == utc and r['text'] == text and r['captured_samples'] == 162000 for r in role['received']), (role['role'], text, utc)
 
 
 def main():

@@ -16,7 +16,7 @@ class UtcSlotsTest {
             if (second == 12) assertTrue(windows.isEmpty())
         }
         assertEquals(2, windows.size); assertEquals(1_800_000_015_000, windows.first().utcStartMillis)
-        assertEquals(168000, windows.first().pcm.toFloatArray().size)
+        assertEquals(162000, windows.first().pcm.toFloatArray().size)
         assertEquals(0f, windows.first().pcm.toFloatArray().first(), 0f)
         assertEquals(.13f, windows.first().pcm.toFloatArray().last(), 0f)
         assembler.clear()

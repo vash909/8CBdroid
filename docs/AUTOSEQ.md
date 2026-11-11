@@ -27,9 +27,9 @@ operating service. Recalibrate when its five-minute latency measurement expires.
 
 ## Immediate response timing
 
-Automatic reception decodes exactly 168000 genuine samples: UTC boundary through
-+14 seconds at 12 kHz. The decoder consumes that length directly; it does not
-pad an unrecorded second. Gaps and initial partial windows are discarded. The
+Automatic reception decodes exactly 162000 genuine samples: UTC boundary through
++13.5 seconds at 12 kHz. The decoder consumes that length directly; it does not
+pad an unrecorded tail. Gaps and initial partial windows are discarded. The
 current automatic receiver keeps this timing after the exchange ends; a fresh
 explicit Start RX selects ordinary 15-second reception again. Exported slots and
 WAV import retain their 15-second contract.

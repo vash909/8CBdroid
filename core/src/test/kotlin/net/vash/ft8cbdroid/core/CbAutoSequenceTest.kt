@@ -11,8 +11,8 @@ class CbAutoSequenceTest {
     private fun policy() = CbAutoSequence(0, 30_000, true, SlotPeriod.EVEN)
     @Test fun callerWaitsForTheFixedBoundaryAndNeverQueuesTwice() {
         val p = policy(); val qso = CbQsoSnapshot()
-        assertNull(p.tick(28_999, qso, null, null, false))
-        val send = requireNotNull(p.tick(29_000, qso, null, null, false))
+        assertNull(p.tick(28_499, qso, null, null, false))
+        val send = requireNotNull(p.tick(28_500, qso, null, null, false))
         assertEquals(ManualMessage.CQ, send.kind); assertEquals(30_000, send.utcMillis)
         assertNull(p.tick(29_100, qso, null, null, false))
         p.sent(send, bits); assertEquals(1, p.state.transmissions)
@@ -58,7 +58,7 @@ class CbAutoSequenceTest {
     @Test fun answeringRequiresAdviceInTheExplicitlySelectedPeriod() {
         val p = CbAutoSequence(0, 30_000, false, SlotPeriod.EVEN)
         val qso = CbQsoSnapshot(peer = "26AT101")
-        assertNull(p.tick(29_000, qso, null, null, false))
+        assertNull(p.tick(28_500, qso, null, null, false))
         val wrong = CbQsoSuggestion("26AT101", ManualMessage.REPLY, "<26AT101> 1AT106", -7, 1000, SlotPeriod.ODD)
         assertNull(p.tick(29_100, qso, wrong, null, false)); assertFalse(p.state.active)
     }

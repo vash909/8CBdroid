@@ -41,13 +41,13 @@ class Ft8PcmSlot private constructor(private val samples: FloatArray) {
     }
 }
 
-/** Fourteen seconds actually captured from a UTC boundary. No invented or padded tail. */
+/** Thirteen and a half seconds actually captured from a UTC boundary. No invented or padded tail. */
 class Ft8ReceiveWindow private constructor(private val samples: FloatArray) {
     fun toFloatArray() = samples.copyOf()
     companion object {
-        const val sampleCount = 168_000
+        const val sampleCount = 162_000
         fun fromSamples(samples: FloatArray): Ft8ReceiveWindow {
-            require(samples.size == sampleCount) { "Expected 14 seconds of captured 12 kHz PCM" }
+            require(samples.size == sampleCount) { "Expected 13.5 seconds of captured 12 kHz PCM" }
             require(samples.all { it.isFinite() && it in -1f..1f })
             return Ft8ReceiveWindow(samples.copyOf())
         }

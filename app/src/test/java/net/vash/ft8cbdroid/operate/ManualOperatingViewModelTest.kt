@@ -28,19 +28,23 @@ class ManualOperatingViewModelTest {
     private val clock = ReceiveClock(source)
     private var receiving = true
     private var recoveries = 0
+    private var pauseMillis = 0L
     private val coordinator = PhoneAudioCoordinator(object : PhoneAudioReceiver {
         override fun blockStarts(blocked: Boolean) {}
         override suspend fun pause(): (() -> Boolean)? {
             val wasReceiving = receiving; receiving = false
+            delay(pauseMillis)
             return if (wasReceiving) { { receiving = true; recoveries++; true } } else null
         }
     })
     private class Engine : Ft8Engine {
         var encoded = mutableListOf<Pair<Ft8Payload77, Float>>()
+        var encodeMillis = 0L
         var wait: CompletableDeferred<Unit>? = null
         override suspend fun decode(slot: Ft8PcmSlot, profile: Ft8DecodeProfile) = error("No self decoding")
         override suspend fun encode(payload: Ft8Payload77, audioFrequencyHz: Float, peakAmplitude: Float): Ft8PcmSlot {
             encoded += payload to audioFrequencyHz
+            delay(encodeMillis)
             wait?.await()
             return Ft8PcmSlot.fromSamples(FloatArray(180000))
         }
@@ -182,6 +186,23 @@ class ManualOperatingViewModelTest {
     }
     private fun automaticInput() = liveInput().copy(earlyWindows = true)
     private suspend fun TestScope.at(ms: Long) { advanceTimeBy(ms - scheduler.currentTime); runCurrent() }
+    @Test fun immediateResponseReservesTimeForActualInputCleanupAndWaveformGeneration() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player()
+        val engine = Engine().also { it.encodeMillis = 100 }
+        val vm = model(engine, player, rx = rx); ready(vm)
+        pauseMillis = 350
+        vm.startAutomatic(true); runCurrent()
+        at(44_000); assertEquals(1, vm.uiState.value.sent.size)
+        at(58_700)
+        rx.value = rx.value.copy(receiveRun = 2, receiveStartedUtcMillis = 1_800_000_044_000,
+            live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_045_000,
+                rows = listOf(decoded("<1AT106> 26AT101", 1_800_000_045_000).copy(capturedSamples = 162000))))
+        runCurrent(); at(74_000)
+        assertNull(vm.uiState.value.error)
+        assertEquals("26AT101 -12", vm.uiState.value.sent.first().text)
+        assertEquals(1_800_000_060_000, vm.uiState.value.sent.first().utcMillis)
+        vm.stop()
+    }
     @Test fun automaticCallingConsumesEarlyQualifiedRepliesAndConfirmsOnlyActualWaveforms() = runTest(dispatcher) {
         val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
         ready(vm); vm.startAutomatic(true); runCurrent(); assertTrue(vm.uiState.value.autoSequence.active)
@@ -190,7 +211,7 @@ class ManualOperatingViewModelTest {
             at(time)
             rx.value = rx.value.copy(receiveRun = run, receiveStartedUtcMillis = 1_800_000_000_000L + slot - 1000,
                 live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_000_000L + slot,
-                    rows = listOf(decoded(text, 1_800_000_000_000L + slot).copy(capturedSamples = 168000))))
+                    rows = listOf(decoded(text, 1_800_000_000_000L + slot).copy(capturedSamples = 162000))))
             runCurrent()
         }
         incoming(59_200, 45_000, "<1AT106> 26AT101", 2)
@@ -223,12 +244,12 @@ class ManualOperatingViewModelTest {
         at(44_200)
         rx.value = rx.value.copy(receiveRun = 2, receiveStartedUtcMillis = 1_800_000_029_000,
             live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_030_000,
-                rows = listOf(decoded("1AT106 -07", 1_800_000_030_000).copy(capturedSamples = 168000))))
+                rows = listOf(decoded("1AT106 -07", 1_800_000_030_000).copy(capturedSamples = 162000))))
         runCurrent(); at(59_000); assertEquals("26AT101 R-12", vm.uiState.value.sent.first().text)
         at(74_200)
         rx.value = rx.value.copy(receiveRun = 3, receiveStartedUtcMillis = 1_800_000_059_000,
             live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_060_000,
-                rows = listOf(decoded("1AT106 RR73", 1_800_000_060_000).copy(capturedSamples = 168000))))
+                rows = listOf(decoded("1AT106 RR73", 1_800_000_060_000).copy(capturedSamples = 162000))))
         runCurrent(); at(89_000)
         assertEquals("26AT101 73", vm.uiState.value.sent.first().text)
         assertEquals(CbQsoPhase.COMPLETE, vm.uiState.value.qso?.phase)

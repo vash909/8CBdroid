@@ -40,7 +40,7 @@ packing/unpacking comes from the [Kotlin CB codec](CB_MESSAGE_CODEC.md), with
 | --- | --- |
 | `Ft8Payload77` | Ten bytes, with three zero padding bits; defensive copies. |
 | `Ft8PcmSlot` | Exactly 180,000 finite normalized float samples in [-1, 1]: mono 12 kHz, 15 seconds. |
-| `Ft8ReceiveWindow` | Exactly 168,000 genuinely captured normalized samples for early foreground AutoSeq decisions. The native decoder processes 14 seconds directly, without adding unrecorded samples. |
+| `Ft8ReceiveWindow` | Exactly 162,000 genuinely captured normalized samples for early foreground AutoSeq decisions. The native decoder processes 13.5 seconds directly, without adding unrecorded samples. |
 | `Ft8DecodedFrame` | CRC/LDPC-valid payload, corrected relative onset, audio frequency, sync score and nullable estimated SNR. |
 | `Ft8DecodeResult` | Decoded frames plus candidate count; duplicate payloads collapsed within a slot. |
 

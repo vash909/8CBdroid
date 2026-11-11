@@ -41,7 +41,7 @@ All state, decisions and tickets are process-local.
 ## Admission boundaries
 
 The core checks the payload and decoded text together, CRC/LDPC flags, resolved
-unambiguous identities, finite signal metadata and complete timestamped observation windows (15 seconds normally, 14 seconds
+unambiguous identities, finite signal metadata and complete timestamped observation windows (15 seconds normally, 13.5 seconds
 for explicitly started AutoSeq). No unrecorded samples are padded.
 It accepts only the active local receiver run, at/after its fresh-window boundary
 and selection/last-output boundary, up to 15 seconds after the actual observation window ends. It

@@ -93,7 +93,7 @@ class CbQsoAdvisor(station: StationIdentity, report: Int = -7) {
         if (snapshot.phase in setOf(CbQsoPhase.COMPLETE, CbQsoPhase.ABORTED)) return ignored("The exchange has ended.")
         val d = row.decode
         val slot = d.slotStartUtc.toEpochMilli()
-        if (row.capturedSamples !in setOf(168_000, 180_000)) return ignored("Unsupported receive window.")
+        if (row.capturedSamples !in setOf(162_000, 180_000)) return ignored("Unsupported receive window.")
         val windowMillis = row.capturedSamples / 12L
         if (d.slotStartUtc.nano != 0 || slot % 15_000 != 0L || slot < maxOf(runFloor, exchangeFloor) ||
             nowUtcMillis < slot + windowMillis || nowUtcMillis - slot - windowMillis > 15_000)
