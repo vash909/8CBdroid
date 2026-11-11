@@ -10,7 +10,9 @@ NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone
 software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
 microphone pause/recovery are available. Operate now offers foreground manual
 phone-speaker exchanges: explicit peer/message selection, enable and one-slot send.
-CAT/PTT, AutoSeq, persistent QSO logging and qualified USB audio remain unimplemented.
+A [pure JVM CB QSO model](docs/CB_QSO_PROGRESSION.md) now records exchange facts
+but is not connected to live reception or sending. CAT/PTT, AutoSeq, persistent
+QSO logging and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 

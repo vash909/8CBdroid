@@ -19,6 +19,8 @@ import net.vash.ft8cbdroid.core.recording.RecordedSlotContext
 import net.vash.ft8cbdroid.core.recording.RecordedSlotDecoder
 import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import net.vash.ft8cbdroid.reference.HashSessionReferenceChecks
+import net.vash.ft8cbdroid.reference.QsoProgressionReferenceChecks
+import net.vash.ft8cbdroid.reference.QsoProgressionSafetyChecks
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -59,6 +61,11 @@ class OfflineEngineProbe : Instrumentation() {
                 )
                 hashScenarios.values.forEach(HashSessionReferenceChecks::verify)
                 report.putInt("hash_session_scenarios", hashScenarios.size)
+                val qsoSteps = QsoProgressionReferenceChecks.verify(
+                    context.assets.open("wsjtcb/qso-progression.tsv").bufferedReader().use { it.readLines() },
+                )
+                report.putInt("qso_progression_steps", qsoSteps)
+                report.putInt("qso_safety_scenarios", QsoProgressionSafetyChecks.verify())
                 val engine = NativeFt8Engine()
                 val generator = OfflineFt8Generator(engine)
                 var generatedCount = 0

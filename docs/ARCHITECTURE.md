@@ -20,7 +20,7 @@ capture stay behind contracts. Completion records audio only, without QSO automa
 
 ```text
 app (Compose, ViewModels, DataStore, Android USB/document access)
- ├── core (station models, CB codec/hash sessions, WAV/recorded-slot logic,
+ ├── core (station models, CB codec/hash sessions/QSO model, WAV/recorded-slot logic,
  │        radio/audio/DSP contracts)
  ├── audio (AndroidMicrophoneCapture; device access and recording worker)
  │    └── core
@@ -66,6 +66,18 @@ NTP/GNSS measurements are process-local, expire, and require explicit applicatio
 the capture contract; it never calls the decoder or changes Android time. Choosing a radio
 connection label does not establish a radio session. See [operating profiles](OPERATING_PROFILES.md) for durable configuration and explicit application. Android
 system picker history/USB grants have their own OS lifecycle.
+
+## CB QSO domain model
+
+`CbQsoProgression` is a serialized, process-local JVM model, separate from the
+current manual operating ViewModel. It accepts explicit peer selection,
+already-qualified received semantics and opaque prepared/sent/cancelled tickets.
+Snapshots distinguish observed/queued text from confirmed output. Replacing a
+peer, resetting or aborting invalidates old tickets; protocol completion requires
+both reports, acknowledgements and local/peer finals. It neither selects the next
+message nor opens hardware, schedules output or persists a log. The future live
+admission/execution owners must supply qualified peer context and handle actual
+cancellation. See [the domain contract](CB_QSO_PROGRESSION.md).
 
 ## Station settings
 
