@@ -44,6 +44,7 @@ data class CbQsoSnapshot(
     val receivedReport: Int? = null,
     val localAcknowledgedReport: Boolean = false,
     val peerAcknowledgedReport: Boolean = false,
+    val peerRogerReceived: Boolean = false,
     val localFinalSent: Boolean = false,
     val peerFinalReceived: Boolean = false,
     val pending: CbQsoTransmission? = null,
@@ -52,7 +53,7 @@ data class CbQsoSnapshot(
     /** Protocol completion only: this is neither RF verification nor a durable log entry. */
     val phase: CbQsoPhase get() = when {
         aborted -> CbQsoPhase.ABORTED
-        localFinalSent && peerFinalReceived && localAcknowledgedReport && peerAcknowledgedReport &&
+        localFinalSent && (peerFinalReceived || peerRogerReceived) && localAcknowledgedReport && peerAcknowledgedReport &&
             sentReport != null && receivedReport != null -> CbQsoPhase.COMPLETE
         localFinalSent || peerFinalReceived -> CbQsoPhase.SIGNOFF
         localAcknowledgedReport || peerAcknowledgedReport -> CbQsoPhase.ACKNOWLEDGED
@@ -141,7 +142,7 @@ class CbQsoProgression(station: StationIdentity) {
                     CbQsoMessage.REPLY -> snapshot.copy(replyReceived = true)
                     CbQsoMessage.REPORT -> snapshot.copy(receivedReport = m.report)
                     CbQsoMessage.ROGER -> snapshot.copy(receivedReport = m.report, peerAcknowledgedReport = true)
-                    CbQsoMessage.RRR -> snapshot.copy(peerAcknowledgedReport = true)
+                    CbQsoMessage.RRR -> snapshot.copy(peerAcknowledgedReport = true, peerRogerReceived = true)
                     CbQsoMessage.RR73 -> snapshot.copy(peerAcknowledgedReport = true, peerFinalReceived = true)
                     CbQsoMessage.SIGNOFF -> snapshot.copy(peerFinalReceived = true)
                 }
@@ -169,7 +170,7 @@ class CbQsoProgression(station: StationIdentity) {
                 kind == ManualMessage.REPORT && (snapshot.localAcknowledgedReport || snapshot.localFinalSent) -> "The report has already been acknowledged."
                 kind == ManualMessage.ROGER && (snapshot.receivedReport == null || snapshot.localFinalSent) -> "A received report is required before sending an R-report."
                 kind == ManualMessage.RR73 && (!reportsKnown() || !snapshot.peerAcknowledgedReport) -> "Both reports and the peer's acknowledgement are required before RR73."
-                kind == ManualMessage.SIGNOFF && (!reportsKnown() || !snapshot.peerFinalReceived || !snapshot.localAcknowledgedReport || !snapshot.peerAcknowledgedReport) -> "The acknowledged report exchange and peer signoff are required before 73."
+                kind == ManualMessage.SIGNOFF && (!reportsKnown() || !(snapshot.peerFinalReceived || snapshot.peerRogerReceived) || !snapshot.localAcknowledgedReport || !snapshot.peerAcknowledgedReport) -> "The acknowledged report exchange and peer closing acknowledgement are required before 73."
                 else -> null
             }
         }

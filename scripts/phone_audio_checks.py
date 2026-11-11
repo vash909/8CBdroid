@@ -39,8 +39,8 @@ def main():
         import wsjtcb_channel as channel
         directory = args.output.resolve()/'desktop-reference'; directory.mkdir()
         executable, _ = channel.compile_reference(directory)
-        messages = {m['message'].strip(): m['payload77'] for m in json.loads((root/'reference/wsjtcb/qso.json').read_text())['message_payloads']}
-        for stage, text in [('cq', 'CQ 26AT101'), ('reply', '<1AT106> 26AT101'), ('report', '1AT106 -07'), ('final', '1AT106 RR73')]:
+        messages = {m['message'].strip(): m['payload77'] for name in ['qso.json', 'admission.json'] for m in json.loads((root/'reference/wsjtcb'/name).read_text())['message_payloads']}
+        for stage, text in [('cq', 'CQ 26AT101'), ('reply', '<1AT106> 26AT101'), ('report', '1AT106 -07'), ('rrr', '1AT106 RRR'), ('foreign-final', '161XZ085 RR73'), ('final', '1AT106 RR73')]:
             path = directory/(stage+'.wav'); path.write_bytes(channel.make_wave(executable, messages[text], directory))
             incoming['receive-'+stage] = path
     prefix = 'r19a' if args.manual else 'r17a'
@@ -118,7 +118,7 @@ def main():
         assert process.returncode == 0 and result_key+'_result=PASS' in log and 'INSTRUMENTATION_CODE: -1' in log, log
         report = read(prefix+'-report.json'); assert report['run'] == run
         line = next(line.split(result_key+'_report=', 1)[1] for line in log.splitlines() if 'INSTRUMENTATION_RESULT: '+result_key+'_report=' in line)
-        assert json.loads(line) == report and len(desktop_plays) == (4 if args.manual else 3) and len(captures) == (3 if args.manual else 2)
+        assert json.loads(line) == report and len(desktop_plays) == (6 if args.manual else 3) and len(captures) == (3 if args.manual else 2)
         for directory, slot in zip(captures, report['slots']):
             assert directory.name == 'capture-'+(slot['stage'] if args.manual else slot['period'].lower())
             (directory/'report.json').write_text(json.dumps(dict(run=run, slots=[slot]), indent=2))

@@ -51,7 +51,11 @@ After successful playback, audio ownership is released, a 500 ms echo guard
 passes, and the previously active built-in receiver is reopened if its setup is
 still valid. Old samples, results and learned hashes are cleared; the first
 partial receive slot is discarded. Choose and enable the next message manually.
-There is no automatic repeat, answer, retry, final-message action or QSO completion.
+[Local QSO advice](QSO_ADVICE.md) shows qualified progress and a suggested template.
+**Use suggested message** applies it and disables TX; it never sends. **Reset QSO**
+clears tracking. The model records protocol completion only after the required
+received evidence and actual local final output. There is no automatic repeat,
+answer, retry, final-message output or persistent QSO log.
 
 **Sent** retains up to 30 completed speaker slots in the current process, with
 slot UTC and text. It confirms complete audio playback only: it cannot confirm
@@ -93,9 +97,10 @@ python3 scripts/phone_audio_checks.py --manual --output /path/to/new-private-dir
 
 `--ntp-host HOST --ntp-port PORT` selects a real nearby NTP reference. The host
 generates incoming WAVs using pinned original WSJT-CB channel routines, plays
-them acoustically, and records three outgoing phone messages with physical
+six incoming messages acoustically, including RRR and a foreign final, and records three outgoing phone messages with physical
 microphone timestamps. The phone checks actual Operate controls, manual peer/
-message selection, RX/output recovery, cold/warm receive context, bounded tone,
+message advice/application without arming, actual report/final progression through
+confirmed output, RX/output recovery, cold/warm receive context, bounded tone,
 Stop, edits, focus loss, time reset, navigation, recreation and profile cleanup.
 Independently decode all recorded outgoing payloads/tones and measure onset;
 Android playback counters alone are insufficient. These are acoustic software

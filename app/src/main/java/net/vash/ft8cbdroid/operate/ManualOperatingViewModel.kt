@@ -8,6 +8,9 @@ import net.vash.ft8cbdroid.core.*
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.message.*
 import net.vash.ft8cbdroid.core.time.ReceiveClock
+import net.vash.ft8cbdroid.core.qso.*
+import net.vash.ft8cbdroid.audio.CapturePhase
+import net.vash.ft8cbdroid.audio.CaptureUiState
 
 enum class ManualPhase { IDLE, CALIBRATING, GENERATING, WAITING, PLAYING, TONE }
 data class SentAudio(val utcMillis: Long, val text: String, val payload: Ft8Payload77,
@@ -22,6 +25,7 @@ data class ManualOperatingState(
     val busy: Boolean = false, val phase: ManualPhase = ManualPhase.IDLE, val queuedUtcMillis: Long? = null,
     val playback: PreviewReport? = null, val sent: List<SentAudio> = emptyList(),
     val error: String? = null, val notice: String? = null,
+    val qso: CbQsoSnapshot? = null, val suggestion: CbQsoSuggestion? = null, val qsoNotice: String? = null,
 ) {
     val packed get() = CbMessageCodec.pack(text, if (freeText) EncodingMode.FREE_TEXT else EncodingMode.AUTOMATIC)
     val templates get() = runCatching { manualMessages(requireNotNull(station), peer, report.toInt()) }.getOrDefault(emptyMap())
@@ -48,6 +52,7 @@ class ManualOperatingViewModel(
     private val receiveReady: () -> Boolean,
     private val prepareOutput: suspend () -> Unit = {},
     private val worker: CoroutineDispatcher = Dispatchers.Default,
+    private val reception: Flow<CaptureUiState> = emptyFlow(),
 ) : ViewModel() {
     private val state = MutableStateFlow(ManualOperatingState())
     val uiState = state.asStateFlow()
@@ -55,6 +60,68 @@ class ManualOperatingViewModel(
     private var guard: Job? = null
     @Volatile private var revision = 0L
     private var contextKey: Any? = null
+    private var advisor: CbQsoAdvisor? = null
+    private var receivingRun: Long? = null
+    private var qsoClockRevision: Long? = null
+    private var lastInput: CaptureUiState? = null
+    init { viewModelScope.launch {
+        combine(reception, uiState.map { it.busy to it.available }.distinctUntilChanged()) { input, _ -> input }.collect(::receive)
+    } }
+    private fun publishQso() { state.value = state.value.copy(qso = advisor?.snapshot, suggestion = advisor?.suggestion) }
+    private fun nextFreshSlot(): Long = runCatching {
+        val now = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
+        Math.floorDiv(now + 14_999, 15_000) * 15_000
+    }.getOrDefault(Long.MIN_VALUE)
+    /** Consumes only the live local receiver's current run, never LAN or imported recordings. */
+    private fun receive(input: CaptureUiState) {
+        lastInput = input
+        val qso = advisor ?: return
+        val mapping = runCatching { clock.snapshot() }.getOrNull()
+        if (qsoClockRevision != null && qsoClockRevision != mapping?.revision) {
+            qso.abort(); qsoClockRevision = null
+            state.value = state.value.copy(qsoNotice = "Time correction changed or expired. Start a new QSO explicitly.")
+        }
+        val active = state.value.available && !state.value.busy && !input.outputBusy && input.phase == CapturePhase.CAPTURING && input.decodeLive && input.receiveRun > 0 &&
+            input.receiveTimeRevision == mapping?.revision && mapping != null &&
+            input.inputs.any { it.id == input.selectedId && it.kind == AudioInputKind.PHONE }
+        if (!active) {
+            if (receivingRun != null && !state.value.busy) {
+                qso.abort(); state.value = state.value.copy(qsoNotice = "Local reception ended. Start a new QSO explicitly.")
+            } else qso.suspendReception()
+            receivingRun = null; publishQso(); return
+        }
+        val start = input.receiveStartedUtcMillis ?: return
+        val first = Math.floorDiv(start + 14_999, 15_000) * 15_000
+        receivingRun = input.receiveRun; qsoClockRevision = requireNotNull(mapping).revision
+        qso.bindReceiver(input.receiveRun, first)
+        val now = requireNotNull(mapping).at(clock.source.read().monotonicNanos) / 1_000_000
+        val txHz = state.value.frequency.toIntOrNull() ?: 0
+        input.live.rows.sortedWith(compareBy<LiveDecodeRow> { it.decode.slotStartUtc }
+            .thenBy { kotlin.math.abs(it.decode.frame.audioFrequencyHz - txHz) }).forEach { row ->
+            val decision = qso.receive(row, input.receiveRun, now, txHz)
+            if (decision.admission == CbQsoAdmission.STOP) {
+                cancelOutput(decision.reason)
+                state.value = state.value.copy(qsoNotice = decision.reason)
+            } else if (decision.admission == CbQsoAdmission.ACCEPTED) {
+                state.value = state.value.copy(qsoNotice = decision.reason)
+            }
+        }
+        publishQso()
+    }
+    fun resetQso() {
+        cancelOutput("QSO reset. TX disabled.")
+        advisor?.reset(); advisor?.suspendReception(); receivingRun = null; qsoClockRevision = null
+        state.value = state.value.copy(qsoNotice = "QSO reset. Select a peer or send CQ explicitly.")
+        lastInput?.let(::receive); publishQso()
+    }
+    fun useSuggestion() {
+        val suggestion = state.value.suggestion ?: return
+        if (state.value.busy) return
+        cancelOutput("Suggested message selected. Enable TX explicitly.")
+        state.value = state.value.copy(peer = suggestion.peer, report = java.lang.String.format(java.util.Locale.ROOT, "%+03d", suggestion.report),
+            choice = suggestion.kind, text = suggestion.text, frequency = suggestion.frequencyHz.toString(), period = suggestion.period,
+            freeText = false, acceptChanges = false, error = null)
+    }
     init { viewModelScope.launch {
         player.outputs.collect { outputs ->
             if (state.value.outputs != outputs) {
@@ -73,19 +140,36 @@ class ManualOperatingViewModel(
         state.value = state.value.copy(station = normalized, available = available, referenceDialHz = dialHz,
             outputId = null, latency = null, peer = if (changedStation) "" else state.value.peer,
             sent = if (changedStation) emptyList() else state.value.sent, acceptChanges = false)
-        refreshTemplate()
+        advisor = normalized?.takeIf { it.isValid && available }?.let { CbQsoAdvisor(it, state.value.report.toIntOrNull()?.coerceIn(-50, 99) ?: -7) }
+        receivingRun = null; qsoClockRevision = null
+        state.value = state.value.copy(qsoNotice = null)
+        refreshTemplate(); publishQso()
     }
     private fun edit(change: (ManualOperatingState) -> ManualOperatingState) {
-        stop("Settings changed. Enable TX again explicitly.")
+        cancelOutput("Settings changed. Enable TX again explicitly.")
         state.value = change(state.value).copy(acceptChanges = false, error = null)
     }
-    fun peer(value: String) { edit { it.copy(peer = CbCallsign.normalize(value)) }; refreshTemplate() }
+    fun peer(value: String) {
+        edit { it.copy(peer = CbCallsign.normalize(value)) }
+        selectQsoPeer(); refreshTemplate()
+    }
+    private fun selectQsoPeer() {
+        advisor?.reset(); qsoClockRevision = null
+        advisor?.selectPeer(state.value.peer, state.value.frequency.toIntOrNull() ?: 0, state.value.period, nextFreshSlot())
+        state.value = state.value.copy(qsoNotice = null); lastInput?.let(::receive); publishQso()
+    }
     fun selectPeer(peer: ManualPeer) {
         edit { it.copy(peer = peer.callsign, report = peer.report?.let { n -> java.lang.String.format(java.util.Locale.ROOT, "%+03d", n) } ?: it.report,
             frequency = peer.frequencyHz.toString(), period = peer.period, choice = ManualMessage.REPLY, freeText = false) }
-        refreshTemplate()
+        selectQsoPeer()
+        state.value.report.toIntOrNull()?.takeIf { it in -50..99 }?.let { advisor?.report(it) }
+        refreshTemplate(); publishQso()
     }
-    fun report(value: String) { edit { it.copy(report = value.take(4)) }; refreshTemplate() }
+    fun report(value: String) {
+        edit { it.copy(report = value.take(4)) }
+        value.toIntOrNull()?.takeIf { it in -50..99 }?.let { advisor?.report(it) }
+        refreshTemplate(); publishQso()
+    }
     fun choose(value: ManualMessage) { edit { it.copy(choice = value, freeText = false) }; refreshTemplate() }
     fun custom(value: String) { edit { it.copy(text = value.take(37), choice = ManualMessage.CUSTOM) } }
     fun freeText(value: Boolean) { edit { it.copy(freeText = value, choice = ManualMessage.CUSTOM) } }
@@ -156,6 +240,14 @@ class ManualOperatingViewModel(
         val settings = Ft8GenerationSettings(value.frequency.toFloat(), value.level.toFloat() / 100)
         val id = requireNotNull(value.outputId)
         runOutput(ManualPhase.GENERATING) { ticket ->
+            val qsoOwner = advisor
+            val qsoTicket = if (value.freeText || value.choice == ManualMessage.CUSTOM || encoded.contentChanged) null else
+                qsoOwner?.prepare(value.choice, value.report.toIntOrNull().takeIf { value.choice in setOf(ManualMessage.REPORT, ManualMessage.ROGER) }, encoded.transmittedText, encoded.payload)
+            if (qsoTicket == null) {
+                qsoOwner?.abort()
+                state.value = state.value.copy(qsoNotice = "This manual output is outside the tracked QSO. Reset QSO to start a new exchange.")
+            }
+            publishQso()
             val pcm = withContext(worker) { engine.encode(encoded.payload, settings.audioFrequencyHz, settings.peakAmplitude) }
             currentCoroutineContext().ensureActive()
             require(clock.revision == clockRevision) { "Time correction changed during generation. Enable TX again." }
@@ -169,13 +261,16 @@ class ManualOperatingViewModel(
             currentCoroutineContext().ensureActive()
             val report = requireNotNull(final)
             require(report.writtenFrames == Ft8PcmSlot.sampleCount && report.playedFrames >= Ft8PcmSlot.sampleCount) { "The complete FT8 slot was not played. Nothing added to Sent." }
+            if (ticket == revision && qsoTicket != null && advisor === qsoOwner) {
+                qsoOwner?.sent(qsoTicket, plan.utcMillis); publishQso()
+            }
             if (ticket == revision) state.value = state.value.copy(sent = (listOf(SentAudio(plan.utcMillis, encoded.transmittedText,
                 encoded.payload, settings.audioFrequencyHz, value.referenceDialHz, value.peer, report.playedFrames)) + state.value.sent).take(30),
                 notice = "Speaker slot completed. TX is disabled; choose and enable the next message manually.")
         }
     }
     private fun runOutput(phase: ManualPhase, action: suspend (Long) -> Unit) {
-        stop()
+        cancelOutput()
         val ticket = revision
         state.value = state.value.copy(busy = true, phase = phase, error = null, notice = null, playback = null)
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
@@ -193,11 +288,15 @@ class ManualOperatingViewModel(
         }
         job = next
         next.invokeOnCompletion { viewModelScope.launch(Dispatchers.Main.immediate) {
-            if (job === next) { job = null; state.value = state.value.copy(busy = false, phase = ManualPhase.IDLE, queuedUtcMillis = null, armed = false) }
+            if (job === next) { advisor?.cancelPending(); publishQso(); job = null; state.value = state.value.copy(busy = false, phase = ManualPhase.IDLE, queuedUtcMillis = null, armed = false) }
         } }
         next.start()
     }
     fun stop(reason: String = "TX stopped. Start RX explicitly if needed.") {
+        cancelOutput(reason); advisor?.abort(); receivingRun = null; qsoClockRevision = null; publishQso()
+    }
+    private fun cancelOutput(reason: String = "TX stopped. Start RX explicitly if needed.") {
+        advisor?.cancelPending(); publishQso()
         revision++; guard?.cancel(); guard = null
         state.value = state.value.copy(armed = false, notice = reason)
         job?.cancel()

@@ -1,0 +1,584 @@
+{
+  "schema": 1,
+  "scenarios": [
+    {
+      "id": "calling-reply",
+      "stage": "CALLING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "REPORT",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "CALLING",
+        "calling_cq": true,
+        "sent_first_73": false,
+        "tx": 6
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <1AT106> 26AT101"
+        }
+      ]
+    },
+    {
+      "id": "calling-reply-reverse-hash",
+      "stage": "CALLING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "-",
+      "policy": "trailing local hash12 remains unresolved by the pinned RX session; never invent its identity",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "CALLING",
+        "calling_cq": true,
+        "sent_first_73": false,
+        "tx": 6
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  26AT101 <1AT106>"
+        }
+      ]
+    },
+    {
+      "id": "calling-own-echo",
+      "stage": "CALLING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "-",
+      "policy": "exclude own-call echo",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "CALLING",
+        "calling_cq": true,
+        "sent_first_73": false,
+        "tx": 6
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <26AT101> 1AT106"
+        }
+      ]
+    },
+    {
+      "id": "calling-both-known-hashes",
+      "stage": "CALLING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "REPORT",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "CALLING",
+        "calling_cq": true,
+        "sent_first_73": false,
+        "tx": 6
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <1AT106> <26AT101>"
+        }
+      ]
+    },
+    {
+      "id": "calling-unknown-hash",
+      "stage": "CALLING",
+      "peer": "26AT101",
+      "warm_peer": false,
+      "expect": "IGNORED",
+      "next": "-",
+      "policy": "unresolved source cannot select peer",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "CALLING",
+        "calling_cq": true,
+        "sent_first_73": false,
+        "tx": 6
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <1AT106> <26AT101>"
+        }
+      ]
+    },
+    {
+      "id": "selected-report",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "ROGER",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07"
+        }
+      ]
+    },
+    {
+      "id": "selected-positive-limit",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "ROGER",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 +99"
+        }
+      ]
+    },
+    {
+      "id": "selected-roger",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "RR73",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 R-07"
+        }
+      ]
+    },
+    {
+      "id": "selected-rr73",
+      "stage": "ROGER_REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "SIGNOFF",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "ROGER_REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 3
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73"
+        }
+      ]
+    },
+    {
+      "id": "selected-rrr",
+      "stage": "ROGER_REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "SIGNOFF",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "ROGER_REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 3
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 RRR"
+        }
+      ]
+    },
+    {
+      "id": "early-final",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPORT",
+      "policy": "confirmed report exchange required",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73"
+        }
+      ]
+    },
+    {
+      "id": "wrong-destination",
+      "stage": "ROGER_REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "ROGER",
+      "policy": "foreign final cannot advance",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "ROGER_REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 3
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  161XZ085 RR73"
+        }
+      ]
+    },
+    {
+      "id": "wrong-named-peer",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPORT",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <1AT106> 161XZ085"
+        }
+      ]
+    },
+    {
+      "id": "unresolved-destination",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": false,
+      "expect": "IGNORED",
+      "next": "REPORT",
+      "policy": "unknown destination is never ours",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  <161XZ085> 26AT101 RR73"
+        }
+      ]
+    },
+    {
+      "id": "partner-elsewhere-edge",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "STOP",
+      "next": "-",
+      "policy": "CB peer stop within 50 Hz; no peer replacement",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1450 ~  <161XZ085> 26AT101"
+        }
+      ]
+    },
+    {
+      "id": "partner-elsewhere-outside",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPLY",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1449 ~  <161XZ085> 26AT101"
+        }
+      ]
+    },
+    {
+      "id": "context-frequency-edge",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "ROGER",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1525 ~  1AT106 -07"
+        }
+      ]
+    },
+    {
+      "id": "context-frequency-outside",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPLY",
+      "policy": "destination-only context bounded to 25 Hz",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1526 ~  1AT106 -07"
+        }
+      ]
+    },
+    {
+      "id": "malformed-report",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPORT",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 R-XX"
+        }
+      ]
+    },
+    {
+      "id": "short-report",
+      "stage": "REPORT",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPORT",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPORT",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 2
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -7"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-report",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "ACCEPTED",
+      "next": "ROGER",
+      "policy": "matches",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07"
+        },
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07"
+        }
+      ]
+    },
+    {
+      "id": "older-report-after-ack",
+      "stage": "ROGERS",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "RR73",
+      "policy": "no report replacement/regression",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "ROGERS",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 4
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -09"
+        }
+      ]
+    },
+    {
+      "id": "final-after-complete",
+      "stage": "COMPLETE",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "-",
+      "policy": "completion is terminal",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "SIGNOFF",
+        "calling_cq": false,
+        "sent_first_73": true,
+        "tx": 5
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73"
+        }
+      ]
+    },
+    {
+      "id": "report-after-complete",
+      "stage": "COMPLETE",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "-",
+      "policy": "completion is terminal",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "SIGNOFF",
+        "calling_cq": false,
+        "sent_first_73": true,
+        "tx": 5
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07"
+        }
+      ]
+    },
+    {
+      "id": "selected-cq",
+      "stage": "REPLYING",
+      "peer": "26AT101",
+      "warm_peer": true,
+      "expect": "IGNORED",
+      "next": "REPLY",
+      "policy": "CQ is observation; explicit answer selection",
+      "state": {
+        "local": "1AT106",
+        "peer": "26AT101",
+        "progress": "REPLYING",
+        "calling_cq": false,
+        "sent_first_73": false,
+        "tx": 1
+      },
+      "steps": [
+        {
+          "op": "auto",
+          "line": "120000 -12  0.0 1500 ~  CQ 26AT101"
+        }
+      ]
+    }
+  ]
+}

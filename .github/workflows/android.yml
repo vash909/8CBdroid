@@ -46,6 +46,8 @@ jobs:
           python3 scripts/wsjtcb_packing.py --check --optimization O2
           python3 scripts/wsjtcb_qso.py --check
           python3 scripts/wsjtcb_qso.py --check --optimization O2
+          python3 scripts/wsjtcb_admission.py --check
+          python3 scripts/wsjtcb_admission.py --check --optimization O2
           python3 scripts/wsjtcb_acoustic.py --check
           python3 -m unittest discover -s scripts/tests -p 'test_wsjtcb_*.py'
   build:

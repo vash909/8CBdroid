@@ -414,7 +414,21 @@ expectations are explicit policy, not evidence of desktop audio completion.
 Five shared safety scenarios also run in the separate Android probe. Broader JVM
 cases cover both roles, numeric/slash calls, report bounds, duplicate/late events,
 abort, peer replacement and stale tickets. Device/CI results belong in the feature
-PR; neither these tests nor the model connect live decoding or automatic audio.
+PR. The [local advisor](QSO_ADVICE.md) now connects qualified live decoding and
+confirmed manual output; automatic audio remains unavailable.
+
+## Local decode admission and QSO advice
+
+The separate 25-case admission corpus runs original desktop parser/AutoSeq code
+and an independent Fortran packer at O0/O2. Its test-only adapter compares actual
+wire payload admission and next-message decisions, including explicit Android
+safety differences. The six-message two-station relay also runs through payload
+unpacking/admission. Shared scenarios execute in the phone probe; ViewModel tests
+cover explicit application, receiver failure, time reset and partner-elsewhere Stop.
+The manual acoustic phone suite additionally requires live report/final advice,
+explicit button application without arming and closure after actual speaker output.
+Exact tested artifacts and finite device observations are recorded in the feature
+PR; synthetic callback traces alone do not qualify physical integration.
 
 ## Checks still pending
 
@@ -425,8 +439,8 @@ PR; neither these tests nor the model connect live decoding or automatic audio.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
-- Live AutoSeq admission, next-message decisions, automatic audio execution and
-  durable QSO logging. The isolated domain model above does not enable these paths.
+- Automatic audio execution, repeated/lost-message operating policies and durable
+  QSO logging. Current advice requires explicit application and one-slot sends.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.
