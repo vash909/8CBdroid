@@ -81,6 +81,8 @@ def main():
             until = time.monotonic()+660
             while process.poll() is None:
                 assert time.monotonic() < until, 'Phone audio check exceeded 660 seconds.'
+                if recorder is not None:
+                    assert recorder.poll() is None, 'Physical recording ended before the phone completed its output stage.'
                 if scheduled is not None and time.time() >= scheduled:
                     assert time.time()-scheduled < .2, 'Missed desktop slot deadline.'
                     player = subprocess.Popen(['pw-play', '--volume', '0.5', str(incoming[stages[-1]] if args.manual else fixture)], stdout=audio_log, stderr=subprocess.STDOUT)
@@ -102,7 +104,7 @@ def main():
                         elif stage.startswith('capture-'):
                             directory = args.output/stage; directory.mkdir(mode=0o700); captures.append(directory)
                             recorder = subprocess.Popen([sys.executable, str(root/'scripts/audio_timing_capture.py'),
-                                '--wav', str(directory/'scheduled.wav'), '--seconds', '65'], stdout=audio_log, stderr=subprocess.STDOUT)
+                                '--wav', str(directory/'scheduled.wav'), '--seconds', '90'], stdout=audio_log, stderr=subprocess.STDOUT)
                             limit = time.monotonic()+5
                             while not (directory/'scheduled.ready.json').exists():
                                 assert recorder.poll() is None and time.monotonic() < limit, 'Recorder startup failed.'
