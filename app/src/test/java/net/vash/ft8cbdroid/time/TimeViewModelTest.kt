@@ -13,6 +13,51 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimeViewModelTest {
+    private class MovingSource : TimeSource {
+        var now = ClockReading(10_000_000_000L, 1_800_000_000_000L)
+        override fun read() = now
+        fun advance(ms: Long) { now = ClockReading(now.monotonicNanos + ms * 1_000_000, now.unixMillis + ms) }
+        fun measured(host: String) = TimeMeasurement("NTP: $host", now.monotonicNanos, now.unixMillis * 1_000_000, 2.0, now)
+    }
+    @Test fun selectedNtpRefreshesAtFiveMinutesAndWaitsForAnIdleBoundary() = runTest(dispatcher) {
+        val source = MovingSource(); val clock = ReceiveClock(source); val repo = Repository(); var calls = 0
+        val vm = TimeViewModel(repo, NtpClient { host -> calls++; source.measured(host) }, GpsTimeClient { error("Not GPS") }, clock, false)
+        runCurrent(); vm.measureNtp(); runCurrent(); vm.applyMeasurement(); val revision = clock.revision
+        var boundarySafe = true
+        vm.idleBoundary { boundarySafe }
+        vm.operating(true); source.advance(299_999); vm.poll(); runCurrent(); assertEquals(1, calls)
+        source.advance(1); vm.poll(); runCurrent(); assertEquals(2, calls)
+        assertTrue(vm.uiState.value.refreshPending); assertEquals(revision, clock.revision)
+        source.advance(20_000); vm.poll(); runCurrent(); assertEquals(2, calls)
+        boundarySafe = false; vm.operating(false)
+        assertTrue(vm.uiState.value.refreshPending); assertEquals(revision, clock.revision)
+        boundarySafe = true; vm.poll()
+        assertFalse(vm.uiState.value.refreshPending); assertEquals(revision + 1, clock.revision)
+        assertTrue(clock.acceptsRecovery(revision)); assertNull(vm.uiState.value.refreshWarning)
+    }
+    @Test fun failedRefreshDoesNotExtendExpiryOrRetryEverySlotAndRecoveryNeverStartsAudio() = runTest(dispatcher) {
+        val source = MovingSource(); val clock = ReceiveClock(source); var calls = 0; var fail = false
+        val vm = TimeViewModel(Repository(), NtpClient { host -> calls++; if (fail) throw IOException(); source.measured(host) }, GpsTimeClient { error("Not GPS") }, clock, false)
+        runCurrent(); vm.measureNtp(); runCurrent(); vm.applyMeasurement(); val expiry = clock.snapshot().expiresAtNanos
+        fail = true; source.advance(300_000); vm.poll(); runCurrent()
+        assertNotNull(vm.uiState.value.refreshWarning); assertEquals(expiry, clock.snapshot().expiresAtNanos)
+        source.advance(15_000); vm.poll(); runCurrent(); assertEquals(2, calls)
+        source.advance(285_000); fail = false; vm.poll(); runCurrent()
+        assertEquals(3, calls); assertTrue(clock.snapshot().expiresAtNanos!! > expiry!!)
+        assertFalse(vm.uiState.value.refreshPending); assertNull(vm.uiState.value.refreshWarning)
+    }
+    @Test fun gpsAndBackgroundDoNotStartPeriodicNetworkWork() = runTest(dispatcher) {
+        val source = MovingSource(); val clock = ReceiveClock(source); var calls = 0
+        val vm = TimeViewModel(Repository(), NtpClient { host -> calls++; source.measured(host) },
+            GpsTimeClient { source.measured("gps").copy(source = "GPS/GNSS") }, clock, false)
+        runCurrent(); vm.requestGps(true); runCurrent(); vm.applyMeasurement(); source.advance(300_000); vm.poll(); runCurrent()
+        assertEquals(0, calls); assertEquals("GPS/GNSS", clock.snapshot().source)
+        source.advance(300_000); vm.poll(); runCurrent()
+        assertEquals(0, calls); assertNotNull(vm.uiState.value.refreshWarning)
+        vm.measureNtp(); runCurrent(); vm.applyMeasurement(); vm.foreground(false)
+        source.advance(300_000); vm.poll(); runCurrent(); assertEquals(1, calls)
+        vm.foreground(true); vm.poll(); runCurrent(); assertEquals(2, calls)
+    }
     private val dispatcher = StandardTestDispatcher()
     private class Repository : TimePreferencesRepository {
         var value = TimeSettings(); var readFailure = false; var writeFailure = false

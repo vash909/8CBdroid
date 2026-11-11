@@ -41,9 +41,10 @@ All state, decisions and tickets are process-local.
 ## Admission boundaries
 
 The core checks the payload and decoded text together, CRC/LDPC flags, resolved
-unambiguous identities, finite signal metadata and complete UTC slot boundaries.
+unambiguous identities, finite signal metadata and complete timestamped observation windows (15 seconds normally, 13.5 seconds
+for explicitly started AutoSeq). No unrecorded samples are padded.
 It accepts only the active local receiver run, at/after its fresh-window boundary
-and selection/last-output boundary, up to 15 seconds after the slot ends. It
+and selection/last-output boundary, up to 15 seconds after the actual observation window ends. It
 rejects stale/future/partial slots, duplicate payloads within a slot and older
 slots after accepted progress. The app supplies a currently valid NTP/GPS mapping
 whose revision matches the receiver. LAN, replay and imported recordings do not
@@ -95,4 +96,5 @@ now also require actual PC-speaker/phone-microphone report/RRR/final reception a
 visible advice, explicit Use suggested message without arming, full speaker-slot
 completion and QSO-model closure. Independently decode the three phone recordings.
 Actual tested revisions, CI runs and device results are recorded in the feature
-PR and [validation](VALIDATION.md). Automatic acoustic execution remains unavailable.
+PR and [validation](VALIDATION.md). Explicit [AutoSeq](AUTOSEQ.md) consumes this advice through the foreground audio
+owner; advice alone still cannot start it.

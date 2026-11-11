@@ -9,6 +9,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CbQsoAdvisorTest {
+    @Test fun anEarlyReceptionRequiresAllThirteenAndAHalfSecondsAndTheSameQualifiedWireContext() {
+        val a = advisor(); tx(a, ManualMessage.REPLY)
+        val early = row("1AT106 -07").copy(capturedSamples = 162000)
+        assertEquals(CbQsoAdmission.IGNORED, a.receive(early, 1, base + 13_499, 1500).admission)
+        assertEquals(CbQsoAdmission.IGNORED, a.receive(early.copy(capturedSamples = 161999), 1, base + 13_600, 1500).admission)
+        assertEquals(CbQsoAdmission.ACCEPTED, a.receive(early, 1, base + 13_600, 1500).admission)
+        assertEquals(ManualMessage.ROGER, a.suggestion?.kind)
+    }
     private val base = Reference.BASE
     private fun advisor() = CbQsoAdvisor(StationIdentity("1AT106", "JN45")).also {
         it.bindReceiver(1, base - 300_000)

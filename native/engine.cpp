@@ -110,7 +110,8 @@ DecodeResult decode_slot(std::vector<float> const& pcm, int profile, StopRequest
     auto settings=decode_settings(profile);
     WorkBudget budget(settings.deadline_ms, stop);
     budget.check(WorkStage::preparing);
-    if (pcm.size() != slot_samples) throw std::invalid_argument("Expected one 15-second 12 kHz PCM slot");
+    if (pcm.size() != slot_samples && pcm.size() != early_window_samples)
+        throw std::invalid_argument("Expected 13.5 or 15 seconds of actual 12 kHz PCM");
     for (float value : pcm) if (!std::isfinite(value) || std::abs(value)>1)
         throw std::invalid_argument("PCM samples must be finite and normalized to [-1, 1]");
     monitor_config_t config{200, 3000, sample_rate, 2, 2, FTX_PROTOCOL_FT8};
@@ -118,7 +119,7 @@ DecodeResult decode_slot(std::vector<float> const& pcm, int profile, StopRequest
     monitor_init(&monitor, &config);
     // All work is per call; no global hash cache or message-policy state is used.
     struct Cleanup { monitor_t* p; ~Cleanup() { monitor_free(p); } } cleanup{&monitor};
-    for (int offset=0; offset+monitor.block_size<=slot_samples; offset+=monitor.block_size) {
+    for (int offset=0; offset+monitor.block_size<=static_cast<int>(pcm.size()); offset+=monitor.block_size) {
         budget.check(WorkStage::monitoring);
         monitor_process(&monitor, pcm.data()+offset);
     }

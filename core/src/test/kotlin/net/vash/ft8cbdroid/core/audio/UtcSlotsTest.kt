@@ -5,6 +5,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class UtcSlotsTest {
+    @Test fun earlyWindowsContainOnlyActualSamplesAndDoNotStitchAcrossARecoveryGap() {
+        val (s, clock) = setup(); val windows = mutableListOf<CompletedReceiveWindow>()
+        val assembler = UtcReceiveWindowAssembler(clock, windows::add)
+        // Input is stable before the next UTC boundary, including the unchanged echo exclusion.
+        for (second in -1 until 29) {
+            val boot = 25_000_000_000L + second * 1_000_000_000L
+            s.now = ClockReading(boot + 1_000_000_000, 1_800_000_000_000 + (boot + 1_000_000_000 - 10_000_000_000) / 1_000_000)
+            assembler.push(TimedCaptureChunk((second + 1) * 12000L, boot, FloatArray(12000) { second / 100f }, 0.0))
+            if (second == 12) assertTrue(windows.isEmpty())
+        }
+        assertEquals(2, windows.size); assertEquals(1_800_000_015_000, windows.first().utcStartMillis)
+        assertEquals(162000, windows.first().pcm.toFloatArray().size)
+        assertEquals(0f, windows.first().pcm.toFloatArray().first(), 0f)
+        assertEquals(.13f, windows.first().pcm.toFloatArray().last(), 0f)
+        assembler.clear()
+        assertEquals(0, assembler.progress().collected)
+    }
     private class Source(var now: ClockReading = ClockReading(10_000_000_000, 1_800_000_000_000)) : TimeSource { override fun read() = now }
     private fun setup(): Pair<Source, ReceiveClock> {
         val s = Source(); return s to ReceiveClock(s).also { it.apply(TimeMeasurement("NTP: test", s.now.monotonicNanos, s.now.unixMillis * 1_000_000, 2.0, s.now)) }

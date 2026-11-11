@@ -30,6 +30,12 @@ int main() {
         auto result=decode_slot(pcm,profile);
         require(result.frames.size()==1 && result.frames[0].payload==p);
         require(result.processed==result.candidates && result.candidates<=limits.candidates);
+        auto early=pcm;
+        early.resize(early_window_samples);
+        auto captured=decode_slot(early,profile);
+        require(captured.frames.size()==1 && captured.frames[0].payload==p);
+        early.pop_back();
+        try { decode_slot(early,profile); require(false); } catch (std::invalid_argument const&) { }
     }
     std::cout<<"Native stage cancellation, cleanup, deadline and profile bounds passed\n";
 }

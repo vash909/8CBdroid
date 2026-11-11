@@ -5,6 +5,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class UtcPlaybackTest {
+    @Test fun acousticOutputRetainsEverySignalSampleAndRefusesAnActiveTail() {
+        val samples = FloatArray(180000)
+        samples[9600] = .2f; samples[161279] = -.3f
+        val played = acousticWaveform(net.vash.ft8cbdroid.core.Ft8PcmSlot.fromSamples(samples))
+        assertEquals(161280, played.size); assertEquals(.2f, played[9600], 0f); assertEquals(-.3f, played.last(), 0f)
+        samples[161280] = .01f
+        assertThrows(IllegalArgumentException::class.java) { acousticWaveform(net.vash.ft8cbdroid.core.Ft8PcmSlot.fromSamples(samples)) }
+    }
+    @Test fun automaticResponseKeepsItsBoundaryAndRejectsLatePlansOrMappingChanges() {
+        val s = Source(); val c = clock(s); val l = latency(s)
+        s.advance(13_100)
+        val p = planResponseSlot(c, l, 7, 1_800_000_015_000)
+        assertEquals(1_800_000_015_000, p.utcMillis)
+        val command = p.commandNanos
+        s.advance(500)
+        assertThrows(SchedulingException::class.java) { planResponseSlot(c, l, 7, p.utcMillis) }
+        c.reset(); assertThrows(SchedulingException::class.java) { p.validate(c) }
+        assertEquals(command, p.commandNanos)
+    }
     private class Source : TimeSource {
         var mono = 10_000_000_000L
         var utc = 1_800_000_001_000L

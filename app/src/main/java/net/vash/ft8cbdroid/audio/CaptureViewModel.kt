@@ -43,6 +43,7 @@ data class CaptureUiState(
     val spectrum: SpectrumState = SpectrumState(),
     val spectrumView: SpectrumView = SpectrumView(),
     val outputBusy: Boolean = false,
+    val earlyWindows: Boolean = false,
 ) {
     val canConfigure get() = phase == CapturePhase.IDLE && !awaitingPermission && !exporting && !outputBusy
     val canStart get() = canConfigure && inputs.any { it.id == selectedId }
@@ -101,13 +102,34 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             used = true
             if (revision != recoveryRevision || !permissionGranted() || state.value.selectedId != selected ||
                 !state.value.canStart || state.value.inputs.none { it.id == selected && it.kind == AudioInputKind.PHONE } ||
-                (before.assembleUtc && (correction == null || runCatching { clock?.snapshot()?.revision }.getOrNull() != correction.revision))) {
+                (before.assembleUtc && (correction == null || clock?.acceptsRecovery(correction.revision) != true))) {
                 state.value = state.value.copy(notice = "Reception was not resumed. Check the input, permission and time, then start explicitly.")
                 return@recover false
             }
             start()
             state.value = state.value.copy(notice = "Resuming microphone after speaker cleanup. Waiting for a new complete slot.")
             true
+        }
+    }
+    /** Explicit AutoSeq startup restarts a fresh timestamped receiver; no previous partial is reused. */
+    suspend fun prepareAutomaticReceive(permissionGranted: Boolean) {
+        require(permissionGranted) { "Allow microphone access and start live RX before AutoSeq." }
+        require(state.value.inputs.any { it.id == state.value.selectedId && it.kind == AudioInputKind.PHONE })
+        if (!state.value.earlyWindows || state.value.phase != CapturePhase.CAPTURING) {
+            val previous = job
+            stop("Preparing early receive windows for AutoSeq.", clear = true); previous?.join()
+            uiState.first { it.phase == CapturePhase.IDLE }
+            state.value = state.value.copy(earlyWindows = true, assembleUtc = true, decodeLive = true)
+            requestStart(true, early = true)
+        }
+        withTimeout(5000) { uiState.first { it.phase == CapturePhase.CAPTURING || it.error != null } }
+        require(state.value.phase == CapturePhase.CAPTURING && state.value.error == null) { state.value.error ?: "Could not start live RX." }
+    }
+    /** Wait for the coordinator's existing recovery; never start a stopped receiver here. */
+    suspend fun awaitAutomaticRecovery() {
+        withTimeout(5000) { uiState.first { it.phase != CapturePhase.STARTING || it.error != null } }
+        require(state.value.phase == CapturePhase.CAPTURING && state.value.error == null && state.value.earlyWindows) {
+            state.value.error ?: "Microphone recovery failed. AutoSeq off."
         }
     }
     fun assembleUtc(enabled: Boolean) {
@@ -155,11 +177,12 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             live = LiveReceiveState(), spectrum = SpectrumState(), error = null, notice = null)
     }
     /** Return true only when the Activity must launch Android's permission request. */
-    fun requestStart(permissionGranted: Boolean): Boolean {
+    fun requestStart(permissionGranted: Boolean): Boolean = requestStart(permissionGranted, early = false)
+    private fun requestStart(permissionGranted: Boolean, early: Boolean): Boolean {
         if (!state.value.canStart) return false
         pendingExport = null
         capture.clear()
-        state.value = state.value.copy(metrics = null, error = null, notice = null)
+        state.value = state.value.copy(metrics = null, error = null, notice = null, earlyWindows = early)
         if (!permissionGranted) {
             state.value = state.value.copy(awaitingPermission = true)
             return true
@@ -180,12 +203,14 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null,
             live = LiveReceiveState(), spectrum = SpectrumState())
         val liveEnabled = state.value.decodeLive
+        val earlyEnabled = state.value.earlyWindows && liveEnabled
         val profile = state.value.liveProfile
         val call = stationCall
         state.value = state.value.copy(phase = CapturePhase.STARTING, metrics = null)
         val completedSlot = AtomicReference<CompletedUtcSlot?>(null)
         val updates = MutableStateFlow<CapturePublication?>(null)
         var assembler: UtcSlotAssembler? = null
+        var earlyAssembler: UtcReceiveWindowAssembler? = null
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             var receiver: LiveSlotReceiver? = null
             var liveRender: Job? = null
@@ -216,8 +241,9 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                     }
                 }
                 if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) {
-                    completedSlot.set(it); receiver?.offer(it)
+                    completedSlot.set(it); if (!earlyEnabled) receiver?.offer(it)
                 }
+                if (earlyEnabled) earlyAssembler = UtcReceiveWindowAssembler(requireNotNull(clock)) { receiver?.offer(it) }
                 // Conflate UI observations without suspending the hardware reader on the main thread.
                 val update: suspend (CaptureMetrics) -> Unit = { metrics ->
                     if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
@@ -236,12 +262,12 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                         }
                     }
                     capture.capturePcm(id, update, { monitor.offer(it) }, slotBuilder?.let { builder ->
-                        { chunk -> if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) builder.push(chunk) }
+                        { chunk -> if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { builder.push(chunk); earlyAssembler?.push(chunk) } }
                     })
                 } else if (slotBuilder != null) {
                     val timed = capture as? TimestampedMicrophoneCapture ?: throw CaptureException("This audio backend does not provide timestamps.")
                     timed.captureTimed(id, update) {
-                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) slotBuilder.push(it)
+                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { slotBuilder.push(it); earlyAssembler?.push(it) }
                     }
                 } else capture.capture(id, update)
                 throw CaptureException("Microphone capture ended. Press Start microphone to retry.")
@@ -251,7 +277,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                 state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null, live = LiveReceiveState(), spectrum = SpectrumState(),
                     error = if (error is CaptureException || error is TimeException) error.message
                     else "Could not capture the microphone. Check permission and the input, then retry.")
-            } finally { spectrumRender?.cancel(); spectrum?.cancel(); render.cancel(); liveRender?.cancel(); receiver?.cancel(); assembler?.clear() }
+            } finally { spectrumRender?.cancel(); spectrum?.cancel(); render.cancel(); liveRender?.cancel(); receiver?.cancel(); assembler?.clear(); earlyAssembler?.clear() }
         }
         job = next
         // Completion also runs if Stop cancels before the coroutine body ever starts.

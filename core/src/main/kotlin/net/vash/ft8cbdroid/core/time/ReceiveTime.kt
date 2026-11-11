@@ -47,7 +47,8 @@ class ReceiveClock(val source: TimeSource) {
     @Volatile var revision = 0L
         private set
     private var measurement: TimeMeasurement? = null
-    @Synchronized fun reset() { measurement = null; revision++ }
+    private var periodicParent: Long? = null
+    @Synchronized fun reset() { measurement = null; periodicParent = null; revision++ }
     @Synchronized fun apply(value: TimeMeasurement) {
         val now = source.read()
         require(now.monotonicNanos >= value.monotonicNanos) { "This time measurement is from the future. Measure again." }
@@ -56,8 +57,19 @@ class ReceiveClock(val source: TimeSource) {
             value.utcNanos + value.observed.monotonicNanos - value.monotonicNanos,
             value.source, value.uncertaintyMillis, value.monotonicNanos + 600_000_000_000L)
         mapping.validate(now, revision)
-        measurement = value; revision++
+        measurement = value; periodicParent = null; revision++
     }
+    /** Called only with input stopped and no queued/playing output; never retargets a plan. */
+    @Synchronized fun applyPeriodic(value: TimeMeasurement) {
+        val old = snapshot(); val now = source.read()
+        require(old.source.startsWith("NTP:") && value.source == old.source) { "Select and apply the NTP source explicitly first." }
+        val nextUtc = value.utcNanos + now.monotonicNanos - value.monotonicNanos
+        require(abs(old.at(now.monotonicNanos) - nextUtc) <= 50_000_000L) { "NTP changed by more than 50 ms. Stop and apply a new measurement explicitly." }
+        val parent = revision
+        apply(value); periodicParent = parent
+    }
+    @Synchronized fun acceptsRecovery(previousRevision: Long): Boolean =
+        runCatching { snapshot(); revision == previousRevision || periodicParent == previousRevision }.getOrDefault(false)
     @Synchronized fun snapshot(): UtcMapping {
         val now = source.read()
         val value = measurement ?: throw TimeException("Not synchronized. Synchronize with NTP or GPS before assembling UTC slots.")

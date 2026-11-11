@@ -128,7 +128,9 @@ class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture,
                     metered += count; clipped += level.clipped; inputSamples += count
                     val pcm = resampler.process(input, count)
                     observe?.invoke(pcm)
-                    if (chunk != null && pcm.isNotEmpty() && now - started >= 500) {
+                    // Observe immediately; the settler still requires 500 ms of consistent
+                    // timestamps. A separate blind delay adds no validation and loses RX time.
+                    if (chunk != null && pcm.isNotEmpty()) {
                         if (recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_BOOTTIME) == AudioRecord.SUCCESS && timestamp.nanoTime > 0) {
                             val zero = timeline.stamp(CaptureTimestamp(timestamp.framePosition, timestamp.nanoTime), inputSamples,
                                 SystemClock.elapsedRealtimeNanos())

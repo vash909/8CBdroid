@@ -12,7 +12,7 @@ import net.vash.ft8cbdroid.core.*
 import net.vash.ft8cbdroid.core.message.CbMessageSession
 import net.vash.ft8cbdroid.core.recording.*
 
-data class LiveDecodeRow(val decode: RecordedDecode, val timeSource: String, val uncertaintyMillis: Double?)
+data class LiveDecodeRow(val decode: RecordedDecode, val timeSource: String, val uncertaintyMillis: Double?, val capturedSamples: Int = Ft8PcmSlot.sampleCount)
 data class LiveReceiveState(
     val decodingUtcMillis: Long? = null,
     val lastSlotUtcMillis: Long? = null,
@@ -37,7 +37,9 @@ class LiveSlotReceiver(
     private val state = MutableStateFlow(LiveReceiveState())
     val uiState = state.asStateFlow()
     private val dropped = AtomicLong()
-    private val pending = Channel<CompletedUtcSlot>(1, BufferOverflow.DROP_OLDEST) { dropped.incrementAndGet() }
+    private data class Input(val utcStartMillis: Long, val source: String, val uncertaintyMillis: Double?,
+        val slot: Ft8PcmSlot? = null, val window: Ft8ReceiveWindow? = null)
+    private val pending = Channel<Input>(1, BufferOverflow.DROP_OLDEST) { dropped.incrementAndGet() }
     // Validate before launching a child, so a bad station becomes the capture owner's visible error.
     private val session = CbMessageSession(stationCall)
     private val job = scope.launch(worker) {
@@ -45,11 +47,11 @@ class LiveSlotReceiver(
         for (slot in pending) {
             state.update { it.copy(decodingUtcMillis = slot.utcStartMillis, skippedSlots = dropped.get(), error = null) }
             try {
-                val channel = engine.decode(slot.pcm, profile)
+                val channel = slot.window?.let { engine.decodeWindow(it, profile) } ?: engine.decode(requireNotNull(slot.slot), profile)
                 currentCoroutineContext().ensureActive()
                 val result = interpretSlot(channel, RecordedSlotContext(Instant.ofEpochMilli(slot.utcStartMillis)), session)
                 session.commitPending()
-                val rows = result.decodes.map { LiveDecodeRow(it, slot.source, slot.uncertaintyMillis) }
+                val rows = result.decodes.map { LiveDecodeRow(it, slot.source, slot.uncertaintyMillis, if (slot.window != null) Ft8ReceiveWindow.sampleCount else Ft8PcmSlot.sampleCount) }
                 state.update { it.copy(decodingUtcMillis = null, lastSlotUtcMillis = slot.utcStartMillis,
                     decodedSlots = it.decodedSlots + 1, skippedSlots = dropped.get(), rows = (rows + it.rows).take(MAX_ROWS),
                     decodeMillis = result.decodeMillis, learnedCalls = session.learnedCount,
@@ -67,10 +69,15 @@ class LiveSlotReceiver(
     init { job.invokeOnCompletion { pending.cancel() } }
     fun offer(slot: CompletedUtcSlot) {
         if (!job.isActive) return
-        pending.trySend(slot)
+        pending.trySend(Input(slot.utcStartMillis, slot.source, slot.uncertaintyMillis, slot = slot.pcm))
         state.update { it.copy(skippedSlots = dropped.get()) }
     }
-    private fun failed(slot: CompletedUtcSlot, message: String) {
+    fun offer(slot: CompletedReceiveWindow) {
+        if (!job.isActive) return
+        pending.trySend(Input(slot.utcStartMillis, slot.source, slot.uncertaintyMillis, window = slot.pcm))
+        state.update { it.copy(skippedSlots = dropped.get()) }
+    }
+    private fun failed(slot: Input, message: String) {
         state.update { it.copy(decodingUtcMillis = null, lastSlotUtcMillis = slot.utcStartMillis,
             failedSlots = it.failedSlots + 1, skippedSlots = dropped.get(), decodeMillis = null, error = message) }
     }

@@ -15,6 +15,7 @@ data class TimeUiState(
     val awaitingGpsPermission: Boolean = false, val measurement: TimeMeasurement? = null,
     val sourceDescription: String = "Not synchronized. Choose NTP or GPS.", val ageMillis: Long? = null,
     val error: String? = null, val notice: String? = null,
+    val refreshing: Boolean = false, val refreshPending: Boolean = false, val refreshWarning: String? = null,
 ) {
     val validation: String? get() = runCatching { value() }.exceptionOrNull()?.message
     fun value() = draft.validated()
@@ -30,11 +31,74 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
     private val state = MutableStateFlow(TimeUiState())
     val uiState = state.asStateFlow()
     private var job: Job? = null
+    private var refreshJob: Job? = null
+    private var pendingRefresh: TimeMeasurement? = null
+    private var lastAttemptNanos: Long? = null
+    private var activeNtpHost: String? = null
+    private var foreground = true
+    private var operating = false
+    private var idleBoundary: () -> Boolean = { !operating }
+    fun idleBoundary(check: () -> Boolean) { idleBoundary = check }
+    private var refreshGeneration = 0L
+    private var wasApplied = false
+    fun foreground(active: Boolean) {
+        foreground = active
+        if (!active) refreshJob?.cancel()
+    }
+    fun operating(active: Boolean) { operating = active; if (!active && foreground) applyPendingAtBoundary() }
+    private fun clearPeriodic() {
+        refreshGeneration++; refreshJob?.cancel(); pendingRefresh = null
+        activeNtpHost = null; lastAttemptNanos = null
+        state.value = state.value.copy(refreshing = false, refreshPending = false, refreshWarning = null)
+    }
+    /** Main-thread tick; requests remain bounded and execute on the NTP client's IO dispatcher. */
+    fun poll() {
+        refresh()
+        if (!foreground || state.value.busy != null || state.value.saving || state.value.loading) return
+        val mapping = runCatching { clock.snapshot() }.getOrNull()
+        val host = state.value.saved?.host ?: return
+        if (mapping != null) {
+            if (mapping.source != "NTP: $host") { activeNtpHost = null; return }
+            activeNtpHost = host
+        }
+        if (!operating) applyPendingAtBoundary()
+        val now = clock.source.read().monotonicNanos
+        val last = lastAttemptNanos ?: mapping?.anchor?.monotonicNanos ?: return
+        if (activeNtpHost != host || now - last < 300_000_000_000L || refreshJob?.isActive == true || pendingRefresh != null) return
+        lastAttemptNanos = now
+        val generation = refreshGeneration
+        state.value = state.value.copy(refreshing = true)
+        refreshJob = viewModelScope.launch {
+            try {
+                val measured = withTimeout(8000) { ntp.measure(host) }
+                if (generation == refreshGeneration && activeNtpHost == host) {
+                    pendingRefresh = measured
+                    state.value = state.value.copy(refreshPending = true, refreshWarning = null)
+                    if (!operating && foreground) applyPendingAtBoundary()
+                }
+            } catch (_: TimeoutCancellationException) { state.value = state.value.copy(refreshWarning = "NTP refresh timed out. Previous time remains usable only until its original expiry.") }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { state.value = state.value.copy(refreshWarning = "NTP refresh failed. Check the network or server; previous time keeps its original expiry.") }
+            finally { state.value = state.value.copy(refreshing = false); refresh() }
+        }
+    }
+    /** Only call with capture stopped and no queued/playing output. A successful refresh never arms TX. */
+    fun applyPendingAtBoundary(audioPaused: Boolean = false): Boolean {
+        if (!foreground || (!audioPaused && !idleBoundary())) return false
+        val measured = pendingRefresh ?: return false
+        pendingRefresh = null
+        val result = runCatching {
+            if (runCatching { clock.snapshot() }.isSuccess) clock.applyPeriodic(measured) else clock.apply(measured)
+        }
+        state.value = state.value.copy(refreshPending = false, refreshWarning = result.exceptionOrNull()?.message)
+        refresh()
+        return result.isSuccess
+    }
     init {
         load()
         if (tick) viewModelScope.launch {
             while (isActive) {
-                refresh(); delay(1000)
+                poll(); delay(1000)
             }
         }
     }
@@ -48,7 +112,11 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
             } ?: "timing uncertainty not reported by receiver"
             "${mapping.source} • age $age s • $quality"
         }.getOrElse { it.message ?: "Time correction unavailable" }
-        state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(clock.source.read()))
+        val usable = runCatching { clock.snapshot() }.isSuccess
+        if (usable) wasApplied = true
+        val expired = wasApplied && !usable
+        state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(clock.source.read()),
+            refreshWarning = if (expired) "Time synchronization is unavailable. TX is disabled until a valid measurement is applied." else state.value.refreshWarning)
     }
     fun load() {
         if (job?.isActive == true) return
@@ -56,7 +124,7 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         job = viewModelScope.launch {
             try {
                 val value = repository.settings.first().validated()
-                clock.reset()
+                clearPeriodic(); wasApplied = false; clock.reset()
                 state.value = TimeUiState(draft = value, saved = value, loading = false)
                 refresh()
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -74,7 +142,7 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         state.value = state.value.copy(saving = true, error = null)
         job = viewModelScope.launch {
             try {
-                repository.save(value); clock.reset()
+                repository.save(value); clearPeriodic(); wasApplied = false; clock.reset()
                 state.value = state.value.copy(draft = value, saved = value,
                     measurement = null, notice = "Time settings saved. Synchronize with NTP or GPS before assembling UTC slots.")
                 refresh()
@@ -83,11 +151,11 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
             finally { state.value = state.value.copy(saving = false) }
         }
     }
-    fun measureNtp() { if (state.value.canMeasure) measure("NTP") { ntp.measure(state.value.saved!!.host) } }
+    fun measureNtp() { if (state.value.canMeasure) { refreshJob?.cancel(); measure("NTP") { ntp.measure(state.value.saved!!.host) } } }
     fun requestGps(granted: Boolean): Boolean {
         if (!state.value.canEdit) return false
         if (!granted) { state.value = state.value.copy(awaitingGpsPermission = true); return true }
-        measure("GPS/GNSS") { gps.measure() }; return false
+        clearPeriodic(); measure("GPS/GNSS") { gps.measure() }; return false
     }
     fun gpsPermissionResult(granted: Boolean) {
         if (!state.value.awaitingGpsPermission) return
@@ -113,7 +181,9 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
     fun applyMeasurement() {
         if (!state.value.canApply) return
         val value = state.value.measurement ?: return
-        runCatching { clock.apply(value) }.onSuccess { state.value = state.value.copy(notice = "Measured time correction applied to this app only.", error = null) }
+        runCatching { clearPeriodic(); clock.apply(value) }.onSuccess {
+            if (value.source.startsWith("NTP:")) { activeNtpHost = state.value.saved?.host; lastAttemptNanos = value.monotonicNanos }
+            state.value = state.value.copy(notice = "Measured time correction applied to this app only.", error = null) }
             .onFailure { state.value = state.value.copy(error = it.message ?: "Measure time again.") }
         refresh()
     }
@@ -122,7 +192,7 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         val measurementJob = job?.takeIf { state.value.busy != null }
         state.value = state.value.copy(awaitingGpsPermission = false)
         measurementJob?.cancelAndJoin()
-        clock.reset()
+        clearPeriodic(); wasApplied = false; clock.reset()
         state.value = state.value.copy(measurement = null, ageMillis = null, notice = null)
         refresh()
     }

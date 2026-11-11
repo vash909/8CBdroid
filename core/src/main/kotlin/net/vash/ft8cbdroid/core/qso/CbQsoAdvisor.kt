@@ -93,8 +93,10 @@ class CbQsoAdvisor(station: StationIdentity, report: Int = -7) {
         if (snapshot.phase in setOf(CbQsoPhase.COMPLETE, CbQsoPhase.ABORTED)) return ignored("The exchange has ended.")
         val d = row.decode
         val slot = d.slotStartUtc.toEpochMilli()
+        if (row.capturedSamples !in setOf(162_000, 180_000)) return ignored("Unsupported receive window.")
+        val windowMillis = row.capturedSamples / 12L
         if (d.slotStartUtc.nano != 0 || slot % 15_000 != 0L || slot < maxOf(runFloor, exchangeFloor) ||
-            nowUtcMillis < slot + 15_000 || nowUtcMillis - slot - 15_000 > 15_000)
+            nowUtcMillis < slot + windowMillis || nowUtcMillis - slot - windowMillis > 15_000)
             return ignored("The decode is outside the current complete receive window.")
         if (RecordedDecodeFlag.CRC_LDPC_VALID !in d.flags || d.flags.any { it in setOf(
                 RecordedDecodeFlag.UNKNOWN_HASH, RecordedDecodeFlag.AMBIGUOUS_HASH, RecordedDecodeFlag.UNSUPPORTED_MESSAGE) })

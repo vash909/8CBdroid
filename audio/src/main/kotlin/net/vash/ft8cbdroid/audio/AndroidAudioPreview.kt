@@ -52,6 +52,10 @@ class AndroidAudioPreview(context: Context) : ScheduledAudioPreview {
         plan: ScheduledSlot, clock: ReceiveClock, update: (PreviewReport) -> Unit) {
         output(previewSamples(slot, settings), outputId, plan, clock, false, update)
     }
+    override suspend fun playWaveform(slot: Ft8PcmSlot, outputId: Int, plan: ScheduledSlot, clock: ReceiveClock,
+        update: (PreviewReport) -> Unit) {
+        output(acousticWaveform(slot), outputId, plan, clock, false, update)
+    }
     private suspend fun output(pcm: FloatArray, outputId: Int, plan: ScheduledSlot?, clock: ReceiveClock?,
         measure: Boolean, update: (PreviewReport) -> Unit): OutputLatency? = withContext(Dispatchers.IO) {
         if (plan != null && pcm.take(9600).any { it != 0f })

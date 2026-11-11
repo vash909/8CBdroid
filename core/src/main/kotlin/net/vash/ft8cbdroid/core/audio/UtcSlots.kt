@@ -1,6 +1,7 @@
 package net.vash.ft8cbdroid.core.audio
 
 import net.vash.ft8cbdroid.core.Ft8PcmSlot
+import net.vash.ft8cbdroid.core.Ft8ReceiveWindow
 import net.vash.ft8cbdroid.core.time.*
 import kotlin.math.abs
 
@@ -74,9 +75,32 @@ data class CompletedUtcSlot(val utcStartMillis: Long, val pcm: Ft8PcmSlot, val s
 data class UtcSlotProgress(val completed: Long, val collected: Int, val discarded: Long, val lastUtcMillis: Long?, val driftPpm: Double?)
 
 /** Bounded single-slot builder. Initial/late partials are discarded, never zero-filled or stitched. */
-class UtcSlotAssembler(private val clock: ReceiveClock, private val completed: (CompletedUtcSlot) -> Unit) {
+class UtcSlotAssembler(clock: ReceiveClock, completed: (CompletedUtcSlot) -> Unit) {
+    private val builder = UtcWindowBuilder(clock, Ft8PcmSlot.sampleCount) { utc, samples, source, uncertainty ->
+        completed(CompletedUtcSlot(utc, Ft8PcmSlot.fromSamples(samples), source, uncertainty))
+    }
+    fun push(chunk: TimedCaptureChunk) = builder.push(chunk)
+    fun progress() = builder.progress()
+    fun clear() = builder.clear()
+}
+
+data class CompletedReceiveWindow(val utcStartMillis: Long, val pcm: Ft8ReceiveWindow,
+    val source: String, val uncertaintyMillis: Double?)
+
+/** An early decision uses 13.5 seconds of genuine input; the unused final 1.5 seconds is never fabricated. */
+class UtcReceiveWindowAssembler(clock: ReceiveClock, completed: (CompletedReceiveWindow) -> Unit) {
+    private val builder = UtcWindowBuilder(clock, Ft8ReceiveWindow.sampleCount) { utc, samples, source, uncertainty ->
+        completed(CompletedReceiveWindow(utc, Ft8ReceiveWindow.fromSamples(samples), source, uncertainty))
+    }
+    fun push(chunk: TimedCaptureChunk) = builder.push(chunk)
+    fun progress() = builder.progress()
+    fun clear() = builder.clear()
+}
+
+private class UtcWindowBuilder(private val clock: ReceiveClock, samples: Int,
+    private val completed: (Long, FloatArray, String, Double?) -> Unit) {
     private val mapping = clock.snapshot()
-    private val buffer = FloatArray(Ft8PcmSlot.sampleCount)
+    private val buffer = FloatArray(samples)
     private var expectedIndex: Long? = null
     private var anchorIndex = 0L
     private var anchorNanos = 0L
@@ -113,9 +137,9 @@ class UtcSlotAssembler(private val clock: ReceiveClock, private val completed: (
                 buffer[size++] = sample.coerceIn(-1f, 1f)
                 if (size == buffer.size) {
                     val utc = target / 12000 * 1000
-                    completed(CompletedUtcSlot(utc, Ft8PcmSlot.fromSamples(buffer), mapping.source,
-                        clock.snapshot().uncertaintyMillis?.plus(MAX_TIMELINE_ERROR_NANOS / 1e6 + 0.1)))
-                    count++; lastUtc = utc; size = 0; targetGrid = target + buffer.size
+                    completed(utc, buffer, mapping.source,
+                        clock.snapshot().uncertaintyMillis?.plus(MAX_TIMELINE_ERROR_NANOS / 1e6 + 0.1))
+                    count++; lastUtc = utc; size = 0; targetGrid = target + Ft8PcmSlot.sampleCount
                 }
             }
             grid++

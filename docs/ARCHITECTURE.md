@@ -15,7 +15,10 @@ no networking. ManualOperatingViewModel freezes one explicit CB message and owns
 one scheduled speaker send, using the same retained PhoneAudioCoordinator as
 Message tools. Protocol templates/peer selection and QSO admission/advice live in core; Android output and
 capture stay behind contracts. Sent records audio only; QSO advice infers protocol
-progress separately and never enables or sends output.
+progress separately and never enables or sends output by itself. The separately
+started JVM `CbAutoSequence` policy drives that same foreground owner with
+bounded retries, qualified early RX windows and actual output confirmations;
+[AutoSeq](AUTOSEQ.md) documents timing and cancellation.
 
 ## Modules and ownership
 
@@ -62,7 +65,9 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
 Operating profiles, station identity and NTP preset/custom-server preferences are stored as app configuration.
-NTP/GNSS measurements are process-local, expire, and require explicit application.
+NTP/GNSS measurements are process-local and expire. Initial application is
+explicit; periodic selected-NTP renewal stages measurements until an idle audio
+boundary, while queued/playing plans keep their original mapping. GPS remains explicit.
 [UTC slot assembly](UTC_RECEIVE_SLOTS.md) consumes boot-clock timestamps behind
 the capture contract; it never calls the decoder or changes Android time. Choosing a radio
 connection label does not establish a radio session. See [operating profiles](OPERATING_PROFILES.md) for durable configuration and explicit application. Android
@@ -200,10 +205,11 @@ attempt. No stale permission callback or failed/cancelled output may restart
 input. See [audio preview](AUDIO_PREVIEW.md) and [phone audio](PHONE_AUDIO.md).
 
 R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots.
-Acoustic radio VOX still needs calibrated output levels,
-lead/tail handling and tested radio hardware. The pure JVM UTC planner and timestamp-based speaker scheduling are described in
-[one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md). PTT, AutoSeq and
-background-service lifecycles remain separate implementations.
+Radio VOX setup is operator-configured; acoustic bench evidence does not observe
+RF transmission. The pure JVM UTC planner and timestamp-based speaker scheduling
+are described in [one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md).
+[Foreground AutoSeq](AUTOSEQ.md) reuses that owner with early receive windows;
+CAT/PTT and background-service lifecycles remain unimplemented.
 
 ## Microphone visualization
 
