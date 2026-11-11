@@ -405,6 +405,17 @@ automatic NTP refresh to the client or change its ten-minute correction expiry.
 No RF contact, AutoSeq or sustained-operation qualification follows from this
 finite acoustic matrix.
 
+## CB QSO domain progression
+
+The [JVM domain model](CB_QSO_PROGRESSION.md) separates observed messages,
+qualified receptions, prepared output and successful sent callbacks. Its test-only
+six-message relay uses pinned desktop-generated text/payloads; Android completion
+expectations are explicit policy, not evidence of desktop audio completion.
+Five shared safety scenarios also run in the separate Android probe. Broader JVM
+cases cover both roles, numeric/slash calls, report bounds, duplicate/late events,
+abort, peer replacement and stale tickets. Device/CI results belong in the feature
+PR; neither these tests nor the model connect live decoding or automatic audio.
+
 ## Checks still pending
 
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
@@ -414,7 +425,8 @@ finite acoustic matrix.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
-- Android AutoSeq admission/progression and durable QSO logging.
+- Live AutoSeq admission, next-message decisions, automatic audio execution and
+  durable QSO logging. The isolated domain model above does not enable these paths.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.

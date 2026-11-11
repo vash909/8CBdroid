@@ -33,6 +33,7 @@ implemented behavior, device evidence and checks still pending.
 
 | Guide | Purpose |
 | --- | --- |
+| [CB QSO progression model](CB_QSO_PROGRESSION.md) | Domain events, selected-peer context and protocol completion; not connected to live AutoSeq. |
 | [Architecture](ARCHITECTURE.md) | Module boundaries, state ownership, persistence and Android I/O. |
 | [Development environment](DEVELOPMENT.md) | Tool versions, build/check commands, CI artifacts and device testing. |
 | [Decoder profiles and work bounds](DECODER_PROFILES.md) | Fast/Standard budgets, native cancellation, admission limits and finite device measurements. |
