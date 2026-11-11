@@ -13,6 +13,7 @@ import net.vash.ft8cbdroid.MainActivity
 import net.vash.ft8cbdroid.audio.*
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.message.*
+import net.vash.ft8cbdroid.core.qso.*
 import net.vash.ft8cbdroid.ntp.UdpNtpClient
 import net.vash.ft8cbdroid.operate.*
 import net.vash.ft8cbdroid.profile.ProfilesViewModel
@@ -80,7 +81,11 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
             PhoneNavigation.click(instrumentation, "Use peer")
             check(main { model.uiState.value.peer == "26AT101" && !model.uiState.value.armed })
             fun outgoing(name: String, choice: ManualMessage, expected: String) {
-                main { model.report("-12"); model.choose(choice); model.frequency("1000") }
+                main { model.report("-12"); model.frequency("1000") }
+                await("qualified QSO suggestion $choice") { main { model.uiState.value.suggestion?.kind == choice } }
+                val before = main { model.uiState.value.sent.size }
+                PhoneNavigation.click(instrumentation, "Use suggested message")
+                check(main { !model.uiState.value.armed && model.uiState.value.sent.size == before })
                 check(main { model.uiState.value.text == expected })
                 PhoneNavigation.click(instrumentation, "Calibrate speaker")
                 await("fresh calibration", 12000) { main { !model.uiState.value.busy && model.uiState.value.latency != null } }; receiving()
@@ -104,10 +109,23 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
                 check(main { !model.uiState.value.armed && model.uiState.value.sent.size == count })
             }
             outgoing("reply", ManualMessage.REPLY, "<26AT101> 1AT106")
+            check(main { model.uiState.value.qso?.replySent == true })
             incoming("report", "1AT106 -07")
+            await("qualified received report") { main { model.uiState.value.qso?.receivedReport == -7 } }
+            check(main { model.uiState.value.choice == ManualMessage.REPLY && !model.uiState.value.armed })
             outgoing("roger", ManualMessage.ROGER, "26AT101 R-12")
+            incoming("rrr", "1AT106 RRR")
+            await("classic RRR advice") { main { model.uiState.value.qso?.peerRogerReceived == true && model.uiState.value.suggestion?.kind == ManualMessage.SIGNOFF } }
+            check(main { model.uiState.value.qso?.phase != CbQsoPhase.COMPLETE && !model.uiState.value.armed })
+            val beforeForeign = main { model.uiState.value.qso }
+            incoming("foreign-final", "161XZ085 RR73")
+            check(main { model.uiState.value.qso == beforeForeign && model.uiState.value.peer == "26AT101" && !model.uiState.value.armed })
+            report.put("actual_rrr_advice", true).put("actual_foreign_final_ignored", true)
             incoming("final", "1AT106 RR73")
+            check(main { model.uiState.value.qso?.phase == CbQsoPhase.SIGNOFF })
             outgoing("signoff", ManualMessage.SIGNOFF, "26AT101 73")
+            check(main { model.uiState.value.qso?.phase == CbQsoPhase.COMPLETE && model.uiState.value.suggestion == null })
+            report.put("qualified_live_qso_advice", true).put("explicit_apply_never_arms", true).put("audio_confirmed_qso_model_completion", true)
             stage("captures-complete")
             report.put("slots", slots).put("received", received).put("manual_acoustic_exchange", true)
                 .put("cold_after_output_and_warm_before_reply", true).put("peer_selection_never_arms", true)

@@ -250,10 +250,12 @@ class CbQsoProgressionTest {
         received(qso, CbQsoMessage.RRR)
         assertEquals(CbQsoPhase.ACKNOWLEDGED, qso.snapshot.phase)
         assertFalse(qso.snapshot.peerFinalReceived)
-        rejected(qso, CbQsoEvent.Prepare(ManualMessage.SIGNOFF))
-        sent(qso, ManualMessage.RR73)
-        received(qso, CbQsoMessage.SIGNOFF)
+        assertTrue(qso.snapshot.peerRogerReceived)
+        val final = prepare(qso, ManualMessage.SIGNOFF)
+        assertEquals(CbQsoPhase.ACKNOWLEDGED, qso.snapshot.phase)
+        applied(qso.dispatch(CbQsoEvent.Sent(final)))
         assertEquals(CbQsoPhase.COMPLETE, qso.snapshot.phase)
+        assertFalse(qso.snapshot.peerFinalReceived)
     }
 
     @Test fun completedExchangeIgnoresLateMessagesAndInvalidatesQueuedRetry() {

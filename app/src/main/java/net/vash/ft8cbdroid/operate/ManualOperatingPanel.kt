@@ -21,6 +21,7 @@ data class ManualActions(
     val calibrate: () -> Unit = {}, val tone: () -> Unit = {},
     val enable: () -> Unit = {}, val send: () -> Unit = {},
     val selectPeer: (ManualPeer) -> Unit = {},
+    val useSuggestion: () -> Unit = {}, val resetQso: () -> Unit = {},
 )
 
 @Composable
@@ -28,6 +29,16 @@ fun ManualOperatingPanel(state: ManualOperatingState, actions: ManualActions) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Manual audio operation", style = MaterialTheme.typography.titleMedium)
         Text("Phone speaker → radio microphone / VOX. Set the radio dial and mode manually. Audio output does not confirm radio TX or a completed QSO. Keep this page visible.", style = MaterialTheme.typography.bodySmall)
+        state.qso?.let { qso ->
+            Text("QSO: ${qso.phase.name.lowercase().replace('_', ' ')} · ${qso.peer ?: "No peer"}")
+            state.suggestion?.let { suggestion ->
+                Text("Suggested: ${suggestion.text}")
+                OutlinedButton(onClick = actions.useSuggestion, enabled = !state.busy) { Text("Use suggested message") }
+            }
+            OutlinedButton(onClick = actions.resetQso, enabled = !state.busy) { Text("Reset QSO") }
+            state.qsoNotice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Text("Suggestions never arm or send audio. Use a suggestion, then enable and send one slot explicitly.", style = MaterialTheme.typography.bodySmall)
+        }
         OutlinedTextField(state.peer, actions.peer, label = { Text("CB peer") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(state.report, actions.report, label = { Text("Report (dB) · editable estimate") }, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii), modifier = Modifier.fillMaxWidth())

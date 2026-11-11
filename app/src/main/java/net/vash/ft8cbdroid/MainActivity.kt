@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                     app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
                         input.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING && input.decodeLive &&
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
-                }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }) }
+                }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls) }
         })[ManualOperatingViewModel::class.java]
         val profilesViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
@@ -173,7 +173,10 @@ class MainActivity : ComponentActivity() {
                     manualViewModel::testTone, manualViewModel::enableTx, manualViewModel::send, { peer ->
                         manualViewModel.selectPeer(peer)
                         captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(rxHz = peer.frequencyHz.coerceIn(200, 2950), txHz = peer.frequencyHz.coerceIn(200, 2950)))
-                    }),
+                    }, useSuggestion = { manualViewModel.useSuggestion()
+                        audioOffset(manualViewModel.uiState.value.frequency)?.let { hz ->
+                            captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(txHz = hz)) }
+                    }, resetQso = manualViewModel::resetQso),
                 onLeaveOperate = { manualViewModel.stop("Left Operate. TX disabled.") },
                 profiles = profiles,
                 onSourceChange = { manualViewModel.stop("Source changed. TX disabled."); profilesViewModel.temporarySource(it == OperatingSource.LAN) },

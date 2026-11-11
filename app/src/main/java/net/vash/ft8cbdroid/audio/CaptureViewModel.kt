@@ -37,6 +37,9 @@ data class CaptureUiState(
     val decodeLive: Boolean = false,
     val liveProfile: Ft8DecodeProfile = Ft8DecodeProfile.STANDARD,
     val live: LiveReceiveState = LiveReceiveState(),
+    val receiveRun: Long = 0,
+    val receiveStartedUtcMillis: Long? = null,
+    val receiveTimeRevision: Long? = null,
     val spectrum: SpectrumState = SpectrumState(),
     val spectrumView: SpectrumView = SpectrumView(),
     val outputBusy: Boolean = false,
@@ -199,6 +202,10 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
             }
             try {
                 if (liveEnabled) {
+                    val mapping = requireNotNull(clock).snapshot()
+                    state.value = state.value.copy(receiveRun = ticket,
+                        receiveStartedUtcMillis = mapping.at(clock.source.read().monotonicNanos) / 1_000_000,
+                        receiveTimeRevision = mapping.revision)
                     val live = LiveSlotReceiver(requireNotNull(engine), this, call, profile, worker)
                     receiver = live
                     liveRender = launch {

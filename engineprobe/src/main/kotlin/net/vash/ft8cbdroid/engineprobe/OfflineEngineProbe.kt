@@ -21,6 +21,7 @@ import net.vash.ft8cbdroid.dsp.NativeFt8Engine
 import net.vash.ft8cbdroid.reference.HashSessionReferenceChecks
 import net.vash.ft8cbdroid.reference.QsoProgressionReferenceChecks
 import net.vash.ft8cbdroid.reference.QsoProgressionSafetyChecks
+import net.vash.ft8cbdroid.reference.QsoAdviceReferenceChecks
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -66,6 +67,10 @@ class OfflineEngineProbe : Instrumentation() {
                 )
                 report.putInt("qso_progression_steps", qsoSteps)
                 report.putInt("qso_safety_scenarios", QsoProgressionSafetyChecks.verify())
+                report.putInt("qso_admission_scenarios", QsoAdviceReferenceChecks.verify(
+                    context.assets.open("wsjtcb/qso-admission.tsv").bufferedReader().use { it.readLines() }))
+                report.putInt("qso_admission_exchange_steps", QsoAdviceReferenceChecks.verifyExchange(
+                    context.assets.open("wsjtcb/qso-progression.tsv").bufferedReader().use { it.readLines() }))
                 val engine = NativeFt8Engine()
                 val generator = OfflineFt8Generator(engine)
                 var generatedCount = 0

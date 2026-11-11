@@ -124,8 +124,10 @@ implement every observed outcome as an Android rule.
 The isolated [CB QSO model](../../docs/CB_QSO_PROGRESSION.md) uses the six-message
 relay's wire text, parser fields and independent payloads through a test-only TSV.
 Its sent callbacks and completion phases are explicit Android domain policy,
-not original desktop TX evidence. The shared JVM/phone checks do not connect
-live decode admission or automatic output.
+not original desktop TX evidence. A separate 25-case [admission corpus](../../docs/QSO_ADVICE.md)
+adds original desktop decision outcomes and independent wire payloads, with explicit
+Android policy differences. The live advisor uses that contract for message
+suggestions; shared offline tests do not establish automatic audio output.
 
 ## Historical R03c phone scope
 

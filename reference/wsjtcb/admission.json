@@ -1,0 +1,2238 @@
+{
+  "schema": 1,
+  "repository": "vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "sources_sha256": "88d3ae96d3b7e3e639f5a759523f00851511023c49ed372a784554ecfab77c12",
+  "packing_sources_sha256": "d96a6e40e24547672a783f8dbfeff879cd769009e55090a0e7da574d45343eee",
+  "cases_sha256": "d5bdd41db218fb48fa50d6d57d9d6f8deb2471120ccd2258b38a46597cc8f543",
+  "harness_sha256": {
+    "qso.cpp": "bf41fa563840a01a1eb3df04576c1714801e27f244b4f6aa4db123ca014e8a75",
+    "qso_config.hpp": "728e27c40721f5e6292874d8a05f6d9a72cbf310222b2ac7c26aee6d3fa2b355",
+    "udp_export.h": "118ca1b647d20bf72903ab8f5c13d26769d924a13ad7d1035db72218cee88f8d",
+    "packing.f90": "da286afcadabfad3bc074fdc1c4b47c27c202a54b86179a821b5bc20dde5da31"
+  },
+  "traces": [
+    {
+      "id": "calling-reply",
+      "initial": {
+        "calling_cq": true,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "CALLING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 6,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <1AT106> 26AT101",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "1AT106 26AT101",
+              "",
+              "1AT106",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "calling-reply-reverse-hash",
+      "initial": {
+        "calling_cq": true,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "CALLING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 6,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  26AT101 <1AT106>",
+          "op": "auto",
+          "parsed": {
+            "call": "26AT101",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "1AT106",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "26AT101 1AT106",
+              "",
+              "26AT101",
+              "1AT106"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<1AT106> 1AT106 ",
+              "1AT106 -12",
+              "1AT106 R-12",
+              "1AT106 RR73",
+              "1AT106 73",
+              "CQ 1AT106"
+            ],
+            "peer": "1AT106",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "calling-own-echo",
+      "initial": {
+        "calling_cq": true,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "CALLING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 6,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <26AT101> 1AT106",
+          "op": "auto",
+          "parsed": {
+            "call": "26AT101",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "1AT106",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "26AT101 1AT106",
+              "",
+              "26AT101",
+              "1AT106"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<1AT106> 1AT106 ",
+              "1AT106 -12",
+              "1AT106 R-12",
+              "1AT106 RR73",
+              "1AT106 73",
+              "CQ 1AT106"
+            ],
+            "peer": "1AT106",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "calling-both-known-hashes",
+      "initial": {
+        "calling_cq": true,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "CALLING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 6,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <1AT106> <26AT101>",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "1AT106 26AT101",
+              "",
+              "1AT106",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "calling-unknown-hash",
+      "initial": {
+        "calling_cq": true,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "CALLING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 6,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <1AT106> <26AT101>",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "1AT106 26AT101",
+              "",
+              "1AT106",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-report",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "-07",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-positive-limit",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 +99",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 +99",
+              "",
+              "1AT106",
+              "+99"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "+99",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-roger",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 R-07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "R",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 R-07",
+              "",
+              "1AT106",
+              "R-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGERS",
+            "received_report": "-07",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 4,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-rr73",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "ROGER_REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 3,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "RR73",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 RR73",
+              "",
+              "1AT106",
+              "RR73"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-rrr",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "ROGER_REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 3,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 RRR",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "RRR",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 RRR",
+              "",
+              "1AT106",
+              "RRR"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "early-final",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "RR73",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 RR73",
+              "",
+              "1AT106",
+              "RR73"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrong-destination",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "ROGER_REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 3,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  161XZ085 RR73",
+          "op": "auto",
+          "parsed": {
+            "call": "161XZ085",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "RR73",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "161XZ085 RR73",
+              "",
+              "161XZ085",
+              "RR73"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<RR73> 1AT106 JN45",
+              "<RR73> 1AT106 -12",
+              "<RR73> 1AT106 R-12",
+              "RR73 1AT106 RR73",
+              "RR73 1AT106 73",
+              "CQ 1AT106"
+            ],
+            "peer": "RR73",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrong-named-peer",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <1AT106> 161XZ085",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "161XZ085",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "1AT106 161XZ085",
+              "",
+              "1AT106",
+              "161XZ085"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "unresolved-destination",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  <161XZ085> 26AT101 RR73",
+          "op": "auto",
+          "parsed": {
+            "call": "161XZ085",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1500,
+            "grid": "RR73",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "161XZ085 26AT101 RR73",
+              "",
+              "161XZ085",
+              "26AT101",
+              "RR73"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "partner-elsewhere-edge",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1450 ~  <161XZ085> 26AT101",
+          "op": "auto",
+          "parsed": {
+            "call": "161XZ085",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1450,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "161XZ085 26AT101",
+              "",
+              "161XZ085",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPLYING",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": true,
+            "tx": 1,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "partner-elsewhere-outside",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1449 ~  <161XZ085> 26AT101",
+          "op": "auto",
+          "parsed": {
+            "call": "161XZ085",
+            "complete_peer": true,
+            "cq_call": "",
+            "de_call": "26AT101",
+            "df": 1449,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "161XZ085 26AT101",
+              "",
+              "161XZ085",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPLYING",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 1,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "context-frequency-edge",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1525 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1525,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "-07",
+            "rx_df": 1525,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "context-frequency-outside",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1526 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1526,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "-07",
+            "rx_df": 1526,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "malformed-report",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 R-XX",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "R",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 R-XX",
+              "",
+              "1AT106",
+              "R-XX"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "short-report",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPORT",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 2,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -7",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -7",
+              "",
+              "1AT106",
+              "-7"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPORT",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 2,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "duplicate-report",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "-07",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        },
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 2,
+            "progress": "ROGER_REPORT",
+            "received_report": "-07",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "older-report-after-ack",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "ROGERS",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 4,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -09",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -09",
+              "",
+              "1AT106",
+              "-09"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -12",
+              "26AT101 R-12",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 1,
+            "progress": "ROGER_REPORT",
+            "received_report": "-09",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 3,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "final-after-complete",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "SIGNOFF",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": true,
+        "stop_requested": false,
+        "tx": 5,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 RR73",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "RR73",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 RR73",
+              "",
+              "1AT106",
+              "RR73"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": true,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-after-complete",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "SIGNOFF",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": true,
+        "stop_requested": false,
+        "tx": 5,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  1AT106 -07",
+          "op": "auto",
+          "parsed": {
+            "call": "1AT106",
+            "complete_peer": false,
+            "cq_call": "",
+            "de_call": "",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": false,
+            "time": 43200,
+            "words": [
+              "1AT106 -07",
+              "",
+              "1AT106",
+              "-07"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "SIGNOFF",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": true,
+            "stop_requested": false,
+            "tx": 5,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected-cq",
+      "initial": {
+        "calling_cq": false,
+        "cease_requested": false,
+        "log_requested": false,
+        "messages": [
+          "<26AT101> 1AT106 ",
+          "26AT101 -07",
+          "26AT101 R-07",
+          "26AT101 RR73",
+          "26AT101 73",
+          "CQ 1AT106"
+        ],
+        "peer": "26AT101",
+        "peer_grid": "",
+        "processed": 0,
+        "progress": "REPLYING",
+        "received_report": "",
+        "rx_df": 1500,
+        "sent_first_73": false,
+        "stop_requested": false,
+        "tx": 1,
+        "tx_df": 1500,
+        "tx_first": false
+      },
+      "steps": [
+        {
+          "line": "120000 -12  0.0 1500 ~  CQ 26AT101",
+          "op": "auto",
+          "parsed": {
+            "call": "CQ",
+            "complete_peer": true,
+            "cq_call": "26AT101",
+            "de_call": "26AT101",
+            "df": 1500,
+            "grid": "",
+            "report": "",
+            "snr": -12,
+            "snr_report": "-12",
+            "standard": true,
+            "time": 43200,
+            "words": [
+              "CQ 26AT101",
+              "",
+              "CQ",
+              "26AT101"
+            ]
+          },
+          "result": {
+            "calling_cq": false,
+            "cease_requested": false,
+            "log_requested": false,
+            "messages": [
+              "<26AT101> 1AT106 ",
+              "26AT101 -07",
+              "26AT101 R-07",
+              "26AT101 RR73",
+              "26AT101 73",
+              "CQ 1AT106"
+            ],
+            "peer": "26AT101",
+            "peer_grid": "",
+            "processed": 0,
+            "progress": "REPLYING",
+            "received_report": "",
+            "rx_df": 1500,
+            "sent_first_73": false,
+            "stop_requested": false,
+            "tx": 1,
+            "tx_df": 1500,
+            "tx_first": false
+          }
+        }
+      ]
+    }
+  ],
+  "message_payloads": [
+    {
+      "message": "161XZ085 RR73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000111000101010011110101101011111001100100010101000001110000000100100000000",
+      "cold_success": true,
+      "cold_decoded": "161XZ085 RR73"
+    },
+    {
+      "message": "1AT106 +99",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000011010010101110011010011011111111110011010100110010000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 +99"
+    },
+    {
+      "message": "1AT106 -07",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000011010010101110011010011011111111110011101010011010000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 -07"
+    },
+    {
+      "message": "1AT106 -09",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000011010010101110011010011011111111110011101010011100000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 -09"
+    },
+    {
+      "message": "1AT106 -12",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000011010010101110011010011011111111110011101010111111000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 -12"
+    },
+    {
+      "message": "1AT106 -7",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000000000101000001000110101110011000011000000101101100000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 -7"
+    },
+    {
+      "message": "1AT106 73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000000000101000001000110101110011000010111110001111100000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 73"
+    },
+    {
+      "message": "1AT106 R-07",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000010001010010010011101010110010111110101010100110100001010000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 R-07"
+    },
+    {
+      "message": "1AT106 R-12",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000010001010010010011101010110010111110101010100110100101111000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 R-12"
+    },
+    {
+      "message": "1AT106 R-XX",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000010001010010010011101010110010111110101010101001010001110000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 R-XX"
+    },
+    {
+      "message": "1AT106 RR73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000010001010010010011101010110010111110101010000100101000100000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 RR73"
+    },
+    {
+      "message": "1AT106 RRR",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000011010010101110011010011011111111101111101000110100000000",
+      "cold_success": true,
+      "cold_decoded": "1AT106 RRR"
+    },
+    {
+      "message": "26AT101 -07",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000011000000100011110100011011111001001001101001000101001010000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 -07"
+    },
+    {
+      "message": "26AT101 -12",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000011000000100011110100011011111001001001101001000101101111000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 -12"
+    },
+    {
+      "message": "26AT101 73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000000000000000100100101011011001001110011101001010111100001110100000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 73"
+    },
+    {
+      "message": "26AT101 <1AT106>",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100001000100",
+      "cold_success": true,
+      "cold_decoded": "26AT101 <...>"
+    },
+    {
+      "message": "26AT101 R-07",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000001111110010111100000011010010011100000010010011000010111101010000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 R-07"
+    },
+    {
+      "message": "26AT101 R-12",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000001111110010111100000011010010011100000010010011000011000001111000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 R-12"
+    },
+    {
+      "message": "26AT101 RR73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "00000000001111110010111100000011010010011100000010010010100001000100100000000",
+      "cold_success": true,
+      "cold_decoded": "26AT101 RR73"
+    },
+    {
+      "message": "<161XZ085> 26AT101",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "01101100101100000000000000000000000010001111001110110000011010110100000000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 26AT101"
+    },
+    {
+      "message": "<161XZ085> 26AT101 RR73",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "01101100101100000000000000000000000010001111001110110000011010110100000100100",
+      "cold_success": true,
+      "cold_decoded": "<...> 26AT101 RR73"
+    },
+    {
+      "message": "<1AT106> 161XZ085",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "10000111110100000000000000000000111010001111010111001100101111000000000000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 161XZ085"
+    },
+    {
+      "message": "<1AT106> 1AT106 ",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "<1AT106> 26AT101",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "10000111110100000000000000000000000010001111001110110000011010110100000000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 26AT101"
+    },
+    {
+      "message": "<1AT106> <26AT101>",
+      "i3": 1,
+      "n3": 0,
+      "payload77": "00000100000101110010110101110000000100101001001101011010100111111010010001001",
+      "cold_success": true,
+      "cold_decoded": "<...> <...>"
+    },
+    {
+      "message": "<26AT101> 1AT106",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "00010110101000000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "<26AT101> 1AT106 ",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "00010110101000000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "<RR73> 1AT106 -12",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "01001001010100000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "<RR73> 1AT106 JN45",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "01001001010100000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "<RR73> 1AT106 R-12",
+      "i3": 4,
+      "n3": -1,
+      "payload77": "01001001010100000000000000000000000000000010101110100100110110001101010000100",
+      "cold_success": true,
+      "cold_decoded": "<...> 1AT106"
+    },
+    {
+      "message": "CQ 1AT106",
+      "i3": 4,
+      "n3": 0,
+      "payload77": "10000111110100000000000000000000000000000010101110100100110110001101010001100",
+      "cold_success": true,
+      "cold_decoded": "CQ 1AT106"
+    },
+    {
+      "message": "CQ 26AT101",
+      "i3": 4,
+      "n3": 0,
+      "payload77": "00010110101000000000000000000000000010001111001110110000011010110100000001100",
+      "cold_success": true,
+      "cold_decoded": "CQ 26AT101"
+    },
+    {
+      "message": "RR73 1AT106 73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "01011101101010001010010101111100011010111000011110011111100000001001100000000",
+      "cold_success": true,
+      "cold_decoded": "RR73 1AT106 7"
+    },
+    {
+      "message": "RR73 1AT106 RR73",
+      "i3": 0,
+      "n3": 0,
+      "payload77": "01011101101010001010010101111100011010111000011110011111100000001100000000000",
+      "cold_success": true,
+      "cold_decoded": "RR73 1AT106 R"
+    }
+  ]
+}

@@ -13,8 +13,9 @@ leaving them for configuration or Chat stops local reception and clears its
 session. Background and rotation cleanup remain unchanged. The Chat page performs
 no networking. ManualOperatingViewModel freezes one explicit CB message and owns
 one scheduled speaker send, using the same retained PhoneAudioCoordinator as
-Message tools. Protocol templates/peer selection live in core; Android output and
-capture stay behind contracts. Completion records audio only, without QSO automation.
+Message tools. Protocol templates/peer selection and QSO admission/advice live in core; Android output and
+capture stay behind contracts. Sent records audio only; QSO advice infers protocol
+progress separately and never enables or sends output.
 
 ## Modules and ownership
 
@@ -70,14 +71,20 @@ system picker history/USB grants have their own OS lifecycle.
 ## CB QSO domain model
 
 `CbQsoProgression` is a serialized, process-local JVM model, separate from the
-current manual operating ViewModel. It accepts explicit peer selection,
+manual operating ViewModel's `CbQsoAdvisor`. It accepts explicit peer selection,
 already-qualified received semantics and opaque prepared/sent/cancelled tickets.
 Snapshots distinguish observed/queued text from confirmed output. Replacing a
 peer, resetting or aborting invalidates old tickets; protocol completion requires
-both reports, acknowledgements and local/peer finals. It neither selects the next
-message nor opens hardware, schedules output or persists a log. The future live
-admission/execution owners must supply qualified peer context and handle actual
-cancellation. See [the domain contract](CB_QSO_PROGRESSION.md).
+both reports, acknowledgements, confirmed local final and peer closing evidence. It neither selects the next
+message nor opens hardware, schedules output or persists a log. The live advisor supplies qualified peer context; the manual owner confirms only full
+successful output and handles cancellation. See [the domain contract](CB_QSO_PROGRESSION.md).
+
+`CaptureViewModel` publishes a receiver generation, start UTC and time-mapping
+revision. The manual owner observes its filtered local stream outside Compose,
+excludes inactive/own-output windows and binds admission to that live run. Advice
+never edits TX fields until explicit application. Stop/lifecycle/setup invalidation
+aborts active tracking; own-output recovery preserves facts with a fresh receiver
+binding. No QSO state/ticket or armed work is persisted. See [advice](QSO_ADVICE.md).
 
 ## Station settings
 

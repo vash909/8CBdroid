@@ -154,7 +154,7 @@ def compile_reference(directory, manifest, packing_manifest, optimization):
     return executable
 
 
-def generate(manifest, packing_manifest, scenarios, optimization='O0'):
+def generate(manifest, packing_manifest, scenarios, optimization='O0', cases_path=CASES, extra_messages=()):
     with tempfile.TemporaryDirectory(prefix='wsjtcb-qso-') as directory:
         executable = compile_reference(directory, manifest, packing_manifest, optimization)
         traces = []
@@ -170,7 +170,7 @@ def generate(manifest, packing_manifest, scenarios, optimization='O0'):
             states += [trace[key] for key in ('initial', 'remote_initial') if key in trace]
             states += [step[key] for step in trace['steps']
                        for key in ('result', 'remote_result') if key in step]
-        messages = sorted({message for state in states for message in state['messages'] if message})
+        messages = sorted({message for state in states for message in state['messages'] if message} | set(extra_messages))
         payloads = []
         for message in messages:
             row, = packing.run(encoder, ['P|' + message])
@@ -181,7 +181,7 @@ def generate(manifest, packing_manifest, scenarios, optimization='O0'):
                              'cold_success': ok == '1', 'cold_decoded': text})
     document = {'schema': 1, 'repository': manifest['repository'], 'revision': manifest['revision'],
                 'sources_sha256': digest(SOURCES), 'packing_sources_sha256': digest(packing.SOURCES),
-                'cases_sha256': digest(CASES),
+                'cases_sha256': digest(cases_path),
                 'harness_sha256': {name: digest(HARNESS / name) for name in
                                    ('qso.cpp', 'qso_config.hpp', 'udp_export.h', 'packing.f90')},
                 'traces': traces, 'message_payloads': payloads}

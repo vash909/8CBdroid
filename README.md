@@ -10,8 +10,8 @@ NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone
 software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
 microphone pause/recovery are available. Operate now offers foreground manual
 phone-speaker exchanges: explicit peer/message selection, enable and one-slot send.
-A [pure JVM CB QSO model](docs/CB_QSO_PROGRESSION.md) now records exchange facts
-but is not connected to live reception or sending. CAT/PTT, AutoSeq, persistent
+[Local QSO advice](docs/QSO_ADVICE.md) now qualifies peer messages and suggests
+the next CB exchange message; applying advice still requires an explicit action. CAT/PTT, AutoSeq, persistent
 QSO logging and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
@@ -20,7 +20,7 @@ not independently confirm radio TX or a QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX offsets, peer selection, CB message templates/custom text, bounded test tone and explicitly armed one-slot speaker sends. | Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground/manual operation; LAN remains read-only. |
+| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO state/next-message advice, CB templates/custom text, bounded test tone and explicitly armed one-slot speaker sends. | Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground/manual operation; LAN remains read-only. |
 | **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
@@ -66,7 +66,9 @@ commands and debug-signature limitations.
    **Operate**. Complete slots appear in **Received**; **→ RX** selects a decoded
    frequency; **Use peer** selects a complete CB sender without arming TX.
    For manual audio exchanges, select and calibrate the speaker, choose a message/period,
-   then explicitly Enable TX and Send one slot. See [manual operation](docs/MANUAL_OPERATION.md).
+   then explicitly Enable TX and Send one slot. Review QSO advice and press
+   **Use suggested message** to apply the next template without arming TX.
+   **Reset QSO** clears tracking. See [manual operation](docs/MANUAL_OPERATION.md).
    **Monitor** displays plain audio
    without time sync. Stop clears local results and hash learning.
 7. For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,

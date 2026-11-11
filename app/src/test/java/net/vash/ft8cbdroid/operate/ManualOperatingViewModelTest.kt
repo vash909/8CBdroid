@@ -4,6 +4,13 @@ import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import net.vash.ft8cbdroid.audio.CaptureUiState
+import net.vash.ft8cbdroid.audio.CapturePhase
+import net.vash.ft8cbdroid.core.qso.CbQsoPhase
+import net.vash.ft8cbdroid.core.recording.*
+import java.time.Instant
 import kotlinx.coroutines.test.*
 import net.vash.ft8cbdroid.core.*
 import net.vash.ft8cbdroid.core.audio.*
@@ -59,10 +66,10 @@ class ManualOperatingViewModelTest {
         }
         override fun close() {}
     }
-    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}): ManualOperatingViewModel {
+    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow()): ManualOperatingViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer {
-            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher)
+            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx)
         } })[ManualOperatingViewModel::class.java]
     }
     private fun sync() { val r = source.read(); clock.apply(TimeMeasurement("NTP/test", r.monotonicNanos, r.unixMillis * 1_000_000, 1.0, r)) }
@@ -151,5 +158,71 @@ class ManualOperatingViewModelTest {
         vm.enableTx(); vm.testTone(); runCurrent(); assertFalse(vm.uiState.value.armed)
         advanceTimeBy(3000); runCurrent()
         assertEquals(1, p.tones); assertTrue(vm.uiState.value.sent.isEmpty()); assertTrue(receiving)
+    }
+
+    private fun liveInput(run: Long = 1) = CaptureUiState(inputs = listOf(AudioInput(1, "Phone", AudioInputKind.PHONE)),
+        selectedId = 1, phase = CapturePhase.CAPTURING, decodeLive = true, receiveRun = run,
+        receiveStartedUtcMillis = 1_800_000_000_000L, receiveTimeRevision = clock.revision)
+    private fun decoded(text: String, slot: Long): LiveDecodeRow {
+        val encoded = CbMessageCodec.pack(text) as PackResult.Encoded
+        val session = CbMessageSession("1AT106")
+        session.learnCall("26AT101"); session.learnCall("161XZ085"); session.commitPending()
+        return LiveDecodeRow(RecordedDecode(Ft8DecodedFrame(encoded.payload, .5f, 1500f, 10, -12f), session.unpack(encoded.payload),
+            Instant.ofEpochMilli(slot), Instant.ofEpochMilli(slot + 500), 0f, setOf(RecordedDecodeFlag.CRC_LDPC_VALID)), "NTP/test", 1.0)
+    }
+    @Test fun qualifiedLiveReportSuggestsRReportWithoutChangingOrArmingManualTx() = runTest(dispatcher) {
+        val rx = MutableStateFlow(liveInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.EVEN)); vm.enableTx(); vm.send()
+        advanceTimeBy(60_000); runCurrent()
+        assertTrue(vm.uiState.value.qso?.replySent == true)
+        val oldText = vm.uiState.value.text
+        advanceTimeBy(16_000); rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(decoded("1AT106 -07", 1_800_000_060_000))))
+        runCurrent()
+        val value = vm.uiState.value
+        assertEquals(-7, value.qso?.receivedReport); assertEquals(ManualMessage.ROGER, value.suggestion?.kind)
+        assertEquals(oldText, value.text); assertEquals(ManualMessage.REPLY, value.choice); assertFalse(value.armed)
+        assertEquals(1, player.slots)
+        vm.useSuggestion(); runCurrent()
+        assertEquals("26AT101 R-12", vm.uiState.value.text); assertFalse(vm.uiState.value.armed)
+        assertEquals(1, player.slots)
+        vm.resetQso(); runCurrent()
+        assertEquals(CbQsoPhase.IDLE, vm.uiState.value.qso?.phase); assertNull(vm.uiState.value.suggestion)
+    }
+    @Test fun livePartnerReplyingElsewhereDisarmsAndAbortsWithoutChangingPeer() = runTest(dispatcher) {
+        val rx = MutableStateFlow(liveInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.EVEN)); vm.enableTx(); vm.send()
+        advanceTimeBy(60_000); runCurrent(); vm.enableTx(); assertTrue(vm.uiState.value.armed)
+        advanceTimeBy(16_000); rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(decoded("<161XZ085> 26AT101", 1_800_000_060_000))))
+        runCurrent()
+        assertEquals(CbQsoPhase.ABORTED, vm.uiState.value.qso?.phase); assertFalse(vm.uiState.value.armed)
+        assertEquals("26AT101", vm.uiState.value.peer); assertNull(vm.uiState.value.suggestion)
+        assertEquals(1, player.slots)
+    }
+    @Test fun receiverEndClockResetAndSourceChangeDiscardSuggestionsWithoutSilentRecovery() = runTest(dispatcher) {
+        val rx = MutableStateFlow(liveInput()); val vm = model(rx = rx); ready(vm)
+        vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.EVEN)); runCurrent()
+        assertNotNull(vm.uiState.value.suggestion)
+        rx.value = rx.value.copy(phase = CapturePhase.IDLE); runCurrent()
+        assertEquals(CbQsoPhase.ABORTED, vm.uiState.value.qso?.phase); assertNull(vm.uiState.value.suggestion)
+        rx.value = liveInput(2); runCurrent()
+        assertEquals(CbQsoPhase.ABORTED, vm.uiState.value.qso?.phase)
+        vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.EVEN)); runCurrent()
+        assertNotNull(vm.uiState.value.suggestion)
+        clock.reset(); rx.value = rx.value.copy(live = LiveReceiveState(decodedSlots = 1)); runCurrent()
+        assertEquals(CbQsoPhase.ABORTED, vm.uiState.value.qso?.phase); assertNull(vm.uiState.value.suggestion)
+        vm.context(StationIdentity("1AT106", "JN45"), false, 27_265_000, 2)
+        assertNull(vm.uiState.value.qso); assertFalse(vm.uiState.value.armed)
+    }
+
+    @Test fun clockResetDuringOwnOutputPauseInvalidatesQsoAndItsPendingTicket() = runTest(dispatcher) {
+        val rx = MutableStateFlow(liveInput()); val engine = Engine().also { it.wait = CompletableDeferred() }
+        val vm = model(engine = engine, rx = rx); ready(vm)
+        vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.EVEN)); runCurrent()
+        vm.enableTx(); vm.send(); runCurrent()
+        assertTrue(vm.uiState.value.busy); assertNotNull(vm.uiState.value.qso?.pending)
+        clock.reset(); rx.value = rx.value.copy(outputBusy = true); runCurrent()
+        assertEquals(CbQsoPhase.ABORTED, vm.uiState.value.qso?.phase); assertNull(vm.uiState.value.qso?.pending)
+        assertNull(vm.uiState.value.suggestion)
+        vm.stop(); runCurrent(); assertTrue(vm.uiState.value.sent.isEmpty())
     }
 }

@@ -2,9 +2,10 @@
 
 `core/qso/CbQsoProgression` is an in-memory Kotlin/JVM domain model for one CB
 exchange. It records selected peer, CQ/reply, reports, acknowledgements, signoff,
-abort and protocol completion. It is not connected to Operate or live decodes.
-The app still requires manual message selection and one-slot sending; this model
-does not enable AutoSeq, choose a next message, schedule audio or save a log.
+abort and protocol completion. The [local QSO advisor](QSO_ADVICE.md) now connects
+qualified live decodes to this model and suggests messages on Operate. The domain
+model itself neither chooses messages nor schedules audio. Applying advice and
+each one-slot send remain explicit; there is no automatic execution or log.
 
 ## Events and ownership
 
@@ -18,12 +19,11 @@ already selected active peer leaves the exchange intact. An explicit selection a
 
 `Received` takes already-qualified message semantics. A named sender and a
 selected-peer context have distinct types: destination-only CB reports and
-finals do not contain the sender on air. Context must be supplied by the future
+finals do not contain the sender on air. Context is supplied by the live
 admission layer; the model neither parses a raw decode nor invents that identity.
 CQ/reply require a named sender. Directed messages must address the saved station
 and belong to its selected peer. Slot freshness, CRC/LDPC/hash qualification and
-binding context to a receive session remain the caller's responsibility; the live
-admission adapter is not implemented here. LAN/replayed decodes do not feed this
+binding context to a receive session belong to `CbQsoAdvisor`. LAN/replayed decodes do not feed this
 model.
 
 `Prepare` freezes an explicit standard template, report, text and exact 77-bit
@@ -51,12 +51,14 @@ older messages cannot regress acknowledgement or replace a report. Early finals
 cannot manufacture a report exchange. An R-report acknowledges a report actually
 sent; `RRR` acknowledges but is not signoff.
 
-Both reports, both acknowledgements, local final output completion and peer final
-reception are required for completion. For example:
+Both reports, both acknowledgements, local final output completion and peer
+closing evidence are required for completion. Peer RR73/73 provides final evidence;
+the classic RRR path closes after our confirmed 73, while RRR itself is recorded
+separately from a received final. For example:
 
 | Calling station | Answering station |
 | --- | --- |
-| CQ sent, then explicitly select the responder | Explicitly select caller; reply sent |
+| CQ sent, then qualify the responder | Explicitly select caller; reply sent |
 | Report sent | Report received; R-report sent |
 | R-report received; RR73 sent | RR73 received; 73 sent → complete |
 | 73 received → complete | Late messages cannot reopen the exchange |
@@ -93,5 +95,5 @@ timeout 600 bash scripts/check.sh
 
 The separate probe runs these domain scenarios on Android alongside its existing
 offline engine checks. This establishes actual domain execution on that device;
-it does not substitute for future live admission, automatic acoustic exchange,
+it does not substitute for physical live integration, automatic acoustic exchange,
 RF, CAT or USB tests. Test fixtures/adapters are excluded from the main app.
