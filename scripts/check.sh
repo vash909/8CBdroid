@@ -2,6 +2,7 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 source scripts/env.sh
+python3 scripts/wsjtcb_context.py --check --data-only
 python3 scripts/manual_messages_reference.py --check
 python3 scripts/qso_progression_reference.py --check
 python3 scripts/wsjtcb_admission.py --check --adapter-only

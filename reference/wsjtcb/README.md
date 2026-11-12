@@ -2,9 +2,9 @@
 
 This directory contains pinned desktop reference sources and generated test
 corpora for the Android implementation. Original Fortran/C++ files are host-only;
-the main app uses its separate Kotlin CB codec and source-built native channel
-backend. The separate `engineprobe` APK includes test fixtures; the main APK does
-not. See [architecture](../../docs/ARCHITECTURE.md) and
+the main app uses its separate Kotlin CB codec, derived runtime country table and
+source-built native channel backend. The separate `engineprobe` APK includes
+test fixtures; the main APK excludes those fixtures. See [architecture](../../docs/ARCHITECTURE.md) and
 [current validation](../../docs/VALIDATION.md).
 
 WSJT-CB reference: **`94f776d54946fe43db5e0bb9c966b1595c7b7d97`**. Original
@@ -18,6 +18,7 @@ and [notices](../../THIRD_PARTY_NOTICES.md).
 | CB predicates and comparison sources | `sources.json`, `cases.json`, `core/src/test/resources/wsjtcb/predicates.tsv` | Complete-call/type 4 predicates and immutable WSJT-X comparison revisions. The TSV is relative to the repository root. |
 | [Payloads and hashes](PACKING.md) | `packing-sources.json`, `packing-cases.json`, `packing.json` | Original packing/unpacking and stateful RX behavior. |
 | [QSO traces](QSO.md) | `qso-sources.json`, `qso-cases.json`, `qso.json` | Extracted parser/generation/AutoSeq methods, not a complete desktop operating session. |
+| [CB countries](../../docs/CB_OPERATING_CONTEXT.md) | `context-sources.json`, `core/src/main/resources/wsjtcb/countries.tsv`, `core/src/test/resources/wsjtcb/country-cases.tsv` | 350 runtime CB divisions and 1,249 original desktop lookup cases; paths relative to repository root. Only the runtime country table is packaged in the main app. |
 | [Channel fixtures](../../docs/FT8_ENGINE.md#independent-desktop-checks) | `channel-sources.json`, `channel/channel.json`, four WAVs | 131 payload/codeword/tone vectors and original desktop waveforms. |
 | [Generated PCM qualification](../../docs/OFFLINE_WAVEFORM.md) | `pcm-sources.json`, `harness/pcm_decode.f90` | Original desktop LDPC/CRC/unpacker with supplied time/frequency and a Goertzel adapter. |
 | [Recorded-slot qualification](../../docs/RECORDED_SLOTS.md) | `recordings/recordings.json`, eight derived/control WAVs plus four channel WAVs | Fixed noisy/shifted/corrupt/negative cases; known-reference checks, not full decoder parity. |

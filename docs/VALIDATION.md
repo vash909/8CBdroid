@@ -20,6 +20,7 @@ qualification or a statement that all possible checks passed.
 | UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |
 | Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. Foreground RX only. |
 | Spectrum and waterfall | 2 Hz microphone display, 96-row history, zoom/pan, independent RX/TX selection and decoded-frequency markers. | A51 physical-tone, acoustic FT8 and UI checks below. Cursors do not filter, tune or transmit. |
+| CB operating context | Offline division/country labels and All/CQ/To-me display filters for local/LAN activity. | 350 pinned divisions and 1,249 original C++ lookup comparisons; message/filter tests and a short physical acoustic/UDP UI regression described in [the guide](CB_OPERATING_CONTEXT.md). Worked filtering awaits the QSO log. |
 
 There is no implemented CAT/PTT,
 live radio TX,

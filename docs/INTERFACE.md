@@ -16,6 +16,10 @@ system language. No connection or microphone session starts on launch.
   confidence/replay flags. **→ RX** changes the RX cursor; **Use peer** selects a
   complete local CB sender and suggests a reply, report, opposite period and TX
   frequency without arming. **Sent** records only completed speaker audio.
+- Received **All / CQ / To me** filters change the display only. Identified senders
+  show their CB division/country; an unknown sender has no label. **Worked** is
+  disabled pending a durable QSO log. A selected local peer also shows country.
+  See [CB countries and filters](CB_OPERATING_CONTEXT.md) for provenance and limits.
 - **RX Hz** controls the 200–2950 Hz display cursor. **TX Hz** also selects actual
   manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
   LAN offsets are unavailable; the separate offline waveform editor is unchanged.
@@ -23,8 +27,9 @@ system language. No connection or microphone session starts on launch.
   **Monitor** starts plain local audio without time sync. **Stop** stops RX and
   cancels/disarms manual output.
 - **Enable TX** followed by **Send one slot** sends one manually selected message
-  with measured time/calibration and active built-in FT8 RX. There is no repeat or
-  AutoSeq. CQ/reply/report/final templates, custom/free text, encoding consent,
+  with measured time/calibration and active built-in FT8 RX. **Auto CQ** and
+  **Auto answer** explicitly start bounded foreground exchanges; see [AutoSeq](AUTOSEQ.md).
+  CQ/reply/report/final templates, custom/free text, encoding consent,
   Even/Odd, speaker selection, level, silent calibration and a two-second test
   tone are below the main controls. See [manual operation](MANUAL_OPERATION.md).
   Radio/VOX setup is manual; Sent is not a QSO log or radio TX confirmation.
