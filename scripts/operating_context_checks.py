@@ -94,7 +94,8 @@ def main():
                     player = subprocess.Popen(['pw-play', '--volume', '0.5', str(waves[index])],
                                               stdout=audio, stderr=subprocess.STDOUT)
                     plays.append(dict(text=TEXTS[index], utc_millis=round(next_slot*1000), launched_utc=time.time()))
-                    next_slot += 15
+                    # Leave an idle slot so player latency cannot overlap the next input.
+                    next_slot += 30
                     print('Desktop acoustic input:', TEXTS[index], flush=True)
                 time.sleep(.02 if next_slot is not None and next_slot-time.time() < .6 else .15)
         text = (output/'instrumentation.log').read_text()

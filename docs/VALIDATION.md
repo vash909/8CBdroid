@@ -471,3 +471,26 @@ and repeated response, immediate following RX windows, a real NTP renewal and
 interruption/lifecycle checks. Device qualification is recorded in the feature
 PR; the implementation and offline probe alone do not establish an acoustic pass,
 radio/RF behavior, hardware support or durable QSO logging.
+
+## CB operating context
+
+[PR #41](https://github.com/vash909/8CBdroid/pull/41) adds offline CB country labels
+and display-only All/CQ/To-me filters. The 350-entry pinned country map and 1,249
+lookup comparisons passed original C++ regeneration at O0/O2. Local validation
+passed 1,032 JVM tests with no failures, errors or skips, 46 Python tests,
+lint and debug/device-check builds.
+
+The successful 110-second SM-A515F / Android 13 check used the matching APKs
+from CI `43295359554`, commit `e93c80a7015ce6690325e5026d6201999b3a17aa`.
+Three original desktop waveforms were received through the phone microphone:
+`CQ 999ZZ999`, `1AT106 -07` and `CQ 26AT101`. Actual UI checks covered country
+labels, no label for an unidentified sender, CQ/To-me counts, unchanged backend
+rows, explicit peer/country selection, retained filter on Activity recreation
+and explicit RX recovery/Stop. A real UDP exchange with a simulated desktop
+verified LAN country/filter presentation and replay/off-air/low-confidence
+labels. No output was armed or sent. Earlier attempts stopped at host playback
+overlap or unreachable networks and are excluded from this full pass.
+
+See the PR for final-head CI/APK identity and device evidence, and
+[the feature guide](CB_OPERATING_CONTEXT.md) for reproduction. Worked history,
+locator/distance display and radio/RF qualification are outside this change.
