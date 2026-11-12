@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "repository": "vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "license": "GPL-3.0-only",
+  "files": [
+    {
+      "path": "Radio.cpp",
+      "local": "source/qso/Radio.cpp",
+      "sha256": "a71ec111fc186c19b580d0692fd2e41d5ea34f4ac291f2aa376880a52279996a"
+    },
+    {
+      "path": "Radio.hpp",
+      "local": "source/qso/Radio.hpp",
+      "sha256": "ccddc50d46585b971b3ed18667a79d7fa3fe5c8becc507433a90ff2061524386"
+    },
+    {
+      "path": "logbook/AD1CCty.cpp",
+      "local": "source/context/AD1CCty.cpp",
+      "sha256": "7b76f4ee4f98e26b25760cd306dadf0fa2c88f7e57920b3c0a8d7873c7965f50"
+    }
+  ]
+}

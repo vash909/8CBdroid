@@ -15,8 +15,16 @@ Original desktop sources are used separately for host reference tests.
   required legacy packing/include and module dependencies, are
   vendored under `reference/wsjtcb/source/` for host-side tests only. Upstream
   paths, revision and SHA-256 values are recorded in `sources.json` and
-  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` / `pcm-sources.json` in the reference directory. These sources and generated
-  text fixtures are not in the main APK. The offline native backend is described below.
+  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` / `pcm-sources.json` / `context-sources.json` in the reference directory. These sources and generated
+  test fixtures are not in the main APK. The offline native backend is described below.
+- The 350-entry runtime CB division/country table in
+  `core/src/main/resources/wsjtcb/countries.tsv` is derived from WSJT-CB's
+  GPL country map in `logbook/AD1CCty.cpp` and is packaged in the app. Its original
+  source and reused `Radio.cpp`/`Radio.hpp` are pinned by `context-sources.json`;
+  the Kotlin lookup follows `Radio::cb_country_prefix`. Two display names are
+  translated to English while original names remain available for comparison.
+  See [CB operating context](docs/CB_OPERATING_CONTEXT.md) for provenance,
+  reproduction and historical dataset limits.
 - Selected WSJT-CB text packing, unpacking and callsign-hash algorithms are
   ported into `core/.../message/CbMessageCodec.kt` under GPL-3.0-only. These
   Kotlin routines are packaged in the app; the original Fortran sources remain

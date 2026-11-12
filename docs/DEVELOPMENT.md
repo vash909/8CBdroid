@@ -100,6 +100,8 @@ timeout 180 python3 scripts/wsjtcb_packing.py --check
 timeout 180 python3 scripts/wsjtcb_packing.py --check --optimization O2
 timeout 180 python3 scripts/wsjtcb_qso.py --check
 timeout 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
+timeout 180 python3 scripts/wsjtcb_context.py --check
+timeout 180 python3 scripts/wsjtcb_context.py --check --optimization O2
 timeout 180 python3 scripts/wsjtcb_acoustic.py --check
 timeout 60 python3 scripts/wsjtcb_codec.py --check
 timeout 180 python3 scripts/wsjtcb_channel.py --check

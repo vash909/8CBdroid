@@ -13,7 +13,8 @@ phone-speaker exchanges: explicit peer/message selection, enable and one-slot se
 [Local QSO advice](docs/QSO_ADVICE.md) now qualifies peer messages and suggests
 the next CB exchange message; applying advice still requires an explicit action.
 [Foreground acoustic AutoSeq](docs/AUTOSEQ.md) explicitly starts bounded CQ/answer
-exchanges. CAT/PTT, persistent QSO logging and qualified USB audio remain unimplemented.
+exchanges. [CB country labels and receive filters](docs/CB_OPERATING_CONTEXT.md)
+provide offline division context and All/CQ/To-me views. CAT/PTT, persistent QSO logging and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 
@@ -21,7 +22,7 @@ not independently confirm radio TX or a QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground operation with bounded retries; LAN remains read-only. |
+| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me receive filters, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked filtering awaits a durable QSO log. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground operation with bounded retries; LAN remains read-only. |
 | **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
@@ -66,6 +67,9 @@ commands and debug-signature limitations.
    **Settings → Audio & source**, synchronize time, then press **Start RX** on
    **Operate**. Complete slots appear in **Received**; **→ RX** selects a decoded
    frequency; **Use peer** selects a complete CB sender without arming TX.
+   **All**, **CQ** and **To me** filter displayed rows without changing reception
+   or AutoSeq input. Known senders show CB division/country; unidentified senders
+   have no extra label. **Worked** remains disabled until a QSO log exists.
    For manual audio exchanges, select and calibrate the speaker, choose a message/period,
    then explicitly Enable TX and Send one slot. Review QSO advice and press
    **Use suggested message** to apply the next template without arming TX.
