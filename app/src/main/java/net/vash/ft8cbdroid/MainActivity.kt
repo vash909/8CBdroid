@@ -131,6 +131,7 @@ class MainActivity : ComponentActivity() {
         val previewCapture = captureViewModel
         val previewLan = lanViewModel
         val app = applicationContext
+        val receiver = receiveRuntime
         val audioCoordinator = previewCapture.audioCoordinator {
             app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         }
@@ -148,7 +149,7 @@ class MainActivity : ComponentActivity() {
                         input.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING && input.decodeLive &&
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
                 }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls,
-                prepareAutomaticReceive = { previewCapture.prepareAutomaticReceive(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) },
+                prepareAutomaticReceive = { receiver.prepareAutomaticReceive() },
                 awaitAutomaticRecovery = { previewCapture.awaitAutomaticRecovery() }, completedQso = logbookViewModel::completed,
                 applyPendingTime = {
                     check(previewCapture.uiState.value.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE)

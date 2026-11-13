@@ -84,7 +84,7 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 main { runtime.time.clock.apply(mapping) }
                 PhoneNavigation.click(instrumentation, "Start RX")
                 await("microphone service") { main { runtime.capture.uiState.value.phase == CapturePhase.CAPTURING && runtime.session.uiState.value.phase == ReceivePhase.RUNNING } }
-                val id = main { runtime.capture.uiState.value.receiveRun }
+                var id = main { runtime.capture.uiState.value.receiveRun }
                 assertOne(id)
                 ready("local-navigation")
                 val first = input("local-navigation")
@@ -98,6 +98,12 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 await("CQ decoded across navigation", 30000) { hasText("CQ 26AT101") }
                 assertOne(id)
                 report.put("real_audio_slot_and_decode_across_settings_chat_navigation", true)
+                val lease = main { runtime.session.uiState.value.generation }
+                runBlocking(Dispatchers.Main) { runtime.prepareAutomaticReceive() }
+                check(main { runtime.session.uiState.value.generation == lease && runtime.capture.uiState.value.earlyWindows })
+                id = main { runtime.capture.uiState.value.receiveRun }
+                assertOne(id)
+                report.put("actual_autoseq_receive_preparation_keeps_the_service_lease", true)
                 ready("local-background")
                 val second = input("local-background")
                 waitUtc(second + 3000)

@@ -66,14 +66,14 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     private var refreshJob: Job? = null
 
     init {
-        time.idleBoundary { capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy && audioCoordinator.phase.value == PhoneAudioPhase.IDLE } }
+        time.idleBoundary { capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy && !serviceStarting && audioCoordinator.phase.value == PhoneAudioPhase.IDLE } }
         scope.launch {
             combine(capture.controls, lan.uiState, session.uiState) { mic, network, owner -> Triple(mic, network, owner) }
                 .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
                 .collect { (inputs, _) ->
                     val (mic, _, owner) = inputs
                     time.foreground(visible || owner.active)
-                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
+                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || serviceStarting || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
                     if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
                         val ended = when (owner.source) {
                             ReceiveSource.MICROPHONE -> capture.uiState.value.let { microphoneSessionEnded(it.phase == CapturePhase.IDLE, it.outputBusy, audioCoordinator.phase.value) }
@@ -96,12 +96,12 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                         val before = session.uiState.value
                         serviceStarting = true
                         try {
-                            capture.stopAndJoin("Applying refreshed NTP time at a receive boundary.", clear = true)
-                            if (session.uiState.value == before) {
-                                time.applyPendingAtBoundary()
+                            val boundary = capture.stopAndJoin("Applying refreshed NTP time at a receive boundary.", clear = true)
+                            if (session.uiState.value == before && capture.configurationRevision == boundary) {
+                                time.applyPendingAtBoundary(audioPaused = true)
                                 check(runCatching { time.clock.snapshot() }.isSuccess) { "Time synchronization expired. Measure NTP or GPS and start RX again." }
                                 capture.requestStart(hasMicrophonePermission())
-                            }
+                            } else if (session.uiState.value == before) stop()
                         } catch (cancelled: CancellationException) { throw cancelled }
                         catch (error: Exception) { stop(error.message ?: "Time refresh failed. Start RX explicitly.") }
                         finally { serviceStarting = false }
@@ -109,6 +109,26 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                     refreshJob?.join(); refreshJob = null
                 }
             }
+        }
+    }
+    /** AutoSeq replaces its normal RX run with early windows without releasing the service lease. */
+    suspend fun prepareAutomaticReceive() {
+        val owner = session.uiState.value
+        check(owner.source == ReceiveSource.MICROPHONE && owner.phase == ReceivePhase.RUNNING) {
+            "Start microphone RX before AutoSeq."
+        }
+        serviceStarting = true
+        try { capture.prepareAutomaticReceive(hasMicrophonePermission()) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (session.uiState.value.generation == owner.generation) stop(error.message ?: "Could not prepare AutoSeq reception.")
+            throw error
+        }
+        finally {
+            serviceStarting = false
+            if (session.uiState.value.generation == owner.generation && session.uiState.value.phase == ReceivePhase.RUNNING &&
+                microphoneSessionEnded(capture.uiState.value.phase == CapturePhase.IDLE,
+                    capture.uiState.value.outputBusy, audioCoordinator.phase.value)) stop()
         }
     }
     fun foreground(active: Boolean) { visibility.value = active; time.foreground(active || session.uiState.value.active) }

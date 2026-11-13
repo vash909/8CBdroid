@@ -74,6 +74,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     private var latestSlot: CompletedUtcSlot? = null
     private var preferredKind: AudioInputKind? = null
     private var recoveryRevision = 0L
+    val configurationRevision get() = recoveryRevision
     fun blockForOutput(blocked: Boolean) { state.value = state.value.copy(outputBusy = blocked) }
     private var sharedCoordinator: PhoneAudioCoordinator? = null
     /** Retained with the receiver, so operating and bench outputs share ownership across Activity recreation. */
@@ -312,15 +313,17 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
         }
     }
     /** Join recorder/DSP cleanup before releasing session resources or replacing a route. */
-    suspend fun stopAndJoin(reason: String = "Microphone stopped.", clear: Boolean = false) {
+    suspend fun stopAndJoin(reason: String = "Microphone stopped.", clear: Boolean = false): Long {
         val previous = job
         stop(reason, clear)
+        val boundary = recoveryRevision
         if (clear) pendingExport = null
         previous?.join()
         uiState.first { it.phase == CapturePhase.IDLE }
+        return boundary
     }
     /** Profile changes discard transient PCM; a normal Stop retains diagnostic export data. */
-    suspend fun stopForProfile() = stopAndJoin("Profile changed. Restart reception explicitly.", clear = true)
+    suspend fun stopForProfile() { stopAndJoin("Profile changed. Restart reception explicitly.", clear = true) }
     fun configureProfile(profile: net.vash.ft8cbdroid.core.profile.OperatingProfile) {
         check(state.value.phase == CapturePhase.IDLE && !state.value.awaitingPermission)
         recoveryRevision++
