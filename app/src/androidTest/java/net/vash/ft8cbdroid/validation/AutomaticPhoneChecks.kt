@@ -19,7 +19,7 @@ import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.core.qso.CbQsoPhase
 import net.vash.ft8cbdroid.operate.ManualOperatingViewModel
 import net.vash.ft8cbdroid.profile.ProfilesViewModel
-import net.vash.ft8cbdroid.time.AndroidTimeSource
+import net.vash.ft8cbdroid.time.AndroidNtpClient
 import net.vash.ft8cbdroid.time.TimeViewModel
 import org.json.JSONArray
 import org.json.JSONObject
