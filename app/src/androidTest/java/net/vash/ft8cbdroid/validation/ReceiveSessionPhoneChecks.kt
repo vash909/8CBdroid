@@ -112,7 +112,6 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 assertOne(id)
                 report.put("real_audio_slot_and_decode_in_background", true)
                 current = launch(); activity = current
-                PhoneNavigation.click(instrumentation, "Operate")
                 val samples = main { requireNotNull(runtime.capture.uiState.value.metrics).inputSamples }
                 val rotation = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
                 main { current.requestedOrientation = if (current.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
