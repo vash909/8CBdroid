@@ -60,7 +60,7 @@ fun LanPanel(
         }
     }
     Text("In WSJT-CB, set the UDP server to this phone's Wi-Fi IP address and the port above. Both devices must be on the same LAN.")
-    Text("Keep the app in the foreground. Listening stops when it goes into the background. One desktop is tracked at a time; an inactive peer is released after 45 seconds.")
+    Text("Listening continues across screens and in the background until you stop reception. One desktop is tracked at a time; an inactive peer is released after 45 seconds.")
     DecodesPanel(state.connection.decodes, state.canReplay, onReplay, onClear)
     Text("This connection displays desktop status and decodes. Logging, audio and radio control are not available yet.")
 }
