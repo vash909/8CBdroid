@@ -42,6 +42,8 @@ class LanViewModel(private val bridge: WsjtCbBridge, private val startSession: (
         .stateIn(viewModelScope, SharingStarted.Eagerly, LanUiState())
 
     private fun current() = inputs.value.copy(connection = bridge.state.value)
+    /** Immediate backend/command state for service shutdown; independent of UI-flow delivery. */
+    val receivingOrStarting get() = current().let { it.active || it.busy }
 
     fun changePort(value: String) {
         if (current().canEdit) inputs.update { it.copy(port = value.filter { char -> char in '0'..'9' }.take(5), error = null) }

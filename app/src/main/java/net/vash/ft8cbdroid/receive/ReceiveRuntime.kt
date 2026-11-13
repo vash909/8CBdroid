@@ -71,8 +71,8 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                     time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy)
                     if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
                         val ended = when (owner.source) {
-                            ReceiveSource.MICROPHONE -> mic.phase == CapturePhase.IDLE && !mic.outputBusy
-                            ReceiveSource.LAN -> !network.active && !network.busy
+                            ReceiveSource.MICROPHONE -> capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy }
+                            ReceiveSource.LAN -> !lan.receivingOrStarting
                             null -> false
                         }
                         if (ended) stop(mic.error.takeIf { owner.source == ReceiveSource.MICROPHONE } ?: network.error)

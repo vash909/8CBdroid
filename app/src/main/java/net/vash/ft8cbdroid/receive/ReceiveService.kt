@@ -28,7 +28,7 @@ class ReceiveService : Service() {
             })
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == STOP) { runtime.stop(); stopSelf(); return START_NOT_STICKY }
+        if (intent?.action == STOP) { runtime.stop(); return START_NOT_STICKY }
         val source = intent?.getStringExtra("source")?.let { value -> ReceiveSource.entries.find { it.name == value } }
         val generation = intent?.getLongExtra("generation", -1) ?: -1
         if (source == null || !runtime.session.accepts(generation, source)) {
@@ -55,6 +55,7 @@ class ReceiveService : Service() {
                 wifi = lock.apply { setReferenceCounted(false); acquire() }
             }
             scope.launch {
+                var renewAt = SystemClock.elapsedRealtime() + 300_000
                 while (isActive) {
                     delay(1000)
                     if (!notificationsAllowed()) { runtime.stop("Receive notifications were disabled. Allow them and start RX again."); break }
@@ -62,7 +63,9 @@ class ReceiveService : Service() {
                         runtime.stop("Microphone permission was removed. Allow access and start RX again."); break
                     }
                     // Renew only while this explicit service is alive; no screen wake lock is used.
-                    if (wake?.isHeld == false) wake?.acquire(600_000)
+                    if (SystemClock.elapsedRealtime() >= renewAt || wake?.isHeld == false) {
+                        wake?.acquire(600_000); renewAt = SystemClock.elapsedRealtime() + 300_000
+                    }
                 }
             }
             scope.launch {
