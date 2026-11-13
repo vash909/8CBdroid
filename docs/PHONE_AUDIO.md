@@ -42,8 +42,10 @@ the fixed guard is not characterized; this is not acoustic echo cancellation.
   recorder. The capture error is shown and an explicit retry is required.
 - Leaving Message tools cancels output. An idle receiver continues through
   navigation/background/rotation via the [receive service](CONTINUOUS_RECEPTION.md);
-  cancelling output still does not resume a paused input. TX remains foreground-only
-  and process death never restores either path.
+  cancelling output still does not resume a paused input. Message tools output
+  remains foreground-only; explicitly started Operate TX/AutoSeq uses the same
+  coordinator through the [continuous service](CONTINUOUS_RECEPTION.md). Process
+  death never restores either path.
 
 `PhoneAudioCoordinator` is a JVM contract owner; Android recorder/output I/O
 stays behind the existing audio interfaces. The recovery attempt is one-use and

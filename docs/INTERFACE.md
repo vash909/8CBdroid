@@ -55,10 +55,12 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview and one-shot UTC scheduling, plus built-in microphone reception with opt-in recovery after successful output. See [phone audio](PHONE_AUDIO.md). |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |
 
-Leaving Operate cancels/disarms manual output and AutoSeq. Explicitly started
-microphone/LAN reception continues through Settings, Chat, rotation, background
-and screen-off. The notification and in-app **Stop RX** end the session; returning
-to Operate observes the same receiver. See [continuous reception](CONTINUOUS_RECEPTION.md).
+Explicit microphone/LAN reception and explicitly started manual TX/AutoSeq
+continue through Settings, Chat, rotation, Activity destruction, background and
+screen-off. The notification and global controls show RX/TX/AutoSeq status:
+**Stop TX** cancels output/automation; **Stop session** ends RX and TX together;
+RX alone has **Stop RX**. Returning observes the same owner and never arms TX.
+See [continuous sessions](CONTINUOUS_RECEPTION.md).
 Message tools stops output when left; only successful explicitly opted-in output
 may recover an existing microphone. Switching source or applying a profile stops
 the current receiver; process death never rearms reception or transmission.

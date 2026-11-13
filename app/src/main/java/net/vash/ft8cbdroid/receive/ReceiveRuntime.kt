@@ -18,6 +18,14 @@ import net.vash.ft8cbdroid.core.audio.PhoneAudioPhase
 import net.vash.ft8cbdroid.audio.CapturePhase
 import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.lan.LanViewModel
+import net.vash.ft8cbdroid.audio.AndroidAudioPreview
+import net.vash.ft8cbdroid.core.audio.AudioInputKind
+import net.vash.ft8cbdroid.core.profile.ProfileAudioRoute
+import net.vash.ft8cbdroid.dsp.NativeFt8Engine
+import net.vash.ft8cbdroid.logbook.*
+import net.vash.ft8cbdroid.operate.*
+import net.vash.ft8cbdroid.settings.*
+import net.vash.ft8cbdroid.ui.audioOffset
 import net.vash.ft8cbdroid.time.TimeViewModel
 
 class EightCbApplication : Application() {
@@ -35,6 +43,51 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     })[CaptureViewModel::class.java]
     val audioCoordinator = capture.audioCoordinator(::hasMicrophonePermission)
     val lan = ViewModelProvider(this, LanViewModel.factory { gate(ReceiveSource.LAN) })[LanViewModel::class.java]
+    val station by lazy { ViewModelProvider(this, StationSettingsViewModel.factory(
+        DataStoreStationPreferencesRepository(app.stationPreferences)))[StationSettingsViewModel::class.java] }
+    val logbook by lazy { ViewModelProvider(this, LogbookViewModel.factory(SqliteQsoLogRepository.get(app)))[LogbookViewModel::class.java] }
+    val manual: ManualOperatingViewModel by lazy { ViewModelProvider(this, viewModelFactory { initializer {
+        ManualOperatingViewModel(NativeFt8Engine(), AndroidAudioPreview(app), audioCoordinator, time.clock,
+            receiveReady = {
+                val input = capture.uiState.value
+                hasMicrophonePermission() && session.uiState.value.let {
+                    it.phase == ReceivePhase.RUNNING && it.source == ReceiveSource.MICROPHONE
+                } && input.phase == CapturePhase.CAPTURING && input.decodeLive &&
+                    input.inputs.any { it.id == input.selectedId && it.kind == AudioInputKind.PHONE }
+            }, prepareOutput = { outputCleanup(true); lan.stopForProfile() }, reception = capture.controls,
+            prepareAutomaticReceive = { prepareAutomaticReceive() },
+            awaitAutomaticRecovery = { capture.awaitAutomaticRecovery() }, completedQso = logbook::completed,
+            applyPendingTime = {
+                check(capture.uiState.value.phase == CapturePhase.IDLE && audioCoordinator.phase.value == PhoneAudioPhase.OUTPUT)
+                check(manual.uiState.value.queuedUtcMillis == null)
+                time.applyPendingAtBoundary(audioPaused = true)
+            }, authorizeOutput = ::authorizeOperation)
+    } })[ManualOperatingViewModel::class.java] }
+    private val operating = OperatingSession()
+    private var serviceOwner: Any? = null
+    private var promoteOutput: (() -> Unit)? = null
+    fun attachService(owner: Any, generation: Long, promote: () -> Unit) {
+        check(session.uiState.value.generation == generation)
+        serviceOwner = owner; promoteOutput = promote
+    }
+    fun detachService(owner: Any) {
+        if (serviceOwner === owner) { serviceOwner = null; promoteOutput = null; operating.clear() }
+    }
+    private fun authorizeOperation(phase: ManualPhase) {
+        val owner = session.uiState.value
+        if (!owner.active) {
+            check(visible && phase in setOf(ManualPhase.CALIBRATING, ManualPhase.TONE)) {
+                "Start microphone RX and enable TX explicitly."
+            }
+            return // Standalone calibration/tone stays foreground-only, as do bench previews.
+        }
+        check(hasMicrophonePermission() && serviceOwner != null && stopJob == null) {
+            "The microphone service is unavailable. Start RX and retry explicitly."
+        }
+        if (phase == ManualPhase.TIME_SYNC) {
+            check(owner.source == ReceiveSource.MICROPHONE && owner.phase == ReceivePhase.RUNNING)
+        } else operating.authorize(owner, visible) { requireNotNull(promoteOutput).invoke() }
+    }
     private var outputOwner: Any? = null
     private var outputCleanup: suspend (Boolean) -> Unit = {}
     fun attachOutput(owner: Any, cleanup: suspend (Boolean) -> Unit) { outputOwner = owner; outputCleanup = cleanup }
@@ -47,6 +100,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                         this@ReceiveRuntime.stop()
                         session.uiState.first { !it.active }
                         outputCleanup(true)
+                        manual.stopForProfile()
                         capture.stopForProfile(); lan.stopForProfile()
                         time.resetForProfile()
                     }
@@ -63,51 +117,64 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     private var stopJob: Job? = null
     private val stopped = MutableStateFlow(0L)
     val stopRequests = stopped.asStateFlow()
-    private var refreshJob: Job? = null
 
     init {
-        time.idleBoundary { capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy && !serviceStarting && audioCoordinator.phase.value == PhoneAudioPhase.IDLE } }
+        time.idleBoundary {
+            val input = capture.uiState.value; val tx = manual.uiState.value
+            input.phase == CapturePhase.IDLE && !input.outputBusy && !serviceStarting &&
+                audioCoordinator.phase.value == PhoneAudioPhase.IDLE && !tx.busy && !tx.armed && !tx.autoSequence.active
+        }
         scope.launch {
-            combine(capture.controls, lan.uiState, session.uiState) { mic, network, owner -> Triple(mic, network, owner) }
-                .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
-                .collect { (inputs, _) ->
-                    val (mic, _, owner) = inputs
-                    time.foreground(visible || owner.active)
-                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || serviceStarting || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
-                    if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
-                        val ended = when (owner.source) {
-                            ReceiveSource.MICROPHONE -> capture.uiState.value.let { microphoneSessionEnded(it.phase == CapturePhase.IDLE, it.outputBusy, audioCoordinator.phase.value) }
-                            ReceiveSource.LAN -> !lan.receivingOrStarting
-                            null -> false
-                        }
-                        if (ended) stop(if (owner.source == ReceiveSource.MICROPHONE) capture.uiState.value.error else lan.failureReason)
+            combine(station.uiState, profiles.uiState, capture.controls) { saved, profile, input -> Triple(saved, profile, input) }
+                .collect { (saved, profile, input) ->
+                    if (!saved.isLoading && saved.saved != null) {
+                        capture.changeStation(saved.saved.callsign.takeIf { it.isNotBlank() })
+                        val selected = input.inputs.firstOrNull { it.id == input.selectedId }
+                        // Catalog/draft work does not replace the applied setup. Saved station changes still invalidate TX immediately.
+                        manual.context(saved.saved, profile.applied != null && !profile.receiveLan &&
+                            selected?.kind == AudioInputKind.PHONE && profile.applied?.audioInput == ProfileAudioRoute.PHONE &&
+                            profile.applied.audioOutput == ProfileAudioRoute.PHONE,
+                            profile.applied?.referenceFrequencyHz ?: 27_265_000L, profile.revision to input.selectedId)
                     }
                 }
         }
         scope.launch {
-            combine(time.uiState.map { it.refreshPending }.distinctUntilChanged(), visibility) { pending, foreground ->
-                pending to foreground
-            }.collect { (pending, foreground) ->
-                // Background receive-only refresh uses a joined, explicit clock boundary.
-                // Foreground output/AutoSeq continues to use its already qualified coordinator.
-                if (pending && !foreground && session.uiState.value.source == ReceiveSource.MICROPHONE &&
-                    capture.uiState.value.phase == CapturePhase.CAPTURING && !capture.uiState.value.outputBusy && audioCoordinator.phase.value == PhoneAudioPhase.IDLE) {
-                    refreshJob = scope.launch {
-                        val before = session.uiState.value
-                        serviceStarting = true
-                        try {
-                            val boundary = capture.stopAndJoin("Applying refreshed NTP time at a receive boundary.", clear = true)
-                            if (session.uiState.value == before && capture.configurationRevision == boundary) {
-                                time.applyPendingAtBoundary(audioPaused = true)
-                                check(runCatching { time.clock.snapshot() }.isSuccess) { "Time synchronization expired. Measure NTP or GPS and start RX again." }
-                                capture.requestStart(hasMicrophonePermission())
-                            } else if (session.uiState.value == before) stop()
-                        } catch (cancelled: CancellationException) { throw cancelled }
-                        catch (error: Exception) { stop(error.message ?: "Time refresh failed. Start RX explicitly.") }
-                        finally { serviceStarting = false }
-                    }
-                    refreshJob?.join(); refreshJob = null
+            manual.uiState.map { it.frequency }.distinctUntilChanged().collect { value ->
+                audioOffset(value)?.let { hz ->
+                    val view = capture.uiState.value.spectrumView
+                    if (view.txHz != hz) capture.spectrumView(view.copy(txHz = hz))
                 }
+            }
+        }
+        scope.launch {
+            combine(capture.controls, session.uiState, manual.uiState.map { Triple(it.busy, it.armed, it.autoSequence.active) }.distinctUntilChanged()) { mic, owner, tx -> Triple(mic, owner, tx) }
+                .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
+                .collect { (inputs, _) ->
+                    val (mic, owner, tx) = inputs
+                    time.foreground(visible || owner.active)
+                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || serviceStarting ||
+                        tx.first || tx.second || tx.third || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
+                    if (!tx.first && !tx.second && !tx.third) operating.clear()
+                    if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
+                        val ended = when (owner.source) {
+                            ReceiveSource.MICROPHONE -> microphoneSessionEnded(mic.phase == CapturePhase.IDLE, mic.outputBusy, audioCoordinator.phase.value)
+                            ReceiveSource.LAN -> !lan.receivingOrStarting
+                            null -> false
+                        }
+                        if (ended) stop(if (owner.source == ReceiveSource.MICROPHONE) mic.error else lan.failureReason)
+                    }
+                }
+        }
+        scope.launch {
+            combine(time.uiState.map { it.refreshPending }.distinctUntilChanged(),
+                manual.uiState.map { Triple(it.busy, it.armed, it.autoSequence.active) }.distinctUntilChanged(),
+                capture.controls, session.uiState) { pending, tx, input, owner ->
+                pending && !tx.first && !tx.second && !tx.third && owner.phase == ReceivePhase.RUNNING &&
+                    owner.source == ReceiveSource.MICROPHONE && input.phase == CapturePhase.CAPTURING && !input.outputBusy
+            }.distinctUntilChanged().collect { ready ->
+                // The same coordinator applies refreshed time at a joined RX boundary with or without a screen.
+                // Active AutoSeq applies pending time inside its next output instead.
+                if (ready && audioCoordinator.phase.value == PhoneAudioPhase.IDLE) manual.refreshTime()
             }
         }
     }
@@ -131,7 +198,12 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                     capture.uiState.value.outputBusy, audioCoordinator.phase.value)) stop()
         }
     }
-    fun foreground(active: Boolean) { visibility.value = active; time.foreground(active || session.uiState.value.active) }
+    fun foreground(active: Boolean) {
+        visibility.value = active
+        time.foreground(active || session.uiState.value.active)
+        if (!active && !operating.authorized(session.uiState.value) && manual.uiState.value.phase != ManualPhase.TIME_SYNC)
+            manual.stop("Foreground-only output stopped. Start RX and enable TX explicitly to continue across screens.")
+    }
     @Suppress("DEPRECATION") // Check our own app-op on every supported API, including pre-29 phones.
     fun hasMicrophonePermission(): Boolean {
         if (app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return false
@@ -174,12 +246,14 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
         if (stopJob != null) return
         val generation = session.stopping()
         stopped.value++
-        refreshJob?.cancel()
+        operating.clear()
+        manual.stop(error ?: "Session stopped. TX disabled.")
         capture.stop(clear = error != null)
         lan.stop()
         val next = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 runCatching { withTimeout(15_000) { outputCleanup(false) } }
+                manual.stopAndJoin()
                 capture.stopAndJoin(clear = error != null)
                 lan.stopForProfile()
             } finally {

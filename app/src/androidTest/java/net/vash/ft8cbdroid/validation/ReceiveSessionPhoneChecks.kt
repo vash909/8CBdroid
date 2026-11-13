@@ -75,7 +75,7 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 SystemClock.sleep(1500)
                 check(main { !runtime.session.uiState.value.active && runtime.capture.uiState.value.phase == CapturePhase.IDLE && !runtime.lan.uiState.value.active })
                 check(serviceCount() == 0)
-                val manual = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }
+                val manual = main { current.receiveRuntime.manual }
                 check(main { !manual.uiState.value.armed && !manual.uiState.value.autoSequence.active && manual.uiState.value.sent.isEmpty() })
                 report.put("cold_process_no_receive_or_tx_restart", true)
             } else {

@@ -34,8 +34,8 @@ confirmation before it becomes a saved contact.
 
 **Reset QSO** disables TX and clears the exchange. Selecting another peer or
 starting a new CQ discards prior context. Completed exchanges ignore late messages.
-Stop, background/navigation, rotation, profile/source/station changes and receiver
-failure invalidate active tracking. Restart RX and select/reset explicitly;
+Stop, profile/source/station changes and receiver failure invalidate active
+tracking. Navigation, rotation and background retain the explicit operating session. Restart RX and select/reset explicitly;
 nothing resumes or transmits silently. Own-output pauses preserve the exchange
 but discard its old receiver binding; recovery needs a new complete RX window.
 All state, decisions and tickets are process-local.
@@ -98,5 +98,5 @@ now also require actual PC-speaker/phone-microphone report/RRR/final reception a
 visible advice, explicit Use suggested message without arming, full speaker-slot
 completion and QSO-model closure. Independently decode the three phone recordings.
 Actual tested revisions, CI runs and device results are recorded in the feature
-PR and [validation](VALIDATION.md). Explicit [AutoSeq](AUTOSEQ.md) consumes this advice through the foreground audio
+PR and [validation](VALIDATION.md). Explicit [AutoSeq](AUTOSEQ.md) consumes this advice through the session-owned audio
 owner; advice alone still cannot start it.

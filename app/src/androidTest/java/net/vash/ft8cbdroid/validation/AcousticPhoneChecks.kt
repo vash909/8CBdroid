@@ -58,7 +58,7 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
             val current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
-            val operating = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; model = operating
+            val operating = main { current.receiveRuntime.manual }; model = operating
             val input = main { current.receiveRuntime.capture }; capture = input
             val time = main { current.receiveRuntime.time }
             val profiles = main { current.receiveRuntime.profiles }

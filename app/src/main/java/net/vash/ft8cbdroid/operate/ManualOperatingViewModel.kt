@@ -30,6 +30,7 @@ data class ManualOperatingState(
     val autoSequence: CbAutoSequenceState = CbAutoSequenceState(),
     val qso: CbQsoSnapshot? = null, val suggestion: CbQsoSuggestion? = null, val qsoNotice: String? = null,
 ) {
+    val hasTxOperation get() = armed || autoSequence.active || (busy && phase != ManualPhase.TIME_SYNC)
     val packed get() = CbMessageCodec.pack(text, if (freeText) EncodingMode.FREE_TEXT else EncodingMode.AUTOMATIC)
     val templates get() = runCatching { manualMessages(requireNotNull(station), peer, report.toInt()) }.getOrDefault(emptyMap())
     val validation: String? get() = runCatching {
@@ -48,7 +49,7 @@ data class ManualOperatingState(
     val canArm get() = !busy && validation == null
 }
 
-/** Foreground manual output and explicitly started, bounded acoustic AutoSeq. Nothing armed is restored. */
+/** Session-owned manual output and explicitly started, bounded acoustic AutoSeq. Nothing armed is restored. */
 class ManualOperatingViewModel(
     private val engine: Ft8Engine, private val player: ScheduledAudioPreview,
     private val coordinator: PhoneAudioCoordinator, private val clock: ReceiveClock,
@@ -60,6 +61,7 @@ class ManualOperatingViewModel(
     private val applyPendingTime: () -> Boolean = { false },
     private val awaitAutomaticRecovery: suspend () -> Unit = {},
     private val completedQso: (QsoCompletion) -> Unit = {},
+    private val authorizeOutput: (ManualPhase) -> Unit = {},
 ) : ViewModel() {
     private val state = MutableStateFlow(ManualOperatingState())
     val uiState = state.asStateFlow()
@@ -98,6 +100,7 @@ class ManualOperatingViewModel(
         try {
             require(state.value.canArm) { state.value.validation.orEmpty() }
             readyClock(); require(receiveReady()) { "Start live RX before AutoSeq." }
+            authorizeOutput(ManualPhase.GENERATING)
             require(calling || CbCallsign.isValid(state.value.peer)) { "Select a decoded peer before answering." }
         } catch (error: Exception) { state.value = state.value.copy(error = error.message); return }
         val selected = state.value.peer
@@ -106,49 +109,52 @@ class ManualOperatingViewModel(
         state.value = state.value.copy(autoSequence = CbAutoSequenceState(active = true, calling = calling, period = state.value.period, reason = "Preparing AutoSeq"), armed = false, error = null)
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                prepareAutomaticReceive()
-                advisor?.reset(); resetLogTracking(); receivingRun = null; qsoClockRevision = null
-                state.value = state.value.copy(peer = if (calling) "" else selected, choice = if (calling) ManualMessage.CQ else ManualMessage.REPLY,
-                    freeText = false, acceptChanges = false, qsoNotice = null, notice = "AutoSeq started explicitly.")
-                if (!calling) selectQsoPeer() else { lastInput?.let(::receive); refreshTemplate(); publishQso() }
-                val value = state.value
-                val initial = planSlot(clock, requireNotNull(value.latency), requireNotNull(value.outputId), value.period)
-                val now = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
-                val policy = CbAutoSequence(now, initial.utcMillis, calling, value.period); autoPolicy = policy
-                var recoveringSince: Long? = null
-                while (isActive && policy.state.active) {
-                    readyClock()
-                    if (!state.value.busy) {
-                        if (lastInput?.phase == CapturePhase.STARTING && policy.state.transmissions > 0) {
-                            val boot = clock.source.read().monotonicNanos
-                            if (recoveringSince == null) recoveringSince = boot
-                            require(boot - requireNotNull(recoveringSince) < 5_000_000_000L) { "Microphone recovery timed out. AutoSeq off." }
-                            delay(20); continue
+                withTimeout(AUTO_TIMEOUT_MILLIS) {
+                    prepareAutomaticReceive()
+                    advisor?.reset(); resetLogTracking(); receivingRun = null; qsoClockRevision = null
+                    state.value = state.value.copy(peer = if (calling) "" else selected, choice = if (calling) ManualMessage.CQ else ManualMessage.REPLY,
+                        freeText = false, acceptChanges = false, qsoNotice = null, notice = "AutoSeq started explicitly.")
+                    if (!calling) selectQsoPeer() else { lastInput?.let(::receive); refreshTemplate(); publishQso() }
+                    val value = state.value
+                    val initial = planSlot(clock, requireNotNull(value.latency), requireNotNull(value.outputId), value.period)
+                    val now = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
+                    val policy = CbAutoSequence(now, initial.utcMillis, calling, value.period); autoPolicy = policy
+                    var recoveringSince: Long? = null
+                    while (isActive && policy.state.active) {
+                        readyClock()
+                        if (!state.value.busy) {
+                            if (lastInput?.phase == CapturePhase.STARTING && policy.state.transmissions > 0) {
+                                val boot = clock.source.read().monotonicNanos
+                                if (recoveringSince == null) recoveringSince = boot
+                                require(boot - requireNotNull(recoveringSince) < 5_000_000_000L) { "Microphone recovery timed out. AutoSeq off." }
+                                delay(20); continue
+                            }
+                            recoveringSince = null
+                            require(receiveReady()) { "Reception stopped. AutoSeq off." }
+                            require(lastInput?.earlyWindows == true) { "Early receive windows are unavailable." }
+                            require(lastInput?.live?.error == null) { lastInput?.live?.error.orEmpty() }
+                            val utc = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
+                            val action = policy.tick(utc, requireNotNull(advisor).snapshot, advisor?.suggestion,
+                                lastInput?.live?.lastSlotUtcMillis, false)
+                            state.value = state.value.copy(autoSequence = policy.state)
+                            if (!policy.state.active) {
+                                if (!policy.state.completed) stop(policy.state.reason)
+                                break
+                            }
+                            if (action != null) {
+                                if (action.kind == ManualMessage.CQ) {
+                                    state.value = state.value.copy(choice = ManualMessage.CQ, peer = ""); refreshTemplate()
+                                } else applySuggestion(requireNotNull(advisor?.suggestion))
+                                state.value = state.value.copy(armed = true)
+                                autoAction = action
+                                sendInternal(action.utcMillis)
+                            }
                         }
-                        recoveringSince = null
-                        require(receiveReady()) { "Reception stopped. AutoSeq off." }
-                        require(lastInput?.earlyWindows == true) { "Early receive windows are unavailable." }
-                        require(lastInput?.live?.error == null) { lastInput?.live?.error.orEmpty() }
-                        val utc = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
-                        val action = policy.tick(utc, requireNotNull(advisor).snapshot, advisor?.suggestion,
-                            lastInput?.live?.lastSlotUtcMillis, false)
-                        state.value = state.value.copy(autoSequence = policy.state)
-                        if (!policy.state.active) {
-                            if (!policy.state.completed) stop(policy.state.reason)
-                            break
-                        }
-                        if (action != null) {
-                            if (action.kind == ManualMessage.CQ) {
-                                state.value = state.value.copy(choice = ManualMessage.CQ, peer = ""); refreshTemplate()
-                            } else applySuggestion(requireNotNull(advisor?.suggestion))
-                            state.value = state.value.copy(armed = true)
-                            autoAction = action
-                            sendInternal(action.utcMillis)
-                        }
+                        delay(20)
                     }
-                    delay(20)
                 }
-            } catch (cancelled: CancellationException) { throw cancelled }
+            } catch (_: TimeoutCancellationException) { stop("AutoSeq watchdog expired. Start again explicitly.") }
+            catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { stop(error.message ?: "AutoSeq failed. Restart explicitly.") }
             finally {
                 if (generation == autoGeneration) {
@@ -304,12 +310,17 @@ class ManualOperatingViewModel(
         try {
             require(receiveReady()) { "Start live FT8 RX on the built-in microphone before enabling TX." }
             val clockRevision = readyClock()
+            authorizeOutput(ManualPhase.WAITING)
+            val armedAt = clock.source.read().monotonicNanos
             state.value = state.value.copy(armed = true, error = null, notice = "One message armed. Press Send one slot; nothing repeats automatically.")
             guard?.cancel()
             guard = viewModelScope.launch {
                 while (state.value.armed) {
                     delay(100)
                     try {
+                        require(clock.source.read().monotonicNanos - armedAt < ARM_TIMEOUT_MILLIS * 1_000_000) {
+                            "TX arm timed out. Enable TX again explicitly."
+                        }
                         require(readyClock() == clockRevision) { "Time correction changed. Enable TX again." }
                         if (!state.value.busy) require(receiveReady()) { "Reception stopped. Enable TX again after starting RX." }
                     } catch (error: Exception) { stop(error.message ?: "TX interlock changed.") }
@@ -328,7 +339,7 @@ class ManualOperatingViewModel(
         }
     }
     fun refreshTime() {
-        if (state.value.busy || state.value.autoSequence.active) return
+        if (state.value.busy || state.value.armed || state.value.autoSequence.active) return
         runOutput(ManualPhase.TIME_SYNC) {
             state.value = state.value.copy(notice = "Time refresh processed at an idle audio boundary. TX remains disabled.")
         }
@@ -400,25 +411,38 @@ class ManualOperatingViewModel(
         }
     }
     private fun runOutput(phase: ManualPhase, action: suspend (Long) -> Unit) {
+        try { authorizeOutput(phase) }
+        catch (error: Exception) {
+            stop(error.message ?: "The operating session is unavailable. Start RX and retry explicitly.")
+            state.value = state.value.copy(error = error.message)
+            return
+        }
         cancelOutput()
         val ticket = revision
         state.value = state.value.copy(busy = true, phase = phase, error = null, notice = null, playback = null)
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                val resumed = coordinator.output(true) {
+                withTimeout(OUTPUT_TIMEOUT_MILLIS) {
+                    // Release a competing bench output before taking the shared audio coordinator.
                     withTimeout(15_000) { prepareOutput() }
-                    if (applyPendingTime()) qsoClockRevision = clock.revision
-                    action(ticket)
+                    val resumed = coordinator.output(true) {
+                        if (applyPendingTime()) qsoClockRevision = clock.revision
+                        action(ticket)
+                    }
+                    // Keep ownership busy until the receiver actually recovers, before the
+                    // policy can mistake asynchronous STARTING/IDLE notifications for Stop.
+                    if (resumed && state.value.autoSequence.active) awaitAutomaticRecovery()
+                    if (!resumed) state.value = state.value.copy(notice = "${state.value.notice.orEmpty()} Start RX explicitly to receive.")
                 }
-                // Keep ownership busy until the receiver actually recovers, before the
-                // policy can mistake asynchronous STARTING/IDLE notifications for Stop.
-                if (resumed && state.value.autoSequence.active) awaitAutomaticRecovery()
-                if (!resumed) state.value = state.value.copy(notice = "${state.value.notice.orEmpty()} Start RX explicitly to receive.")
             } catch (_: TimeoutCancellationException) {
-                state.value = state.value.copy(error = "Audio preparation timed out. Start RX and retry explicitly.")
+                stopAutomatic("Audio watchdog expired. AutoSeq off.")
+                state.value = state.value.copy(error = "Audio operation timed out. Start RX and retry explicitly.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: UnsatisfiedLinkError) { state.value = state.value.copy(error = "The FT8 backend is unavailable on this device.") }
-            catch (error: Exception) { state.value = state.value.copy(error = error.message ?: "Audio operation failed. Check the setup and retry explicitly.") }
+            catch (error: Exception) {
+                stopAutomatic("Audio operation failed. AutoSeq off.")
+                state.value = state.value.copy(error = error.message ?: "Audio operation failed. Check the setup and retry explicitly.")
+            }
         }
         job = next
         next.invokeOnCompletion { viewModelScope.launch(Dispatchers.Main.immediate) {
@@ -445,4 +469,9 @@ class ManualOperatingViewModel(
         state.value = state.value.copy(outputId = null, latency = null, available = false)
     }
     override fun onCleared() { autoJob?.cancel(); job?.cancel(); guard?.cancel(); player.close() }
+    companion object {
+        const val ARM_TIMEOUT_MILLIS = 120_000L
+        const val OUTPUT_TIMEOUT_MILLIS = 60_000L
+        const val AUTO_TIMEOUT_MILLIS = 240_000L
+    }
 }

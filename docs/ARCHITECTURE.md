@@ -8,8 +8,9 @@ For current capabilities and tested revisions, see [validation](VALIDATION.md).
 The UI shell has Operate, Settings and Chat destinations. Operate renders one
 selected source; local estimates and desktop reports keep distinct labels.
 Settings owns configuration/tool pages. `ReceiveRuntime` holds the process-local
-capture, clock, profile and LAN graph outside Activity stores; `ReceiveService`
-owns explicit active reception and its foreground notification/Stop. Navigation,
+capture, clock, station, profile, LAN, manual operating and logbook graph outside Activity stores; `ReceiveService`
+owns explicit active reception and authorized operating output, with a foreground
+notification and Stop controls. Navigation,
 rotation, background and screen-off observe the same session. The Chat page
 performs no chat networking, while an already started receiver can continue.
 ManualOperatingViewModel freezes one explicit CB message and owns
@@ -17,7 +18,7 @@ one scheduled speaker send, using the same retained PhoneAudioCoordinator as
 Message tools. Protocol templates/peer selection and QSO admission/advice live in core; Android output and
 capture stay behind contracts. Sent records audio only; QSO advice infers protocol
 progress separately and never enables or sends output by itself. The separately
-started JVM `CbAutoSequence` policy drives that same foreground owner with
+started JVM `CbAutoSequence` policy drives that same session owner with
 bounded retries, qualified early RX windows and actual output confirmations;
 [AutoSeq](AUTOSEQ.md) documents timing and cancellation.
 
@@ -56,7 +57,7 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | --- | --- | --- |
 | Saved operating profiles | `ProfilesViewModel` / DataStore / pure JVM profile codec | Bounded versioned configuration; no device IDs or sessions. Startup/apply joins receiver cleanup and clears timing before configuring disconnected backends. |
 | Saved station callsign/locator | DataStore repository | Durable across process restarts; written only by explicit Save. |
-| Station draft/load/save status | `StationSettingsViewModel` | Retained across rotation; unread data cannot be overwritten while loading or after a read failure. |
+| Station draft/load/save status | `StationSettingsViewModel` | Process-owned across screens/recreation; unread data cannot be overwritten while loading or after a read failure. |
 | LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Endpoint restored from an applied profile; temporary edits survive rotation. Navigation/background retain active listening; Stop/process death ends it. |
 | USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
 | Hamlib catalog/search/selection and Dummy result | `HamlibViewModel` / `NativeHamlibCatalog` | Explicit requests, rotation retained, process-local. Serialized native calls; cancellation discards late results. No hardware handles or profile persistence. |
@@ -88,7 +89,7 @@ successful output and handles cancellation. See [the domain contract](CB_QSO_PRO
 `CaptureViewModel` publishes a receiver generation, start UTC and time-mapping
 revision. The manual owner observes its filtered local stream outside Compose,
 excludes inactive/own-output windows and binds admission to that live run. Advice
-never edits TX fields until explicit application. Stop/lifecycle/setup invalidation
+never edits TX fields until explicit application. Stop/service/setup invalidation
 aborts active tracking; own-output recovery preserves facts with a fresh receiver
 binding. No QSO state/ticket or armed work is persisted. See [advice](QSO_ADVICE.md).
 
@@ -230,9 +231,13 @@ R11 supplies timestamped buffers, continuity/clock guards and complete UTC slots
 Radio VOX setup is operator-configured; acoustic bench evidence does not observe
 RF transmission. The pure JVM UTC planner and timestamp-based speaker scheduling
 are described in [one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md).
-[Foreground AutoSeq](AUTOSEQ.md) reuses that owner with early receive windows;
-CAT/PTT and background TX session ownership remain unimplemented.
-[Continuous receive ownership](CONTINUOUS_RECEPTION.md) is separate from foreground TX.
+[AutoSeq](AUTOSEQ.md) reuses that owner with early receive windows. The application
+owns the operating ViewModel and log completion callback, so no Activity is needed
+for execution. Explicit output authorization belongs to one microphone-service
+generation and requires successful mediaPlayback promotion. Stop invalidates it
+before joined cleanup; no output state is persisted. [Continuous sessions](CONTINUOUS_RECEPTION.md)
+cover RX and operating TX; Message tools output remains foreground-only. CAT/PTT
+remain unimplemented.
 
 ## Microphone visualization
 

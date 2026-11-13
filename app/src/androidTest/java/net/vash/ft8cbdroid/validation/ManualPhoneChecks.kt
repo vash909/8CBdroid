@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -42,14 +43,16 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
     }
     fun run() {
         var activity: MainActivity? = null; var output: ManualOperatingViewModel? = null; var audio: CaptureViewModel? = null
+        var fixtures: AcousticLogFixtures? = null
         val result = Bundle(); val report = JSONObject().put("run", runId); var code = Activity.RESULT_CANCELED
         try {
             require(runId.matches(Regex("[A-Za-z0-9-]{1,64}")))
             var current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
-            val model = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; output = model
+            val model = main { current.receiveRuntime.manual }; output = model
             val capture = main { current.receiveRuntime.capture }; audio = capture
+            fixtures = AcousticLogFixtures(context, runId)
             val time = main { current.receiveRuntime.time }
             val profiles = main { current.receiveRuntime.profiles }
             await("phone profile and station initialization") { main { profiles.uiState.value.ready && model.uiState.value.available && model.uiState.value.outputs.isNotEmpty() } }
@@ -95,6 +98,26 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
                 PhoneNavigation.click(instrumentation, "Send one slot")
                 await("queued manual message", 18000) { main { model.uiState.value.queuedUtcMillis != null || model.uiState.value.error != null } }
                 val queued = main { requireNotNull(model.uiState.value.queuedUtcMillis) { model.uiState.value.error.orEmpty() } }
+                val calibration = main { model.uiState.value.latency }
+                if (name == "reply") {
+                    PhoneNavigation.click(instrumentation, "Settings")
+                    PhoneNavigation.click(instrumentation, "Chat")
+                    main { current.finish() }
+                    current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) as MainActivity
+                    activity = current
+                    check(main { current.receiveRuntime.manual === model && model.uiState.value.queuedUtcMillis == queued && model.uiState.value.latency == calibration })
+                    ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_HOME")).use { it.readBytes() }
+                } else if (name == "roger") {
+                    await("playing during rotation", 40000) { main { (model.uiState.value.playback?.playedFrames ?: 0) >= 24000 } }
+                    val rotation = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
+                    main { current.requestedOrientation = if (current.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+                    current = requireNotNull(rotation.waitForActivityWithTimeout(8000)) as MainActivity
+                    activity = current; instrumentation.removeMonitor(rotation)
+                    check(main { current.receiveRuntime.manual === model && model.uiState.value.latency == calibration })
+                    ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_HOME")).use { it.readBytes() }
+                }
                 await("one complete speaker slot", 55000) { main { !model.uiState.value.busy } }
                 val value = main { model.uiState.value }
                 check(value.error == null) { value.error.orEmpty() }
@@ -104,6 +127,13 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
                 slots.put(JSONObject().put("stage", name).put("period", value.period.name).put("utc_millis", queued)
                     .put("text", expected).put("payload77", value.sent.first().payload.toBitString())
                     .put("frames", value.sent.first().frames).put("first_frame_error_ms", value.playback?.firstFrameErrorMillis))
+                if (name == "reply" || name == "roger") {
+                    current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)) as MainActivity
+                    activity = current
+                    check(main { current.receiveRuntime.manual === model && model.uiState.value.latency == calibration })
+                    report.put(if (name == "reply") "manual_navigation_activity_destruction_and_background_continue" else "manual_actual_rotation_and_background_continue", true)
+                }
                 val count = value.sent.size
                 SystemClock.sleep(500)
                 check(main { !model.uiState.value.armed && model.uiState.value.sent.size == count })
@@ -139,7 +169,7 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
                 main { model.enableTx(); model.send() }
                 await("queue") { main { model.uiState.value.queuedUtcMillis != null } }
             }
-            fun idle() { await("audio cleanup") { main { !model.uiState.value.busy && capture.uiState.value.phase == CapturePhase.IDLE } } }
+            fun idle() { await("audio cleanup") { main { !model.uiState.value.busy && capture.uiState.value.phase == CapturePhase.IDLE && !current.receiveRuntime.session.uiState.value.active } } }
             queue(); PhoneNavigation.click(instrumentation, "Stop"); idle(); SystemClock.sleep(650)
             check(main { model.uiState.value.sent.size == sentCount && !model.uiState.value.armed }); report.put("stop_no_sent_or_recovery", true)
             startRx(); queue()
@@ -156,13 +186,31 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
             idle(); report.put("actual_focus_loss_cancels", true)
             SystemClock.sleep(1800)
             check(main { !model.uiState.value.armed })
-            startRx(); queue(); PhoneNavigation.click(instrumentation, "Settings"); idle(); report.put("navigation_disarms", true)
+            startRx(); queue(); PhoneNavigation.click(instrumentation, "Settings")
+            check(main { model.uiState.value.busy && model.uiState.value.hasTxOperation })
+            PhoneNavigation.click(instrumentation, "Stop TX"); idle(); report.put("navigation_preserves_until_explicit_stop", true)
             PhoneNavigation.click(instrumentation, "Operate"); startRx(); queue()
             val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
             main { current.recreate() }; current = requireNotNull(monitor.waitForActivityWithTimeout(6000)) as MainActivity
-            activity = current; instrumentation.removeMonitor(monitor); idle(); report.put("retained_recreation_disarms", true)
+            activity = current; instrumentation.removeMonitor(monitor)
+            check(main { current.receiveRuntime.manual === model && model.uiState.value.busy && model.uiState.value.hasTxOperation })
+            val notification = context.getSystemService(android.app.NotificationManager::class.java).activeNotifications
+                .single { it.id == net.vash.ft8cbdroid.receive.ReceiveService.NOTIFICATION }.notification
+            requireNotNull(notification.actions).single { it.title == "Stop TX" }.actionIntent.send()
+            idle(); report.put("recreation_preserves_and_notification_stop_cancels", true)
+            startRx()
+            main { model.enableTx() }; check(main { model.uiState.value.armed })
+            val armedAt = SystemClock.elapsedRealtime()
+            await("actual manual arm watchdog", 125000) { main { !model.uiState.value.armed } }
+            val armMillis = SystemClock.elapsedRealtime() - armedAt
+            check(armMillis in 119000..123000 && main { model.uiState.value.sent.size == sentCount })
+            report.put("manual_arm_watchdog_millis", armMillis)
             main { profiles.apply() }; await("profile cleanup") { main { !profiles.uiState.value.busy } }
             check(main { model.uiState.value.outputId == null && model.uiState.value.latency == null && !model.uiState.value.armed })
+            await("durable bench completion") { main { !current.receiveRuntime.logbook.uiState.value.busy && current.receiveRuntime.logbook.uiState.value.unsavedCompletions == 0 } }
+            check(requireNotNull(fixtures).cleanup() == 1)
+            fixtures = null
+            report.put("application_owned_completion_staged_once_and_fixture_removed", true)
             report.put("profile_clears_output_calibration", true).put("result", "PASS")
                 .put("model", android.os.Build.MODEL).put("android", android.os.Build.VERSION.RELEASE)
             File(context.cacheDir, "r19a-report.json").writeText(report.toString(2))
@@ -170,7 +218,12 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
         } catch (error: Throwable) {
             result.putString("manual_audio_failure", "${error.javaClass.simpleName}: ${error.message}; ${error.stackTrace.firstOrNull()}; manual=${output?.uiState?.value}; capture=${audio?.uiState?.value?.copy(spectrum = SpectrumState())}")
         } finally {
-            output?.let { main { it.stop() } }; audio?.let { main { it.stop(clear = true) } }
+            output?.let { runBlocking(kotlinx.coroutines.Dispatchers.Main) { it.stopAndJoin() } }
+            audio?.let { runBlocking(kotlinx.coroutines.Dispatchers.Main) { it.stopAndJoin(clear = true) } }
+            if (fixtures != null) {
+                await("accepted log writes before fixture cleanup") { main { activity?.receiveRuntime?.logbook?.uiState?.value?.let { !it.busy && it.unsavedCompletions == 0 } ?: true } }
+                fixtures.cleanup()
+            }
             activity?.let { main { it.finish() } }
         }
         instrumentation.finish(code, result)

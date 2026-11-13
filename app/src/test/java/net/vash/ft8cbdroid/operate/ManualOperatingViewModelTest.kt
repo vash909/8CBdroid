@@ -82,10 +82,10 @@ class ManualOperatingViewModelTest {
         }
         override fun close() {}
     }
-    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow(), recovery: suspend () -> Unit = {}, completion: (net.vash.ft8cbdroid.core.logbook.QsoCompletion) -> Unit = {}): ManualOperatingViewModel {
+    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow(), recovery: suspend () -> Unit = {}, completion: (net.vash.ft8cbdroid.core.logbook.QsoCompletion) -> Unit = {}, authorize: (ManualPhase) -> Unit = {}, automaticPreparation: suspend () -> Unit = {}): ManualOperatingViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer {
-            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {}, awaitAutomaticRecovery = recovery, completedQso = completion)
+            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = automaticPreparation, awaitAutomaticRecovery = recovery, completedQso = completion, authorizeOutput = authorize)
         } })[ManualOperatingViewModel::class.java]
     }
     private fun sync() { val r = source.read(); clock.apply(TimeMeasurement("NTP/test", r.monotonicNanos, r.unixMillis * 1_000_000, 1.0, r)) }
@@ -96,6 +96,41 @@ class ManualOperatingViewModelTest {
     }
     @Before fun before() { Dispatchers.setMain(dispatcher); sync() }
     @After fun after() { stores.forEach { it.clear() }; Dispatchers.resetMain() }
+    @Test fun deniedServicePromotionCannotArmStartAutomationOrGenerateAudio() = runTest(dispatcher) {
+        val player = Player(); val engine = Engine()
+        val vm = model(engine, player, authorize = { phase ->
+            check(phase == ManualPhase.CALIBRATING) { "Service unavailable" }
+        })
+        ready(vm)
+        vm.enableTx(); vm.send(); vm.startAutomatic(true); runCurrent()
+        assertFalse(vm.uiState.value.armed); assertFalse(vm.uiState.value.autoSequence.active)
+        assertEquals(0, player.slots); assertTrue(engine.encoded.isEmpty())
+        assertEquals("Service unavailable", vm.uiState.value.error)
+    }
+    @Test fun manualArmExpiresOnTheMonotonicDeadlineWithoutPlayingAnything() = runTest(dispatcher) {
+        val player = Player(); val vm = model(player = player); ready(vm)
+        vm.enableTx(); runCurrent(); advanceTimeBy(119_000); runCurrent()
+        assertTrue(vm.uiState.value.armed)
+        advanceTimeBy(1_100); runCurrent()
+        assertFalse(vm.uiState.value.armed); assertEquals(0, player.slots)
+        assertTrue(vm.uiState.value.notice.orEmpty().contains("arm timed out"))
+    }
+    @Test fun hungGenerationIsCancelledByTheOutputWatchdogWithoutRecordingSentOrRecovering() = runTest(dispatcher) {
+        val engine = Engine().apply { wait = CompletableDeferred() }; val vm = model(engine = engine); ready(vm)
+        val before = recoveries
+        vm.enableTx(); vm.send(); runCurrent()
+        advanceTimeBy(ManualOperatingViewModel.OUTPUT_TIMEOUT_MILLIS + 1); runCurrent()
+        assertFalse(vm.uiState.value.busy); assertFalse(vm.uiState.value.armed)
+        assertTrue(vm.uiState.value.sent.isEmpty()); assertEquals(before, recoveries)
+        assertTrue(vm.uiState.value.error.orEmpty().contains("timed out"))
+    }
+    @Test fun hungAutomaticPreparationHasAMonotonicSessionDeadlineAndNeverRearms() = runTest(dispatcher) {
+        val vm = model(automaticPreparation = { awaitCancellation() }); ready(vm)
+        vm.startAutomatic(true); runCurrent(); assertTrue(vm.uiState.value.autoSequence.active)
+        advanceTimeBy(ManualOperatingViewModel.AUTO_TIMEOUT_MILLIS + 1); runCurrent()
+        assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed)
+        assertTrue(vm.uiState.value.autoSequence.reason.contains("watchdog"))
+    }
     @Test fun explicitEnableAndSendFreezeOnePayloadAndRecordOnlyACompleteSlotWithoutRepeating() = runTest(dispatcher) {
         val engine = Engine(); val player = Player(); val vm = model(engine, player); ready(vm)
         vm.send(); runCurrent(); assertEquals(0, player.slots)

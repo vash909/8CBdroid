@@ -166,11 +166,10 @@ class WaveformViewModel(
         state.value = state.value.copy(isPlaying = true, operation = operation, playback = null, error = null, notice = null)
         val next = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             try {
-                val output: suspend () -> Unit = {
-                    kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
-                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                    action(ticket)
-                }
+                // An explicit bench action cancels competing operating output before claiming audio.
+                kotlinx.coroutines.withTimeout(15_000) { preparePreview() }
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                val output: suspend () -> Unit = { action(ticket) }
                 if (audioCoordinator != null) {
                     val resumed = audioCoordinator.output(resumeReceive, output)
                     state.value = state.value.copy(notice = "${state.value.notice.orEmpty()} " +

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify automatic foreground exchanges with physical phone/PC audio and original desktop decoders.
+"""Qualify automatic exchanges with physical phone/PC audio and original desktop decoders.
 
 Requires matching CI app/test/probe APKs, station 1AT106, a Phone profile, an
 unlocked phone, working selected NTP server, synchronized host, physical PC
@@ -120,7 +120,7 @@ def analyze(output, report, encoder, packer, decoder, jt9):
 
 
 def validate_roles(report, plays):
-    assert [role['role'] for role in report['roles']] == ['calling', 'answering', 'no-response']
+    assert sorted(role['role'] for role in report['roles']) == ['answering', 'calling', 'no-response']
     for role in report['roles']:
         sent = role['sent']; texts = [s['text'] for s in sent]
         assert all(row['text'] != 'CQ 1AT106' for row in role['received']), 'Own output leaked into a receive window'
@@ -206,6 +206,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--jt9', required=True, type=Path)
+    parser.add_argument('--continuous', action='store_true', help='Qualify navigation, Activity destruction, background and a complete screen-off QSO; omit the separate NTP outage/UI-recovery scenario.')
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--analyze-only', action='store_true')
     modes.add_argument('--time-only', action='store_true', help='Repeat only actual NTP failure/recovery; no audio qualification')
@@ -242,7 +243,7 @@ def main():
         try: return json.loads(adb('exec-out', 'run-as', PACKAGE, 'cat', 'cache/'+name, check=False))
         except ValueError: return {}
     process = recorder = player = None; stages = []; plays = []; scheduled = None; handled = set(); role = None
-    pending_online = []; online = []; network_original = None; network_restored = False
+    pending_online = []; online = []; network_original = None; network_restored = False; service_verified = False
     def restore_network():
         nonlocal network_restored
         if network_original is not None and not network_restored:
@@ -303,7 +304,7 @@ def main():
     try:
         with (output/'instrumentation.log').open('w') as log, (output/'audio.log').open('w') as audio:
             process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
-                '-e', 'scenario', 'automatic-audio', '-e', 'preview_run', run,
+                '-e', 'scenario', 'continuous-operating' if args.continuous else 'automatic-audio', '-e', 'preview_run', run,
                 PACKAGE+'.test/'+PACKAGE+'.validation.WaveformPhoneChecks'], env=env, stdout=log, stderr=subprocess.STDOUT)
             deadline = time.monotonic()+1400
             while process.poll() is None:
@@ -352,6 +353,12 @@ def main():
                         print('Phone stage:', stage, flush=True)
                     progress = read('autoseq-progress.json')
                     if role is not None and progress.get('run') == run and progress.get('role') == role:
+                        if args.continuous and progress.get('active') and not service_verified:
+                            services = adb('shell', 'dumpsys', 'activity', 'services', PACKAGE).decode()
+                            (output/'foreground-service.txt').write_text(services)
+                            types = [int(v, 0) for v in re.findall(r'foregroundServiceType=(0x[0-9a-fA-F]+|[0-9]+)', services)]
+                            assert any(value & 0x82 == 0x82 for value in types), 'Microphone/mediaPlayback foreground service not observed'
+                            service_verified = True
                         for index, sent in enumerate(progress['sent']):
                             key = (role, index)
                             if key in handled: continue
@@ -365,9 +372,16 @@ def main():
         assert process.returncode == 0 and 'autoseq_result=PASS' in text and 'INSTRUMENTATION_CODE: -1' in text, text
         report = read('autoseq-report.json'); assert report['result'] == 'PASS'
         report['desktop_plays'] = plays; report['physical_source'] = source_name
-        assert len(online) == 11 and network_restored and not pending_online
+        assert len(online) == 11 and (args.continuous or network_restored) and not pending_online
         report['live_desktop_decodes'] = online
-        assert report['real_ntp_failure_warning_and_manual_recovery'] is True
+        if args.continuous:
+            assert report['scope'] == 'continuous' and service_verified
+            assert report['automatic_navigation_activity_destruction_and_background_continue'] and report['automatic_complete_qso_with_screen_off']
+            assert report['application_owned_completions_staged_once_and_fixtures_removed'] == 2
+            assert set(report['guards']) == {'queued-stop', 'playing-stop', 'edit', 'clock-reset', 'focus-loss', 'navigation', 'recreation', 'service-stop', 'permission-loss', 'profile-browse', 'profile'}
+            report['microphone_media_playback_foreground_service_verified'] = service_verified
+        else:
+            assert report['real_ntp_failure_warning_and_manual_recovery'] is True
         report['desktop_binary_sha256'] = hashlib.sha256(jt9.read_bytes()).hexdigest()
         validate_roles(report, plays)
         (output/'phone-report.json').write_text(json.dumps(report, indent=2))
