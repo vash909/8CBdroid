@@ -88,6 +88,7 @@ the PC's physical speaker/microphone. With synchronized Linux time, reference
 compiler/Qt/Boost setup, NumPy/SciPy and an installed WSJT-CB `jt9`:
 
 ```bash
+python3 -c 'import numpy, scipy'
 timeout 960 python3 scripts/qso_log_checks.py --output /private/path/log-check --jt9 /path/to/wsjtcb/bin/jt9
 ```
 

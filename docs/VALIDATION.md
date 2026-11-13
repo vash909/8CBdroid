@@ -496,3 +496,37 @@ overlap or unreachable networks and are excluded from this full pass.
 See the PR for final-head CI/APK identity and device evidence, and
 [the feature guide](CB_OPERATING_CONTEXT.md) for reproduction. Worked history,
 locator/distance display and radio/RF qualification are outside this change.
+
+## Durable local QSO log
+
+[PR #42](https://github.com/vash909/8CBdroid/pull/42) adds durable completion
+reviews, operator-confirmed dial frequency, manual contacts, edit/search and
+Worked filtering. The first schema creates a separate SQLite database without
+converting or replacing the existing station/profile/time preferences.
+
+The acquisition/UI/cold-reopen run used matching CI `43413234618` APKs at
+`a9a979d8406f4f64b810cb6693618c8c1b751da3` on SM-A515F / Android 13. Real SQLite
+checks passed restart/idempotence, concurrent duplicate saves, injected atomic
+rollback/retry, optimistic editing, UTC provenance, manual/worked scoping,
+future-schema refusal and preservation of corrupt bytes. The integrated check
+completed one real acoustic automatic answer and created one durable review
+candidate. Actual UI checks passed cancel, dial confirmation, an injected failed
+database insert/retry, edit/search, manual cancel/save, draft recreation, Worked
+with two real CQ receptions and cold-process persistence without RX/TX rearming.
+Test entries were removed by exact IDs and the original logical log was verified
+unchanged; no bench fixture remains as a worked contact.
+
+The 239-second acquisition/UI/reopen run completed its device checks; initial
+host analysis stopped because the selected Python lacked NumPy. Reanalysis used
+the existing NumPy/SciPy environment and the unmodified saved microphone WAV.
+All three phone outputs passed full desktop candidate search and original
+packing/LDPC/CRC checks. Measured onset errors were −74.6 to −60.1 ms, within
+the existing 150 ms bound, with no clipping. The initial host did not persist
+per-play launch timestamps before its analysis failure; the phone output UTC
+and original capture timestamps remain in the retained evidence.
+
+Local checks passed 1,042 JVM tests without failures/errors/skips, lint and
+debug/device-check builds. Calling completion and abort behavior also have JVM
+callback coverage. The PR records final-head CI/APK identity and phone evidence.
+See [log reproduction](LOGBOOK.md#reproduce-checks). No CAT, USB, measured radio
+frequency or RF-contact qualification is inferred from these software/bench tests.

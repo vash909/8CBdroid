@@ -33,6 +33,11 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--jt9', required=True, type=Path)
     args = parser.parse_args(); output = args.output.resolve(); jt9 = args.jt9.resolve()
+    try:
+        import numpy  # noqa: F401 — required before starting any phone or audio action.
+        import scipy  # noqa: F401
+    except ImportError as error:
+        raise SystemExit('Use a Python environment with NumPy and SciPy before starting phone checks.') from error
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     assert jt9.is_file() and os.access(jt9, os.X_OK)
     assert subprocess.check_output(['timedatectl', 'show', '-p', 'NTPSynchronized', '--value'], text=True, timeout=5).strip() == 'yes'
@@ -121,6 +126,9 @@ def main():
         reopen = read('logbook-reopen-report'); (output/'reopen-report.json').write_text(json.dumps(reopen, indent=2))
         assert reopened.returncode == 0 and 'logbook_result=PASS' in reopened.stdout and reopen.get('run') == run and reopen['result'] == 'PASS', reopened.stdout+'\n'+str(reopen)
         cleaned = True
+        report.update(desktop_plays=plays, reopen=reopen, physical_source=source_name,
+                      desktop_binary_sha256=hashlib.sha256(jt9.read_bytes()).hexdigest())
+        (output/'device-report.json').write_text(json.dumps(report, indent=2))
         report['independent_captures'] = analyze(output, report, encoder, packer, decoder, jt9)
         assert len(report['independent_captures']) == 3
         report.update(result='PASS', desktop_plays=plays, reopen=reopen, physical_source=source_name,
