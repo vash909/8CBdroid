@@ -71,7 +71,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
             combine(capture.controls, lan.uiState, session.uiState) { mic, network, owner -> Triple(mic, network, owner) }
                 .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
                 .collect { (inputs, _) ->
-                    val (mic, network, owner) = inputs
+                    val (mic, _, owner) = inputs
                     time.foreground(visible || owner.active)
                     time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
                     if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
@@ -80,7 +80,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                             ReceiveSource.LAN -> !lan.receivingOrStarting
                             null -> false
                         }
-                        if (ended) stop(mic.error.takeIf { owner.source == ReceiveSource.MICROPHONE } ?: network.error)
+                        if (ended) stop(if (owner.source == ReceiveSource.MICROPHONE) capture.uiState.value.error else lan.failureReason)
                     }
                 }
         }

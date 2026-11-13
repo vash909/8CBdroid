@@ -30,6 +30,14 @@ class LanViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun serviceCanReadAnIoFailureBeforeUiDeliveryAndStopClearsIt() = runTest {
+        val bridge = FakeBridge(); val vm = create(bridge)
+        vm.start(); advanceUntilIdle()
+        bridge.state.value = bridge.state.value.copy(phase = LanPhase.ERROR, error = "Socket interrupted")
+        assertFalse(vm.receivingOrStarting)
+        assertEquals("Socket interrupted", vm.failureReason)
+        vm.stop(); advanceUntilIdle(); assertNull(vm.failureReason)
+    }
     @Test fun servicePromotionPrecedesSocketBindAndRepeatedStartKeepsOneListener() = runTest {
         val bridge = FakeBridge()
         var promoted = false

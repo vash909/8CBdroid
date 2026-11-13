@@ -142,6 +142,17 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 PhoneNavigation.open(instrumentation, "Audio & source")
                 PhoneNavigation.click(instrumentation, "WSJT-CB LAN")
                 PhoneNavigation.click(instrumentation, "Operate")
+                val originalPort = main { runtime.lan.uiState.value.port }
+                val occupied = java.net.DatagramSocket(0)
+                try {
+                    main { runtime.lan.changePort(occupied.localPort.toString()) }
+                    PhoneNavigation.click(instrumentation, "Start RX")
+                    await("real bind failure with released service") {
+                        main { !runtime.session.uiState.value.active && runtime.session.uiState.value.error?.contains("UDP") == true } && serviceCount() == 0
+                    }
+                } finally { occupied.close() }
+                main { runtime.lan.changePort(originalPort) }
+                report.put("real_lan_bind_failure_visible_and_explicit_retry", true)
                 PhoneNavigation.click(instrumentation, "Start RX")
                 await("LAN service") { main { runtime.lan.uiState.value.active && runtime.session.uiState.value.source == ReceiveSource.LAN } }
                 val port = main { runtime.lan.uiState.value.port.toInt() }
