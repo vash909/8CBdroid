@@ -59,9 +59,10 @@ def main():
     desktop.bind(('0.0.0.0', 0)); desktop.settimeout(.2)
     process = player = None; plans = {}; plays = []; stages = set(); last_lan = 0; permission_changed = False
     op = adb('shell', 'cmd', 'appops', 'get', PACKAGE, 'RECORD_AUDIO').decode()
-    original_mode = re.search(r'RECORD_AUDIO: (allow|default)', op)
+    original_mode = re.search(r'RECORD_AUDIO: (allow|default|foreground)', op)
     assert original_mode, 'Expected an authorized debug microphone; no app-op was changed'
     original_mode = original_mode.group(1)
+    uid_op = ['--uid'] if re.search(r'Uid mode:.*RECORD_AUDIO', op) else []
     try:
         with (output/'instrumentation.log').open('w') as log, (output/'audio.log').open('w') as audio:
             process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
@@ -76,9 +77,9 @@ def main():
                     stages.add(stage); print('Receive check stage:', stage, flush=True)
                     if stage == 'unlock': print('OWNER_ACTION_REQUIRED: unlock the debug phone; host test waits up to 180 seconds.', flush=True)
                 if stage == 'microphone-interruption' and not permission_changed:
-                    adb('shell', 'cmd', 'appops', 'set', PACKAGE, 'RECORD_AUDIO', 'ignore'); permission_changed = True
+                    adb('shell', 'cmd', 'appops', 'set', *uid_op, PACKAGE, 'RECORD_AUDIO', 'ignore'); permission_changed = True
                 if stage == 'microphone-restore' and permission_changed:
-                    adb('shell', 'cmd', 'appops', 'set', PACKAGE, 'RECORD_AUDIO', original_mode); permission_changed = False
+                    adb('shell', 'cmd', 'appops', 'set', *uid_op, PACKAGE, 'RECORD_AUDIO', original_mode); permission_changed = False
                     write('receive-input.json', dict(run=run, stage=stage, utc_millis=round(time.time()*1000)))
                 if stage in waves and stage not in plans:
                     plans[stage] = (int((time.time()+4)//15)+1)*15
@@ -113,7 +114,7 @@ def main():
         print('Real continuous microphone/LAN reception and Stop PASS.', flush=True)
     finally:
         desktop.close()
-        if permission_changed: adb('shell', 'cmd', 'appops', 'set', PACKAGE, 'RECORD_AUDIO', original_mode, check=False)
+        if permission_changed: adb('shell', 'cmd', 'appops', 'set', *uid_op, PACKAGE, 'RECORD_AUDIO', original_mode, check=False)
         if player is not None and player.poll() is None: player.terminate(); player.wait(timeout=3)
         if process is not None and process.poll() is None:
             adb('shell', 'am', 'force-stop', '--user', '0', PACKAGE, check=False)

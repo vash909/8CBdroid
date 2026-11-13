@@ -64,6 +64,15 @@ object PhoneNavigation {
         error("Visible control not found: $text")
     }
     fun open(instrumentation: Instrumentation, page: String) {
+        // Profile loading can finish before the first Compose navigation frame is drawn.
+        val until = SystemClock.elapsedRealtime() + 8000
+        while (true) {
+            val current = root(instrumentation)
+            if (current?.packageName?.toString() == instrumentation.targetContext.packageName &&
+                (clickable(current, "Settings") != null || clickable(current, "Operate") != null)) break
+            check(SystemClock.elapsedRealtime() < until) { "App navigation did not become ready" }
+            SystemClock.sleep(50)
+        }
         // Compose does not expose accessibility clicks for an already selected tab.
         if (clickable(root(instrumentation), "Settings") == null) click(instrumentation, "Operate")
         click(instrumentation, "Settings")

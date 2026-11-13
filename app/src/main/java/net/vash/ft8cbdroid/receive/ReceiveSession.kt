@@ -1,5 +1,6 @@
 package net.vash.ft8cbdroid.receive
 
+import net.vash.ft8cbdroid.core.audio.PhoneAudioPhase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -38,3 +39,7 @@ class ReceiveSession {
     }
     fun error(message: String) { state.value = state.value.copy(error = message) }
 }
+
+/** Unblocking starts precedes recovery; release only after the coordinator finishes its transition. */
+fun microphoneSessionEnded(captureIdle: Boolean, outputBlocked: Boolean, audio: PhoneAudioPhase) =
+    captureIdle && !outputBlocked && audio == PhoneAudioPhase.IDLE

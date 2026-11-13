@@ -1,9 +1,36 @@
 package net.vash.ft8cbdroid.receive
 
 import org.junit.Assert.*
+import kotlinx.coroutines.test.runTest
+import net.vash.ft8cbdroid.core.audio.*
 import org.junit.Test
 
 class ReceiveSessionTest {
+    @Test fun receiveLeaseSurvivesTheUnblockedRecoveryWindow() = runTest {
+        lateinit var coordinator: PhoneAudioCoordinator
+        var inputActive = true
+        var blocked = false
+        var stopped = false
+        var observedRecoveryGap = false
+        coordinator = PhoneAudioCoordinator(object : PhoneAudioReceiver {
+            override fun blockStarts(value: Boolean) {
+                blocked = value
+                if (!value && coordinator.phase.value == PhoneAudioPhase.RECOVERING) {
+                    observedRecoveryGap = true
+                    stopped = microphoneSessionEnded(!inputActive, blocked, coordinator.phase.value)
+                }
+            }
+            override suspend fun pause(): (() -> Boolean) {
+                inputActive = false
+                return { inputActive = !stopped; !stopped }
+            }
+        })
+        assertTrue(coordinator.output(resumeReceive = true) {})
+        assertTrue(observedRecoveryGap); assertFalse(stopped); assertTrue(inputActive)
+        assertFalse(microphoneSessionEnded(!inputActive, blocked, coordinator.phase.value))
+        assertFalse(coordinator.output(resumeReceive = false) {})
+        assertTrue(microphoneSessionEnded(!inputActive, blocked, coordinator.phase.value))
+    }
     @Test fun repeatedStartsAndCrossSourceCommandsCannotCreateAnotherLease() {
         val owner = ReceiveSession()
         val first = requireNotNull(owner.request(ReceiveSource.MICROPHONE))

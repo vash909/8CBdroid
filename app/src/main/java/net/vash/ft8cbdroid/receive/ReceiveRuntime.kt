@@ -14,6 +14,7 @@ import net.vash.ft8cbdroid.profile.*
 import net.vash.ft8cbdroid.core.profile.OperatingProfile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import net.vash.ft8cbdroid.core.audio.PhoneAudioPhase
 import net.vash.ft8cbdroid.audio.CapturePhase
 import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.lan.LanViewModel
@@ -32,6 +33,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     val capture = ViewModelProvider(this, CaptureViewModel.factory(app, app.contentResolver, time.clock) {
         gate(ReceiveSource.MICROPHONE)
     })[CaptureViewModel::class.java]
+    val audioCoordinator = capture.audioCoordinator(::hasMicrophonePermission)
     val lan = ViewModelProvider(this, LanViewModel.factory { gate(ReceiveSource.LAN) })[LanViewModel::class.java]
     private var outputOwner: Any? = null
     private var outputCleanup: suspend (Boolean) -> Unit = {}
@@ -64,15 +66,17 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     private var refreshJob: Job? = null
 
     init {
-        time.idleBoundary { capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy } }
+        time.idleBoundary { capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy && audioCoordinator.phase.value == PhoneAudioPhase.IDLE } }
         scope.launch {
             combine(capture.controls, lan.uiState, session.uiState) { mic, network, owner -> Triple(mic, network, owner) }
-                .collect { (mic, network, owner) ->
+                .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
+                .collect { (inputs, _) ->
+                    val (mic, network, owner) = inputs
                     time.foreground(visible || owner.active)
-                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy)
+                    time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
                     if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
                         val ended = when (owner.source) {
-                            ReceiveSource.MICROPHONE -> capture.uiState.value.let { it.phase == CapturePhase.IDLE && !it.outputBusy }
+                            ReceiveSource.MICROPHONE -> capture.uiState.value.let { microphoneSessionEnded(it.phase == CapturePhase.IDLE, it.outputBusy, audioCoordinator.phase.value) }
                             ReceiveSource.LAN -> !lan.receivingOrStarting
                             null -> false
                         }
@@ -87,7 +91,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                 // Background receive-only refresh uses a joined, explicit clock boundary.
                 // Foreground output/AutoSeq continues to use its already qualified coordinator.
                 if (pending && !foreground && session.uiState.value.source == ReceiveSource.MICROPHONE &&
-                    capture.uiState.value.phase == CapturePhase.CAPTURING && !capture.uiState.value.outputBusy) {
+                    capture.uiState.value.phase == CapturePhase.CAPTURING && !capture.uiState.value.outputBusy && audioCoordinator.phase.value == PhoneAudioPhase.IDLE) {
                     refreshJob = scope.launch {
                         val before = session.uiState.value
                         serviceStarting = true
