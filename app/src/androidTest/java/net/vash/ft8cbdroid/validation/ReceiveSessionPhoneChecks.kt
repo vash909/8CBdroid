@@ -195,6 +195,7 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 await("screen off during actual FT8") { !context.getSystemService(PowerManager::class.java).isInteractive }
                 await("CQ decoded with screen off", 30000) { hasText("CQ 14AT101") }
                 assertOne(thirdId)
+                report.put("real_audio_slot_and_decode_with_screen_off", true)
                 val oldTimeRevision = main { runtime.time.clock.revision }
                 ready("background-ntp-refresh")
                 await("actual five-minute NTP refresh while screen off", 320000) {
@@ -211,6 +212,17 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
             report.put("result", "PASS"); code = Activity.RESULT_OK; output.putString("receive_result", "PASS")
         } catch (error: Throwable) {
             report.put("result", "FAIL").put("failure", "${error.javaClass.simpleName}: ${error.message}")
+            main {
+                val time = runtime.time.uiState.value
+                report.put("time_diagnostics", JSONObject()
+                    .put("source", time.sourceDescription).put("error", time.error)
+                    .put("warning", time.refreshWarning).put("refreshing", time.refreshing)
+                    .put("pending", time.refreshPending).put("revision", runtime.time.clock.revision)
+                    .put("capture_phase", runtime.capture.uiState.value.phase.name)
+                    .put("capture_error", runtime.capture.uiState.value.error)
+                    .put("session_phase", runtime.session.uiState.value.phase.name)
+                    .put("session_error", runtime.session.uiState.value.error))
+            }
             output.putString("receive_failure", "${error.message}; ${error.stackTrace.take(4)}")
         } finally {
             main { runtime.stop() }
