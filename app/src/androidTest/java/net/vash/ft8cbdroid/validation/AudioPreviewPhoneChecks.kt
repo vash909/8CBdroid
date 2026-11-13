@@ -43,7 +43,7 @@ class AudioPreviewPhoneChecks(private val instrumentation: Instrumentation, priv
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
             val model = main { ViewModelProvider(current)[WaveformViewModel::class.java] }; vm = model
-            val profiles = main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
+            val profiles = main { current.receiveRuntime.profiles }
             await("profiles and outputs") { main { profiles.uiState.value.ready && model.uiState.value.outputs.isNotEmpty() } }
             check(main { !model.uiState.value.isPlaying && model.uiState.value.outputId == null })
             PhoneNavigation.open(instrumentation,"Message tools")

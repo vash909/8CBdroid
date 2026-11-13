@@ -81,7 +81,7 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             val station = main { ViewModelProvider(activity)[StationSettingsViewModel::class.java] }
             await("saved station loaded") { main { !station.uiState.value.isLoading } }
-            val audio = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = audio
+            val audio = main { activity.receiveRuntime.capture }; capture = audio
             PhoneNavigation.open(instrumentation, "Microphone tools")
             val mic = context.getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
                 .first { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
@@ -147,11 +147,14 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             check(main { audio.uiState.value.spectrumView.rxHz == 1025 })
             reveal("Zoom 1×", true); click("Zoom 1×")
             check(main { audio.uiState.value.spectrumView.startHz == 0f && audio.uiState.value.spectrumView.spanHz == 3000f })
-            // Actual tab navigation stops capture; returning cannot rearm it.
+            // Actual navigation retains the same spectrum/capture session until explicit Stop.
             PhoneNavigation.open(instrumentation, "Station")
-            await("navigation cleanup") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
-            check(main { audio.uiState.value.spectrum.frames.isEmpty() })
-            PhoneNavigation.open(instrumentation, "Microphone tools"); reveal("Start microphone"); click("Start microphone")
+            await("navigation continuity") { main { audio.uiState.value.phase == CapturePhase.CAPTURING } }
+            check(main { audio.uiState.value.spectrum.sessionId == end.sessionId })
+            PhoneNavigation.open(instrumentation, "Microphone tools")
+            main { audio.stop(clear = true) }
+            await("explicit Stop") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
+            reveal("Start microphone"); click("Start microphone")
             await("explicit restart") { main { audio.uiState.value.spectrum.frames.isNotEmpty() } }
             val restarted = main { audio.uiState.value.spectrum }
             check(restarted.sessionId != end.sessionId && restarted.frames.size < 10)

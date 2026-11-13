@@ -63,3 +63,5 @@ implemented behavior, device evidence and checks still pending.
 - Never turn a planned test into a recorded pass, or a small offline corpus into
   a claim of radio interoperability. Keep private backups, device identifiers
   and personal recordings out of committed documentation.
+
+- [Continuous reception](CONTINUOUS_RECEPTION.md): service ownership, notification Stop, permissions and phone checks.

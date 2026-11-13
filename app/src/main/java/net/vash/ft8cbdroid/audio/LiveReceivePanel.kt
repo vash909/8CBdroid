@@ -46,6 +46,6 @@ fun LiveReceivePanel(state: LiveReceiveState, profile: Ft8DecodeProfile, phase: 
                 }
             }
         }
-        Text("Local audio and LAN results use separate sessions. Calls learned in a complete decode batch become available to later slots. Stop, background, rotation and input/station changes clear local results and learned calls. Reception never restarts automatically.")
+        Text("Local audio and LAN results use separate sessions. Calls learned in a complete decode batch become available to later slots. Navigation, rotation, background and screen-off preserve active RX. Stop and input/station changes clear local results and learned calls. Process death never restarts reception.")
     }
 }

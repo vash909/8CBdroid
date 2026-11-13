@@ -16,16 +16,16 @@ qualification or a statement that all possible checks passed.
 | Speaker preview | Explicit phone-speaker playback, gain/ramps, focus and cancellation. | R14 A51/Android 13 checks: two complete slots, physical PC-microphone recordings decoded by the pinned desktop known-time/frequency adapter, plus UI/lifecycle checks. Bench only. |
 | One-shot UTC output | Frozen message/clock/output, measured latency and even/odd bench slots. | Virtual-clock/ViewModel tests and real speaker/onset checks described in [the scheduling guide](UTC_AUDIO_SCHEDULING.md). No radio PTT/VOX qualification. |
 | Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. Complete desktop decoder parity remains unverified. |
-| Microphone capture | Selected foreground input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
+| Microphone capture | Selected explicit input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
 | UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |
-| Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. Foreground RX only. |
+| Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. RX continuity uses the receive service; TX remains foreground-only. |
 | Spectrum and waterfall | 2 Hz microphone display, 96-row history, zoom/pan, independent RX/TX selection and decoded-frequency markers. | A51 physical-tone, acoustic FT8 and UI checks below. Cursors do not filter, tune or transmit. |
 | CB operating context | Offline division/country labels and receive filters for local/LAN activity. | 350 pinned divisions and 1,249 original C++ lookup comparisons; message/filter tests and a short physical acoustic/UDP UI regression described in [the guide](CB_OPERATING_CONTEXT.md). Worked uses saved local contacts. |
 | Local QSO log | Durable completion candidates, operator-confirmed dial, saved/manual contacts, edit/search and Worked history. | Domain/ViewModel tests and [real SQLite/acoustic/UI reproduction](LOGBOOK.md#reproduce-checks); feature PR records the exact tested CI/device. No CAT readback or RF confirmation is inferred. |
 
 There is no implemented CAT/PTT,
 live radio TX,
-sustained background operating service. The local log records reviewed/operator
+background TX/AutoSeq session ownership. The local log records reviewed/operator
 contacts; it is not RF verification. Foreground acoustic AutoSeq
 is implemented with [reproducible qualification](AUTOSEQ.md); its feature PR
 records matching-artifact phone evidence, including any incomplete attempts.
@@ -530,3 +530,15 @@ debug/device-check builds. Calling completion and abort behavior also have JVM
 callback coverage. The PR records final-head CI/APK identity and phone evidence.
 See [log reproduction](LOGBOOK.md#reproduce-checks). No CAT, USB, measured radio
 frequency or RF-contact qualification is inferred from these software/bench tests.
+
+
+## Continuous reception validation
+
+The receive service and process-owned graph implement explicit microphone/LAN
+continuity across screen navigation, Activity recreation, background and screen-off,
+with notification Stop and non-sticky process-death behavior. Standard checks
+include start/Stop command generations and service promotion before actual input/
+socket start. The [real-phone reproduction](CONTINUOUS_RECEPTION.md#reproduce-phone-checks)
+uses actual microphone FT8, interruptions and UDP traffic. Exact successful CI and
+physical device evidence must be recorded in the feature PR before qualification;
+implementation alone does not establish all Android/OEM or USB support.

@@ -44,8 +44,8 @@ class ScheduledPhoneChecks(private val instrumentation: Instrumentation, private
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity=current
             val model=main { ViewModelProvider(current)[WaveformViewModel::class.java] };vm=model
-            val time=main { ViewModelProvider(current)[TimeViewModel::class.java] }
-            val profiles=main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
+            val time=main { current.receiveRuntime.time }
+            val profiles=main { current.receiveRuntime.profiles }
             await("initial state") { main { profiles.uiState.value.ready && model.uiState.value.outputs.isNotEmpty() && !time.uiState.value.loading } }
             PhoneNavigation.open(instrumentation,"Message tools")
             main { model.generate("CQ 1AT106",EncodingMode.AUTOMATIC) }

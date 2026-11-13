@@ -62,9 +62,9 @@ class AutomaticPhoneChecks(
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             current = activity
             val model = main { ViewModelProvider(activity)[ManualOperatingViewModel::class.java] }; operating = model
-            val input = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = input
-            val time = main { ViewModelProvider(activity)[TimeViewModel::class.java] }
-            val profiles = main { ViewModelProvider(activity)[ProfilesViewModel::class.java] }
+            val input = main { activity.receiveRuntime.capture }; capture = input
+            val time = main { activity.receiveRuntime.time }
+            val profiles = main { activity.receiveRuntime.profiles }
             val observedReceives = ConcurrentHashMap<String, JSONObject>()
             observer = main { CoroutineScope(Dispatchers.Main.immediate).launch {
                 input.uiState.collect { rx -> rx.live.rows.forEach { row ->

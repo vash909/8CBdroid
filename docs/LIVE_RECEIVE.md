@@ -2,7 +2,7 @@
 
 Operate can decode complete microphone UTC slots automatically. Local
 results are labeled **Local microphone** and kept apart from LAN messages and
-recorded-file results. This is foreground reception; [AutoSeq](AUTOSEQ.md) has a separate explicit
+recorded-file results. An explicit receive foreground service owns this session; [AutoSeq](AUTOSEQ.md) has a separate explicit
 execution owner. Radio PTT and
 radio QSOs remain later work. The separate [speaker preview](AUDIO_PREVIEW.md) and [UTC scheduling](UTC_AUDIO_SCHEDULING.md) stop reception before playing. Current device evidence is in [validation](VALIDATION.md).
 
@@ -19,12 +19,13 @@ radio QSOs remain later work. The separate [speaker preview](AUDIO_PREVIEW.md) a
 4. Scroll to **Live local decodes** for UTC, text/hash status, offset, DT,
    experimental SNR and the time source/estimated uncertainty. GPS uncertainty
    remains explicitly unavailable when the receiver does not report it.
-5. Stop to clear local results and learned calls. The latest complete PCM slot
+5. Use the in-app or notification Stop to clear local results and learned calls. The latest complete PCM slot
    can still be exported through the existing UTC WAV action after cleanup.
    Every restart is explicit and creates a cold local callsign session.
 
-The live mode/profile are temporary ViewModel choices, separate from recorded
-file profiles. Stop, rotation, backgrounding, leaving the receive screens for Settings or Chat, station changes,
+The live mode/profile are process-local choices, separate from recorded
+file profiles. Navigation, rotation, background and screen-off preserve active RX;
+see [continuous reception](CONTINUOUS_RECEPTION.md). Stop, station changes,
 input changes and capture failures cannot publish late live results or restart
 the microphone. A running decode must clean up before Start is available again.
 Changing/disabling UTC assembly also disables live decoding. Time-setting/apply

@@ -8,17 +8,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OperatingPresentationTest {
-    @Test fun receiverViewsKeepCaptureButConfigurationAndChatRequireCleanup() {
-        assertFalse(stopsLocalReception(AppDestination.OPERATE, AppDestination.CAPTURE))
-        assertFalse(stopsLocalReception(AppDestination.CAPTURE, AppDestination.OPERATE))
-        for (to in listOf(AppDestination.SETTINGS, AppDestination.STATION, AppDestination.TIME,
-            AppDestination.AUDIO, AppDestination.LAN, AppDestination.USB, AppDestination.MESSAGES,
-            AppDestination.RECORDINGS, AppDestination.LOGBOOK, AppDestination.CHAT)) {
-            assertTrue(stopsLocalReception(AppDestination.OPERATE, to))
-            assertTrue(stopsLocalReception(AppDestination.CAPTURE, to))
-        }
-        assertFalse(stopsLocalReception(AppDestination.OPERATE, AppDestination.OPERATE))
-    }
     @Test fun invalidFrequencyEditsCannotPublishOutOfRangeCursors() {
         for (value in listOf("", "0", "199", "2951", "3000", "-1", "12.5", "abcd")) assertNull(audioOffset(value))
         assertEquals(200, audioOffset("200")); assertEquals(1000, audioOffset("1000")); assertEquals(2950, audioOffset("2950"))

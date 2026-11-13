@@ -35,7 +35,7 @@ data class LanUiState(
     val canReplay: Boolean get() = !busy && connection.phase == LanPhase.CONNECTED
 }
 
-class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
+class LanViewModel(private val bridge: WsjtCbBridge, private val startSession: (() -> Boolean)? = null) : ViewModel() {
     private val inputs = MutableStateFlow(LanUiState())
     private val commands = Mutex()
     val uiState = combine(inputs, bridge.state) { input, connection -> input.copy(connection = connection) }
@@ -53,7 +53,7 @@ class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
 
     fun start() {
         val input = current()
-        if (!input.canStart) return
+        if (!input.canStart || startSession?.invoke() == false) return
         inputs.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             commands.withLock {
@@ -67,7 +67,7 @@ class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
         }
     }
 
-    /** Also called when the activity leaves the foreground; serialized behind any bind in progress. */
+    /** Explicit stop, serialized behind any bind in progress. Navigation does not stop the listener. */
     fun stop() {
         viewModelScope.launch {
             commands.withLock {
@@ -112,6 +112,6 @@ class LanViewModel(private val bridge: WsjtCbBridge) : ViewModel() {
     override fun onCleared() { bridge.close() }
 
     companion object {
-        fun factory() = viewModelFactory { initializer { LanViewModel(UdpWsjtCbBridge()) } }
+        fun factory(startSession: (() -> Boolean)? = null) = viewModelFactory { initializer { LanViewModel(UdpWsjtCbBridge(), startSession) } }
     }
 }

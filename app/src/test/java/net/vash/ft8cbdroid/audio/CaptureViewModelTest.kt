@@ -62,6 +62,22 @@ class CaptureViewModelTest {
         assertEquals(100L, vm.uiState.value.metrics!!.inputSamples)
         assertEquals(CapturePhase.IDLE, vm.uiState.value.phase)
     }
+    @Test fun serviceGateMustAcceptBeforeAnyHardwareOrWorkerIsOpened() = runTest(dispatcher) {
+        val capture = Capture()
+        var promoted = false; var requested = 0
+        val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }, startSession = { requested++; promoted })
+        runCurrent()
+        vm.requestStart(true); runCurrent()
+        assertEquals(1, requested); assertEquals(0, capture.starts)
+        assertEquals(CapturePhase.IDLE, vm.uiState.value.phase)
+        promoted = true
+        vm.requestStart(true); runCurrent()
+        assertEquals(1, capture.starts); assertEquals(1, capture.active)
+        vm.requestStart(true); runCurrent()
+        assertEquals(1, capture.starts)
+        vm.stop(clear = true); advanceUntilIdle()
+        assertEquals(0, capture.active)
+    }
     @Test fun deniedPermissionDoesNotOpenHardwareAndExplicitRetryWorks() = runTest(dispatcher) {
         val capture = Capture(); val vm = CaptureViewModel(capture, CaptureWriter { _, _ -> }); runCurrent()
         assertTrue(vm.requestStart(false)); vm.permissionResult(false); runCurrent()

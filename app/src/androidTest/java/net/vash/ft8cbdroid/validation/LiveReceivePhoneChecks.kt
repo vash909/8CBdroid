@@ -73,8 +73,8 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation, priva
             }
             activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
-            val timing = main { ViewModelProvider(activity)[TimeViewModel::class.java] }; time = timing
-            val audio = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = audio
+            val timing = main { activity.receiveRuntime.time }; time = timing
+            val audio = main { activity.receiveRuntime.capture }; capture = audio
             await("time settings") { main { !timing.uiState.value.loading } }
             main { timing.measureNtp() }
             await("actual NTP", 10) { main { timing.uiState.value.busy == null } }
@@ -136,10 +136,11 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation, priva
             val cold = main { audio.uiState.value.live }
             if (operate) {
                 PhoneNavigation.click(instrumentation, "Settings")
-                await("settings stops capture") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
+                await("settings retains capture") { main { audio.uiState.value.phase == CapturePhase.CAPTURING } }
                 PhoneNavigation.click(instrumentation, "Chat")
                 show("Chat between 8CBdroid operators is coming later.")
                 PhoneNavigation.click(instrumentation, "Operate")
+                PhoneNavigation.click(instrumentation, "Stop RX")
             } else main { audio.stop(clear = true) }
             await("final cleanup") { main { audio.uiState.value.phase == CapturePhase.IDLE } }
             check(main { audio.uiState.value.live.rows.isEmpty() })

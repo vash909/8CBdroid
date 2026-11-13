@@ -59,9 +59,9 @@ class AcousticPhoneChecks(private val instrumentation: Instrumentation, private 
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
             val operating = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; model = operating
-            val input = main { ViewModelProvider(current)[CaptureViewModel::class.java] }; capture = input
-            val time = main { ViewModelProvider(current)[TimeViewModel::class.java] }
-            val profiles = main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
+            val input = main { current.receiveRuntime.capture }; capture = input
+            val time = main { current.receiveRuntime.time }
+            val profiles = main { current.receiveRuntime.profiles }
             await("station and Phone profile") { main { profiles.uiState.value.ready && operating.uiState.value.available && operating.uiState.value.outputs.isNotEmpty() } }
             check(main { operating.uiState.value.station?.callsign == cases.getString("station") }) { "Save station 1AT106 and apply a Phone input/output profile first." }
             var measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }

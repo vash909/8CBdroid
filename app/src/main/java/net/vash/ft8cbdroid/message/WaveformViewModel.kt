@@ -197,6 +197,9 @@ class WaveformViewModel(
             playbackJob?.cancel()
         }
     }
+    suspend fun stopAndJoin() {
+        stopPreview("Receive session stopped."); playbackJob?.join()
+    }
     suspend fun stopForProfile() {
         stopPreview("Profile changed. Select the output and restart explicitly.")
         playbackJob?.join()

@@ -49,9 +49,9 @@ class OperatingContextPhoneChecks(private val instrumentation: Instrumentation, 
             var current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
-            val input = main { ViewModelProvider(current)[CaptureViewModel::class.java] }; capture = input
+            val input = main { current.receiveRuntime.capture }; capture = input
             val operating = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; model = operating
-            val time = main { ViewModelProvider(current)[TimeViewModel::class.java] }
+            val time = main { current.receiveRuntime.time }
             await("saved Phone setup") { main { input.uiState.value.canStart && operating.uiState.value.available && time.uiState.value.saved != null } }
             check(main { operating.uiState.value.station?.callsign == "1AT106" })
             val host = main { requireNotNull(time.uiState.value.saved).host }
@@ -81,17 +81,15 @@ class OperatingContextPhoneChecks(private val instrumentation: Instrumentation, 
             main { current.recreate() }
             current = requireNotNull(monitor.waitForActivityWithTimeout(6000)) as MainActivity
             activity = current; instrumentation.removeMonitor(monitor)
-            await("recreation stops reception") { main { input.uiState.value.phase == CapturePhase.IDLE } }
-            await("saved CQ filter") { visible("Received 0/0") }
+            await("recreation retains reception") { main { input.uiState.value.phase == CapturePhase.CAPTURING && input.uiState.value.live.rows == before } }
+            await("saved CQ filter") { visible("Received 2/3") }
             PhoneNavigation.click(instrumentation, "All")
-            await("reset filter") { visible("Received 0") }
-            PhoneNavigation.click(instrumentation, "Start RX")
-            await("explicit RX recovery") { main { input.uiState.value.phase == CapturePhase.CAPTURING } }
+            await("reset filter") { visible("Received 3") }
             PhoneNavigation.click(instrumentation, "Stop")
             await("Stop releases microphone") { main { input.uiState.value.phase == CapturePhase.IDLE } }
             check(main { !operating.uiState.value.armed && !operating.uiState.value.autoSequence.active && operating.uiState.value.sent.isEmpty() })
-            report.put("filter_restored_after_recreation", true).put("explicit_recovery_and_stop", true)
-            val desktop = main { ViewModelProvider(current)[LanViewModel::class.java] }; lan = desktop
+            report.put("filter_restored_after_recreation", true).put("receive_continuity_and_stop", true)
+            val desktop = main { current.receiveRuntime.lan }; lan = desktop
             PhoneNavigation.open(instrumentation, "Audio & source")
             PhoneNavigation.click(instrumentation, "WSJT-CB LAN")
             PhoneNavigation.click(instrumentation, "Operate")

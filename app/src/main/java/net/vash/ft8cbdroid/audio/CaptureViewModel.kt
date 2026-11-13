@@ -57,7 +57,7 @@ private data class CapturePublication(val metrics: CaptureMetrics, val progress:
 
 /** Each start is explicit. Permission callbacks and late worker updates cannot restart stopped capture. */
 class CaptureViewModel(private val capture: MicrophoneCapture, private val writer: CaptureWriter, private val clock: ReceiveClock? = null,
-    private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default) : ViewModel() {
+    private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default, private val startSession: (() -> Boolean)? = null) : ViewModel() {
     private val state = MutableStateFlow(CaptureUiState())
     val uiState = state.asStateFlow()
     // Fast observations have their own UI subscribers; only controls invalidate the app shell.
@@ -198,6 +198,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     private fun start() {
         val id = state.value.selectedId ?: return
         if (!state.value.canStart) return
+        if (startSession?.invoke() == false) return
         val ticket = ++generation
         discard = false; capture.clear(); latestSlot = null
         state.value = state.value.copy(slots = null, latestSlotUtcMillis = null, slotSource = null, slotUncertaintyMillis = null,
@@ -310,15 +311,16 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                 slots = state.value.slots.takeUnless { clear }, latestSlotUtcMillis = latestSlot?.utcStartMillis, notice = reason.takeIf { wasPending } ?: state.value.notice)
         }
     }
-    /** Join actual hardware cleanup before replacing a profile's route. Never opens the input. */
-    suspend fun stopForProfile() {
+    /** Join recorder/DSP cleanup before releasing session resources or replacing a route. */
+    suspend fun stopAndJoin(reason: String = "Microphone stopped.", clear: Boolean = false) {
         val previous = job
-        stop("Profile changed. Restart reception explicitly.", clear = true)
-        pendingExport = null
+        stop(reason, clear)
+        if (clear) pendingExport = null
         previous?.join()
-        // Completion is posted to Main; wait for it rather than exposing a partially stopped input.
         uiState.first { it.phase == CapturePhase.IDLE }
     }
+    /** Profile changes discard transient PCM; a normal Stop retains diagnostic export data. */
+    suspend fun stopForProfile() = stopAndJoin("Profile changed. Restart reception explicitly.", clear = true)
     fun configureProfile(profile: net.vash.ft8cbdroid.core.profile.OperatingProfile) {
         check(state.value.phase == CapturePhase.IDLE && !state.value.awaitingPermission)
         recoveryRevision++
@@ -358,13 +360,13 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     }
     override fun onCleared() { job?.cancel(); capture.close() }
     companion object {
-        fun factory(context: Context, resolver: ContentResolver, clock: ReceiveClock) = viewModelFactory {
+        fun factory(context: Context, resolver: ContentResolver, clock: ReceiveClock, startSession: (() -> Boolean)? = null) = viewModelFactory {
             initializer { CaptureViewModel(AndroidMicrophoneCapture(context), CaptureWriter { document, bytes ->
                 withContext(Dispatchers.IO) {
                     val output = resolver.openOutputStream(Uri.parse(document), "wt") ?: error("No output stream")
                     output.use { it.write(bytes) }
                 }
-            }, clock, NativeFt8Engine()) }
+            }, clock, NativeFt8Engine(), startSession = startSession) }
         }
     }
 }

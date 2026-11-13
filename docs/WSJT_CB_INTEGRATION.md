@@ -18,7 +18,7 @@ and the WSJT-X comparison inventory are documented in
 - Desktop Clear empties phone history. Stop, Close and peer timeout also clear it.
 - Peer release after 45 seconds without a valid heartbeat/status/decode/clear, or on desktop Close.
 - Recovery from malformed datagrams, unknown message types and bind failures.
-- Foreground-only operation: stop when the app goes into the background; retain the listener across rotation.
+- An explicit receive foreground service keeps the listener alive across navigation, rotation, background and screen-off; notification Stop ends it.
 
 ADIF/log parsing, radio-control commands, audio streaming, multicast and
 automatic network scanning are not implemented. LAN options
@@ -48,8 +48,9 @@ are retained across rotation, but are not persisted after process termination.
 9. Clear desktop band activity and check that its Clear packet empties phone
    history. Tap **Stop** and start repeatedly. Close WSJT-CB to test Close
    handling; interrupt traffic to test the 45-second timeout. History must clear.
-10. Send the app into the background and return: the listener must remain
-    stopped until explicitly started again. Rotation should retain it.
+10. Navigate, background the app, switch off the screen and return: the same
+    listener must remain active. Notification Stop must end it. A new process
+    must remain stopped until explicitly started again.
 
 For a simulated desktop, run from the PC:
 
@@ -75,9 +76,9 @@ the selected peer closes or expires.
 The listener opens a socket only on an explicit Start request. I/O runs off
 the main thread. Socket closure unblocks receive; session identity guards
 prevent an old worker from overwriting a restarted listener's state. Start
-and Stop/Replay requests are serialized in the ViewModel, including a background
-transition while binding. Restart waits off the UI thread until the previous
-receiver exits, avoiding a same-port bind race after socket closure. Clearing the ViewModel closes its owned socket.
+and Stop/Replay requests are serialized in the process-owned controller, including
+Stop while binding. Restart waits off the UI thread until the previous
+receiver exits, avoiding a same-port bind race after socket closure. The service joins socket cleanup on Stop; Activity destruction does not close it.
 Stopping never sends a Close command to the desktop: in that direction it
 could request termination of WSJT-CB.
 
@@ -120,7 +121,8 @@ Log parsing still needs the schema-specific QDateTime representation.
 The current target SDK is 36, using the existing `INTERNET` manifest permission.
 Before changing the target SDK, review the applicable local-network access
 requirements in the [Android documentation](https://developer.android.com/privacy-and-security/local-network-permission).
-No foreground service or background-listening capability is claimed here.
+An explicit connected-device foreground service owns background listening; see
+[continuous reception](CONTINUOUS_RECEPTION.md) for permissions, Stop and scope.
 
 ## Verification and upstream sources
 
@@ -131,7 +133,7 @@ reuse under traffic. Decode fixtures cover Qt numeric types, optional flags,
 malformed payloads and schema 2/3. Tests also cover deduplication, the 200-entry
 limit, desktop/local Clear and the exact Replay endpoint/header. ViewModel tests
 cover input validation, failed binds, replay failures, duplicate requests,
-foreground stop ordering and disposal. Android device/real-desktop interoperability remains a manual check.
+explicit stop ordering, service-start gating and disposal. Android device/real-desktop interoperability remains a manual check.
 
 - [NetworkMessage.hpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.hpp): wire contract and message types.
 - [NetworkMessage.cpp](https://github.com/vash909/WSJT-CB/blob/94f776d54946fe43db5e0bb9c966b1595c7b7d97/Network/NetworkMessage.cpp): Qt serialization.
