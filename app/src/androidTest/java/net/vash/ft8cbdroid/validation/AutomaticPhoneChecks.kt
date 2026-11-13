@@ -104,7 +104,8 @@ class AutomaticPhoneChecks(
                 }
                 if (direct) main { model.calibrate() } else PhoneNavigation.click(instrumentation, "Calibrate speaker")
                 await("speaker timing") { main { !model.uiState.value.busy && model.uiState.value.latency != null } }
-                if (direct) main { input.requestStart(true) } else PhoneNavigation.click(instrumentation, "Start RX")
+                if (direct) main { input.decodeLive(true); input.assembleUtc(true); input.requestStart(true) }
+                else PhoneNavigation.click(instrumentation, "Start RX")
                 receiving()
             }
             fun measureTimeFromUi() {
