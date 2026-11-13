@@ -13,7 +13,7 @@ class OperatingPresentationTest {
         assertFalse(stopsLocalReception(AppDestination.CAPTURE, AppDestination.OPERATE))
         for (to in listOf(AppDestination.SETTINGS, AppDestination.STATION, AppDestination.TIME,
             AppDestination.AUDIO, AppDestination.LAN, AppDestination.USB, AppDestination.MESSAGES,
-            AppDestination.RECORDINGS, AppDestination.CHAT)) {
+            AppDestination.RECORDINGS, AppDestination.LOGBOOK, AppDestination.CHAT)) {
             assertTrue(stopsLocalReception(AppDestination.OPERATE, to))
             assertTrue(stopsLocalReception(AppDestination.CAPTURE, to))
         }

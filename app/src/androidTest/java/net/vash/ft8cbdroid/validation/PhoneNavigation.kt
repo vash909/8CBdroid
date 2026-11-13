@@ -3,6 +3,7 @@ package net.vash.ft8cbdroid.validation
 import android.app.Instrumentation
 import android.graphics.Rect
 import android.os.Build
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
@@ -27,6 +28,25 @@ object PhoneNavigation {
         return null
     }
     fun click(instrumentation: Instrumentation, text: String) {
+        fun scroller(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+            if (node == null) return null
+            if (node.isScrollable) return node
+            repeat(node.childCount) { scroller(node.getChild(it))?.let { return it } }; return null
+        }
+        // Page-sized accessibility scrolling avoids repeated swipes into nested message lists.
+        for (action in listOf(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
+            for (index in 0 until 8) {
+                val root = root(instrumentation) ?: break
+                val node = clickable(root, text); val bounds = Rect(); node?.getBoundsInScreen(bounds)
+                val screen = Rect(); root.getBoundsInScreen(screen)
+                if (node?.isVisibleToUser == true && screen.contains(bounds) && bounds.width() > 0 && bounds.height() > 0) {
+                    check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click $text" }
+                    SystemClock.sleep(180); return
+                }
+                if (scroller(root)?.performAction(action) != true) break
+                SystemClock.sleep(220)
+            }
+        }
         for (forward in listOf(true, false)) repeat(16) {
             val root = root(instrumentation)
             if (root == null) { SystemClock.sleep(100); return@repeat }
@@ -48,5 +68,21 @@ object PhoneNavigation {
         if (clickable(root(instrumentation), "Settings") == null) click(instrumentation, "Operate")
         click(instrumentation, "Settings")
         click(instrumentation, page)
+    }
+    fun replace(instrumentation: Instrumentation, label: String, value: String) {
+        click(instrumentation, label)
+        fun focused(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+            if (node == null) return null
+            if (node.isEditable && node.isFocused) return node
+            repeat(node.childCount) { focused(node.getChild(it))?.let { return it } }
+            return null
+        }
+        val until = SystemClock.elapsedRealtime() + 4000
+        var field = focused(root(instrumentation))
+        while (field == null && SystemClock.elapsedRealtime() < until) { SystemClock.sleep(50); field = focused(root(instrumentation)) }
+        check(requireNotNull(field) { "Focused editor missing: $label" }.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,
+            Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value) })) { "Cannot edit $label" }
+        ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("timeout 4 input keyevent KEYCODE_BACK")).use { it.readBytes() }
+        SystemClock.sleep(180)
     }
 }

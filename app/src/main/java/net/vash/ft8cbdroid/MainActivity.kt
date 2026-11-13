@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid
 
 import net.vash.ft8cbdroid.profile.*
 import net.vash.ft8cbdroid.operate.*
+import net.vash.ft8cbdroid.logbook.*
 import net.vash.ft8cbdroid.time.*
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -116,6 +117,7 @@ class MainActivity : ComponentActivity() {
             previewLan.stopForProfile()
         })[WaveformViewModel::class.java]
         val bench = waveformViewModel
+        val logbookViewModel = ViewModelProvider(this, LogbookViewModel.factory(SqliteQsoLogRepository.get(app)))[LogbookViewModel::class.java]
         manualViewModel = ViewModelProvider(this, viewModelFactory {
             initializer { ManualOperatingViewModel(net.vash.ft8cbdroid.dsp.NativeFt8Engine(),
                 net.vash.ft8cbdroid.audio.AndroidAudioPreview(app), audioCoordinator, timeViewModel.clock,
@@ -126,7 +128,7 @@ class MainActivity : ComponentActivity() {
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
                 }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls,
                 prepareAutomaticReceive = { previewCapture.prepareAutomaticReceive(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) },
-                awaitAutomaticRecovery = { previewCapture.awaitAutomaticRecovery() },
+                awaitAutomaticRecovery = { previewCapture.awaitAutomaticRecovery() }, completedQso = logbookViewModel::completed,
                 applyPendingTime = {
                     check(previewCapture.uiState.value.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE)
                     check(audioCoordinator.phase.value == net.vash.ft8cbdroid.core.audio.PhoneAudioPhase.OUTPUT)
@@ -157,6 +159,7 @@ class MainActivity : ComponentActivity() {
             val hashes by hashViewModel.uiState.collectAsStateWithLifecycle()
             val waveform by waveformViewModel.uiState.collectAsStateWithLifecycle()
             val manual by manualViewModel.uiState.collectAsStateWithLifecycle()
+            val logbook by logbookViewModel.uiState.collectAsStateWithLifecycle()
             val recording by recordedSlotViewModel.uiState.collectAsStateWithLifecycle()
             val capture by captureViewModel.controls.collectAsStateWithLifecycle(initialValue = CaptureUiState())
             val time by timeViewModel.uiState.collectAsStateWithLifecycle()
@@ -190,6 +193,8 @@ class MainActivity : ComponentActivity() {
             }
             EightCbApp(
                 station = station,
+                logbook = logbook,
+                logbookContent = { LogbookPanel(logbook, logbookViewModel, station.saved, profiles.applied?.referenceFrequencyHz ?: 27_265_000L) },
                 manual = manual,
                 manualActions = ManualActions(manualViewModel::peer, manualViewModel::report,
                     manualViewModel::choose, manualViewModel::custom, manualViewModel::freeText,
@@ -309,6 +314,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EightCbApp(
     station: StationSettingsUiState,
+    logbook: LogbookState = LogbookState(),
+    logbookContent: @Composable () -> Unit = {},
     manual: ManualOperatingState = ManualOperatingState(),
     manualActions: ManualActions = ManualActions(),
     onLeaveOperate: () -> Unit = {},
@@ -417,7 +424,9 @@ fun EightCbApp(
                         onStop = { if (source == OperatingSource.LAN) onStopLan() else onStopCapture() },
                         onView = onSpectrumView, spectrum = compactSpectrumContent,
                         profileName = profiles.applied?.name, referenceFrequencyHz = profiles.applied?.referenceFrequencyHz ?: 27_265_000L,
-                        profileReady = profiles.ready, manual = manual, manualActions = manualActions)
+                        profileReady = profiles.ready, manual = manual, manualActions = manualActions,
+                        workedCalls = logbook.snapshot.workedCalls(station.saved?.callsign.orEmpty()),
+                        workedAvailable = logbook.workedAvailable, pendingQsos = logbook.snapshot.pending.size + logbook.unsavedCompletions)
                     AppDestination.CHAT -> ChatPlaceholder()
                     else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -427,6 +436,7 @@ fun EightCbApp(
                         when (destination) {
                             AppDestination.SETTINGS -> SettingsMenu(::navigate)
                             AppDestination.PROFILES -> profilesContent()
+                            AppDestination.LOGBOOK -> logbookContent()
                             AppDestination.STATION -> StationSettingsPanel(station, onCallsignChange, onGridChange, onSaveStation, onRetryLoad)
                             AppDestination.TIME -> TimePanel(time, timeActions)
                             AppDestination.AUDIO -> AudioSourceSettings(source, capture,

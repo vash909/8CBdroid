@@ -3,7 +3,8 @@
 **Operate** sends one FT8 message at a time through the built-in phone speaker
 and receives through the built-in microphone. A radio can use this acoustic
 path with its own VOX settings; set its dial, sideband, audio levels and VOX
-manually. There is no CAT/PTT feedback or QSO log. This guide covers manual output;
+manually. There is no CAT/PTT feedback. The separate [logbook](LOGBOOK.md) stores
+reviewed contacts; this guide covers manual output;
 [AutoSeq](AUTOSEQ.md) is a separate explicit start. LAN remains read-only.
 
 ## Prepare
@@ -56,7 +57,8 @@ partial receive slot is discarded. Choose and enable the next message manually.
 **Use suggested message** applies it and disables TX; it never sends. **Reset QSO**
 clears tracking. The model records protocol completion only after the required
 received evidence and actual local final output. There is no automatic repeat,
-answer, retry, final-message output or persistent QSO log.
+answer, retry or final-message output in manual mode. Completed model exchanges
+become pending reviews in the separate [persistent logbook](LOGBOOK.md).
 
 **Sent** retains up to 30 completed speaker slots in the current process, with
 slot UTC and text. It confirms complete audio playback only: it cannot confirm

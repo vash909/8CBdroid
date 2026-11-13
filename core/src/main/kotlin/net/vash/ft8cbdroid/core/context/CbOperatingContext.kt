@@ -32,7 +32,7 @@ object CbCountries {
 }
 
 enum class ActivityKind { CQ, DIRECTED, OTHER }
-enum class ActivityFilter { ALL, CQ, TO_ME }
+enum class ActivityFilter { ALL, CQ, TO_ME, WORKED }
 
 data class CbActivityContext(
     val kind: ActivityKind = ActivityKind.OTHER,
@@ -40,10 +40,11 @@ data class CbActivityContext(
     val recipient: String? = null,
     val division: CbDivision? = null,
 ) {
-    fun matches(filter: ActivityFilter, ownCall: String): Boolean = when (filter) {
+    fun matches(filter: ActivityFilter, ownCall: String, workedCalls: Set<String> = emptySet()): Boolean = when (filter) {
         ActivityFilter.ALL -> true
         ActivityFilter.CQ -> kind == ActivityKind.CQ
         ActivityFilter.TO_ME -> kind == ActivityKind.DIRECTED && CbCallsign.isValid(ownCall) && recipient == CbCallsign.normalize(ownCall)
+        ActivityFilter.WORKED -> sender != null && sender in workedCalls
     }
 }
 

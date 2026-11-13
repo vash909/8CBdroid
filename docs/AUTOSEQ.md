@@ -109,4 +109,5 @@ the public source tree. Time recovery must leave RX/TX and AutoSeq stopped.
 
 The relevant PR records tested commit, CI, device, results and limitations.
 This is acoustic software interoperability and inferred protocol completion;
-it does not establish radio TX, an RF QSO, USB/CAT operation or a durable log.
+it does not establish radio TX, an RF QSO or USB/CAT operation. The separate
+[logbook checks](LOGBOOK.md#reproduce-checks) qualify completion review and storage.

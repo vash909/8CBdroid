@@ -9,6 +9,7 @@ import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.message.*
 import net.vash.ft8cbdroid.core.time.ReceiveClock
 import net.vash.ft8cbdroid.core.qso.*
+import net.vash.ft8cbdroid.core.logbook.*
 import net.vash.ft8cbdroid.audio.CapturePhase
 import net.vash.ft8cbdroid.audio.CaptureUiState
 
@@ -58,6 +59,7 @@ class ManualOperatingViewModel(
     private val prepareAutomaticReceive: suspend () -> Unit = { throw IllegalStateException("Automatic reception is unavailable.") },
     private val applyPendingTime: () -> Boolean = { false },
     private val awaitAutomaticRecovery: suspend () -> Unit = {},
+    private val completedQso: (QsoCompletion) -> Unit = {},
 ) : ViewModel() {
     private val state = MutableStateFlow(ManualOperatingState())
     val uiState = state.asStateFlow()
@@ -73,6 +75,17 @@ class ManualOperatingViewModel(
     private var autoPolicy: CbAutoSequence? = null
     private var autoAction: CbAutoSend? = null
     private var autoGeneration = 0L
+    private val logTracker = QsoCompletionTracker()
+    private var lastTrackedAudioHz: Int? = null
+    private var lastTrackedDialHz: Long? = null
+    private fun resetLogTracking() { logTracker.reset(); lastTrackedAudioHz = null; lastTrackedDialHz = null }
+    private fun captureCompletion(slotUtcMillis: Long) {
+        val station = state.value.station ?: return
+        val snapshot = advisor?.snapshot ?: return
+        val audio = lastTrackedAudioHz ?: state.value.frequency.toIntOrNull() ?: return
+        val dial = lastTrackedDialHz ?: state.value.referenceDialHz
+        logTracker.observe(station, snapshot, slotUtcMillis, dial, audio)?.let(completedQso)
+    }
     private fun stopAutomatic(reason: String) {
         if (autoJob == null && !state.value.autoSequence.active) return
         autoGeneration++
@@ -94,7 +107,7 @@ class ManualOperatingViewModel(
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 prepareAutomaticReceive()
-                advisor?.reset(); receivingRun = null; qsoClockRevision = null
+                advisor?.reset(); resetLogTracking(); receivingRun = null; qsoClockRevision = null
                 state.value = state.value.copy(peer = if (calling) "" else selected, choice = if (calling) ManualMessage.CQ else ManualMessage.REPLY,
                     freeText = false, acceptChanges = false, qsoNotice = null, notice = "AutoSeq started explicitly.")
                 if (!calling) selectQsoPeer() else { lastInput?.let(::receive); refreshTemplate(); publishQso() }
@@ -160,7 +173,7 @@ class ManualOperatingViewModel(
         val qso = advisor ?: return
         val mapping = runCatching { clock.snapshot() }.getOrNull()
         if (qsoClockRevision != null && qsoClockRevision != mapping?.revision) {
-            qso.abort(); qsoClockRevision = null
+            qso.abort(); resetLogTracking(); qsoClockRevision = null
             state.value = state.value.copy(qsoNotice = "Time correction changed or expired. Start a new QSO explicitly.")
         }
         val active = state.value.available && !state.value.busy && !input.outputBusy && input.phase == CapturePhase.CAPTURING && input.decodeLive && input.receiveRun > 0 &&
@@ -168,7 +181,7 @@ class ManualOperatingViewModel(
             input.inputs.any { it.id == input.selectedId && it.kind == AudioInputKind.PHONE }
         if (!active) {
             if (receivingRun != null && !state.value.busy) {
-                qso.abort(); state.value = state.value.copy(qsoNotice = "Local reception ended. Start a new QSO explicitly.")
+                qso.abort(); resetLogTracking(); state.value = state.value.copy(qsoNotice = "Local reception ended. Start a new QSO explicitly.")
             } else qso.suspendReception()
             receivingRun = null; publishQso(); return
         }
@@ -184,10 +197,12 @@ class ManualOperatingViewModel(
             .thenBy { kotlin.math.abs(it.decode.frame.audioFrequencyHz - txHz) }).forEach { row ->
             val decision = qso.receive(row, input.receiveRun, now, txHz)
             if (decision.admission == CbQsoAdmission.STOP) {
+                resetLogTracking()
                 stopAutomatic(decision.reason); cancelOutput(decision.reason)
                 state.value = state.value.copy(qsoNotice = decision.reason)
             } else if (decision.admission == CbQsoAdmission.ACCEPTED) {
                 state.value = state.value.copy(qsoNotice = decision.reason)
+                captureCompletion(row.decode.slotStartUtc.toEpochMilli())
             }
         }
         publishQso()
@@ -195,7 +210,7 @@ class ManualOperatingViewModel(
     fun resetQso() {
         stopAutomatic("QSO reset. AutoSeq off.")
         cancelOutput("QSO reset. TX disabled.")
-        advisor?.reset(); advisor?.suspendReception(); receivingRun = null; qsoClockRevision = null
+        advisor?.reset(); resetLogTracking(); advisor?.suspendReception(); receivingRun = null; qsoClockRevision = null
         state.value = state.value.copy(qsoNotice = "QSO reset. Select a peer or send CQ explicitly.")
         lastInput?.let(::receive); publishQso()
     }
@@ -230,6 +245,7 @@ class ManualOperatingViewModel(
             outputId = null, latency = null, peer = if (changedStation) "" else state.value.peer,
             sent = if (changedStation) emptyList() else state.value.sent, acceptChanges = false)
         advisor = normalized?.takeIf { it.isValid && available }?.let { CbQsoAdvisor(it, state.value.report.toIntOrNull()?.coerceIn(-50, 99) ?: -7) }
+        resetLogTracking()
         receivingRun = null; qsoClockRevision = null
         state.value = state.value.copy(qsoNotice = null)
         refreshTemplate(); publishQso()
@@ -244,7 +260,7 @@ class ManualOperatingViewModel(
         selectQsoPeer(); refreshTemplate()
     }
     private fun selectQsoPeer() {
-        advisor?.reset(); qsoClockRevision = null
+        advisor?.reset(); resetLogTracking(); qsoClockRevision = null
         advisor?.selectPeer(state.value.peer, state.value.frequency.toIntOrNull() ?: 0, state.value.period, nextFreshSlot())
         state.value = state.value.copy(qsoNotice = null); lastInput?.let(::receive); publishQso()
     }
@@ -345,7 +361,7 @@ class ManualOperatingViewModel(
                 qsoOwner?.prepare(value.choice, value.report.toIntOrNull().takeIf { value.choice in setOf(ManualMessage.REPORT, ManualMessage.ROGER) }, encoded.transmittedText, encoded.payload)
             if (automaticUtc != null) requireNotNull(qsoTicket) { "The automatic message is outside the qualified QSO. AutoSeq off." }
             if (qsoTicket == null) {
-                qsoOwner?.abort()
+                qsoOwner?.abort(); resetLogTracking()
                 state.value = state.value.copy(qsoNotice = "This manual output is outside the tracked QSO. Reset QSO to start a new exchange.")
             }
             publishQso()
@@ -367,7 +383,11 @@ class ManualOperatingViewModel(
             val expectedFrames = if (automaticUtc == null) Ft8PcmSlot.sampleCount else 161280
             require(report.writtenFrames == expectedFrames && report.playedFrames >= expectedFrames) { "The complete FT8 waveform was not played. Nothing added to Sent." }
             if (ticket == revision && qsoTicket != null && advisor === qsoOwner) {
-                qsoOwner?.sent(qsoTicket, plan.utcMillis); publishQso()
+                if (qsoOwner?.sent(qsoTicket, plan.utcMillis) == true) {
+                    lastTrackedAudioHz = settings.audioFrequencyHz.toInt(); lastTrackedDialHz = value.referenceDialHz
+                    captureCompletion(plan.utcMillis)
+                }
+                publishQso()
                 if (automaticUtc != null) {
                     autoPolicy?.sent(requireNotNull(autoAction), encoded.payload); autoAction = null
                     state.value = state.value.copy(autoSequence = requireNotNull(autoPolicy).state)
@@ -408,7 +428,7 @@ class ManualOperatingViewModel(
     }
     fun stop(reason: String = "TX stopped. Start RX explicitly if needed.") {
         stopAutomatic(reason)
-        cancelOutput(reason); advisor?.abort(); receivingRun = null; qsoClockRevision = null; publishQso()
+        cancelOutput(reason); advisor?.abort(); resetLogTracking(); receivingRun = null; qsoClockRevision = null; publishQso()
     }
     private fun cancelOutput(reason: String = "TX stopped. Start RX explicitly if needed.") {
         advisor?.cancelPending(); publishQso()

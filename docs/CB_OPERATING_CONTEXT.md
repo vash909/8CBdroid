@@ -20,8 +20,10 @@ invented station. A known sender with an unmapped division displays
 - **To me** shows directed messages whose identified recipient matches the saved
   station callsign, including destination-only reports/finals. An unresolved
   destination cannot match this filter.
-- **Worked** is disabled until a durable QSO log is implemented. Received rows,
-  completed speaker audio and a selected peer do not establish worked history.
+- **Worked** shows identified senders in the [saved QSO log](LOGBOOK.md) for the
+  current station callsign. Pending reviews, received rows, completed speaker
+  audio and a selected peer alone do not establish worked history. The filter
+  is unavailable until the log loads or while a log error needs attention.
 
 The received count shows matching/total rows when filtered. The filter survives
 Activity recreation; it is not a saved station/profile preference. Sent audio

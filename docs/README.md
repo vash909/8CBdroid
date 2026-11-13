@@ -12,6 +12,7 @@ implemented behavior, device evidence and checks still pending.
 | [Operating profiles](OPERATING_PROFILES.md) | Save radio/audio/LAN setups, restore disconnected configuration and handle validation/migration errors. |
 | [Interface and navigation](INTERFACE.md) | Operate, settings, source selection, manual acoustic TX controls and the Chat placeholder. |
 | [CB countries and receive filters](CB_OPERATING_CONTEXT.md) | Pinned offline divisions, sender context, All/CQ/To-me display filters and unknown identities. |
+| [Local QSO log](LOGBOOK.md) | Durable completion reviews, operator-confirmed contacts, manual entry, edit/search, recovery and Worked filtering. |
 | [Build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |

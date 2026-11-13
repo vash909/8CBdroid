@@ -28,7 +28,9 @@ queued, cancelled, failed or partial output does not. Protocol completion
 requires both reports and acknowledgements, actual local final output and peer
 closing evidence: RR73/73, or the classic RRR acknowledgement. A final alone
 cannot create a QSO. The state is an inference from local software/audio events,
-not independent proof of radio TX, RF reception or a durable log.
+not independent proof of radio TX or RF reception. A completed exchange is
+staged separately for [durable log review](LOGBOOK.md), requiring operator
+confirmation before it becomes a saved contact.
 
 **Reset QSO** disables TX and clears the exchange. Selecting another peer or
 starting a new CQ discards prior context. Completed exchanges ignore late messages.
