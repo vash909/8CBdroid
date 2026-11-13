@@ -51,10 +51,10 @@ class PhoneAudioChecks(private val instrumentation: Instrumentation, private val
             var current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
-            val capture = main { ViewModelProvider(current)[CaptureViewModel::class.java] }; audio = capture
+            val capture = main { current.receiveRuntime.capture }; audio = capture
             val model = main { ViewModelProvider(current)[WaveformViewModel::class.java] }; output = model
-            val time = main { ViewModelProvider(current)[TimeViewModel::class.java] }
-            val profiles = main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
+            val time = main { current.receiveRuntime.time }
+            val profiles = main { current.receiveRuntime.profiles }
             await("initialization") { main { profiles.uiState.value.ready && !time.uiState.value.loading && model.uiState.value.outputs.isNotEmpty() } }
             PhoneNavigation.open(instrumentation, "Message tools")
             main { capture.changeStation(null); capture.select(capture.uiState.value.inputs.first { it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }.id) }

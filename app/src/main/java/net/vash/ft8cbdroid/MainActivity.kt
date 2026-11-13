@@ -7,6 +7,12 @@ import net.vash.ft8cbdroid.time.*
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import net.vash.ft8cbdroid.radio.*
+import net.vash.ft8cbdroid.receive.*
+import android.app.NotificationManager
+import android.os.Build
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
 import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
@@ -66,6 +72,21 @@ import net.vash.ft8cbdroid.settings.StationSettingsViewModel
 import net.vash.ft8cbdroid.settings.stationPreferences
 
 class MainActivity : ComponentActivity() {
+    val receiveRuntime get() = (application as EightCbApplication).receiver
+    private val outputOwner = Any()
+    private var pendingReceive: (() -> Unit)? = null
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingReceive; pendingReceive = null
+        if (granted && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) action?.invoke()
+        else receiveRuntime.session.error("Allow receive notifications, then press Start RX again.")
+    }
+    private fun requestReception(action: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            pendingReceive = action; notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else if (!getSystemService(NotificationManager::class.java).areNotificationsEnabled()) {
+            receiveRuntime.session.error("Allow receive notifications in Android settings, then start RX again.")
+        } else action()
+    }
     private lateinit var timeViewModel: TimeViewModel
     private val gpsPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         timeViewModel.gpsPermissionResult(it[Manifest.permission.ACCESS_FINE_LOCATION] == true)
@@ -100,16 +121,17 @@ class MainActivity : ComponentActivity() {
                 DataStoreStationPreferencesRepository(applicationContext.stationPreferences),
             ),
         )[StationSettingsViewModel::class.java]
-        lanViewModel = ViewModelProvider(this, LanViewModel.factory())[LanViewModel::class.java]
+        lanViewModel = receiveRuntime.lan
         val usbViewModel = ViewModelProvider(this, UsbViewModel.factory(applicationContext))[UsbViewModel::class.java]
         val hamlibViewModel = ViewModelProvider(this)[HamlibViewModel::class.java]
         val hashViewModel = ViewModelProvider(this)[HashSessionViewModel::class.java]
         recordedSlotViewModel = ViewModelProvider(this, RecordedSlotViewModel.factory(contentResolver))[RecordedSlotViewModel::class.java]
-        timeViewModel = ViewModelProvider(this, TimeViewModel.factory(applicationContext))[TimeViewModel::class.java]
-        captureViewModel = ViewModelProvider(this, CaptureViewModel.factory(applicationContext, contentResolver, timeViewModel.clock))[CaptureViewModel::class.java]
+        timeViewModel = receiveRuntime.time
+        captureViewModel = receiveRuntime.capture
         val previewCapture = captureViewModel
         val previewLan = lanViewModel
         val app = applicationContext
+        val receiver = receiveRuntime
         val audioCoordinator = previewCapture.audioCoordinator {
             app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         }
@@ -127,7 +149,7 @@ class MainActivity : ComponentActivity() {
                         input.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING && input.decodeLive &&
                         input.inputs.any { it.id == input.selectedId && it.kind == net.vash.ft8cbdroid.core.audio.AudioInputKind.PHONE }
                 }, prepareOutput = { bench.stopForProfile(); previewLan.stopForProfile() }, reception = previewCapture.controls,
-                prepareAutomaticReceive = { previewCapture.prepareAutomaticReceive(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) },
+                prepareAutomaticReceive = { receiver.prepareAutomaticReceive() },
                 awaitAutomaticRecovery = { previewCapture.awaitAutomaticRecovery() }, completedQso = logbookViewModel::completed,
                 applyPendingTime = {
                     check(previewCapture.uiState.value.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE)
@@ -136,21 +158,26 @@ class MainActivity : ComponentActivity() {
                     timeViewModel.applyPendingAtBoundary(audioPaused = true)
                 }) }
         })[ManualOperatingViewModel::class.java]
-        timeViewModel.idleBoundary {
-            val input = captureViewModel.uiState.value
-            input.phase == net.vash.ft8cbdroid.audio.CapturePhase.IDLE && !input.outputBusy &&
-                !manualViewModel.uiState.value.busy && !manualViewModel.uiState.value.autoSequence.active && !bench.uiState.value.isPlaying
+        lifecycleScope.launch {
+            receiveRuntime.stopRequests.drop(1).collect {
+                manualViewModel.stop("Receive session stopped. TX disabled.")
+                waveformViewModel.stopPreview("Receive session stopped.")
+            }
         }
-        val profilesViewModel = ViewModelProvider(this, viewModelFactory {
-            initializer { ProfilesViewModel(DataStoreProfileRepository(applicationContext.operatingProfiles),
-                AndroidProfileRuntime(captureViewModel, lanViewModel, timeViewModel, waveformViewModel, manualViewModel), net.vash.ft8cbdroid.hamlib.NativeHamlibCatalog()) }
-        })[ProfilesViewModel::class.java]
+        val outputManual = manualViewModel
+        val outputBench = waveformViewModel
+        receiveRuntime.attachOutput(outputOwner) { profile ->
+            if (profile) { outputManual.stopForProfile(); outputBench.stopForProfile() }
+            else { outputManual.stopAndJoin(); outputBench.stopAndJoin() }
+        }
+        val profilesViewModel = receiveRuntime.profiles
         val spectrumChange: (SpectrumView) -> Unit = { view ->
             val previous = captureViewModel.uiState.value.spectrumView
             captureViewModel.spectrumView(view)
             if (view.txHz != previous.txHz) manualViewModel.frequency(view.txHz.toString())
         }
         setContent {
+            val receiveSession by receiveRuntime.session.uiState.collectAsStateWithLifecycle()
             val profiles by profilesViewModel.uiState.collectAsStateWithLifecycle()
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
             val hamlib by hamlibViewModel.uiState.collectAsStateWithLifecycle()
@@ -176,11 +203,11 @@ class MainActivity : ComponentActivity() {
                 if (time.refreshPending && !manual.busy && !manual.autoSequence.active && capture.phase == net.vash.ft8cbdroid.audio.CapturePhase.CAPTURING)
                     manualViewModel.refreshTime()
             }
-            LaunchedEffect(station.saved?.callsign) {
+            LaunchedEffect(station.saved?.callsign, station.isLoading) {
                 val call = station.saved?.callsign?.takeIf { it.isNotBlank() }
                 hashViewModel.changeStation(call)
                 recordedSlotViewModel.changeStation(call)
-                captureViewModel.changeStation(call)
+                if (!station.isLoading && station.saved != null) captureViewModel.changeStation(call)
             }
             LaunchedEffect(station.saved, profiles.ready, profiles.revision, profiles.receiveLan, capture.selectedId) {
                 val input = capture.inputs.firstOrNull { it.id == capture.selectedId }
@@ -193,6 +220,8 @@ class MainActivity : ComponentActivity() {
             }
             EightCbApp(
                 station = station,
+                receiveSession = receiveSession,
+                onStopSession = { receiveRuntime.stop() },
                 logbook = logbook,
                 logbookContent = { LogbookPanel(logbook, logbookViewModel, station.saved, profiles.applied?.referenceFrequencyHz ?: 27_265_000L) },
                 manual = manual,
@@ -228,8 +257,8 @@ class MainActivity : ComponentActivity() {
                 lan = lan,
                 onLanPortChange = lanViewModel::changePort,
                 onLanAddressChange = lanViewModel::changeAddress,
-                onStartLan = { if (profilesViewModel.uiState.value.ready) lanViewModel.start() },
-                onStopLan = lanViewModel::stop,
+                onStartLan = { if (profilesViewModel.uiState.value.ready) requestReception { lanViewModel.start() } },
+                onStopLan = { receiveRuntime.stop() },
                 onReplayLan = lanViewModel::requestReplay,
                 onClearLan = lanViewModel::clearDecodes,
                 onCallsignChange = stationViewModel::changeCallsign,
@@ -263,12 +292,12 @@ class MainActivity : ComponentActivity() {
                     utcSlotDestination.launch("8CBdroid-UTC-$stamp.wav")
                 } },
                 onSelectInput = captureViewModel::select,
-                onStartCapture = {
+                onStartCapture = { requestReception {
                     if (profilesViewModel.uiState.value.ready && captureViewModel.requestStart(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED))
                         microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
-                },
-                onStopCapture = { manualViewModel.stop(); captureViewModel.stop() },
-                onLeaveAudio = { captureViewModel.stop("Microphone stopped after leaving the receive screen.", clear = true) },
+                } },
+                onStopCapture = { manualViewModel.stop(); receiveRuntime.stop() },
+                onLeaveAudio = { receiveRuntime.stop() },
                 onSaveCapture = {
                     if (captureViewModel.prepareExport()) microphoneDestination.launch("8CBdroid-microphone.wav")
                 },
@@ -298,22 +327,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        receiveRuntime.detachOutput(outputOwner)
+        super.onDestroy()
+    }
     override fun onStop() {
-        timeViewModel.foreground(false)
+        receiveRuntime.foreground(false)
+        pendingReceive = null
         manualViewModel.stop("App left the foreground. TX disabled.")
         waveformViewModel.stopPreview("Preview stopped because the app left the foreground.")
         timeViewModel.cancel()
-        captureViewModel.stop("Microphone stopped because the app left the foreground. Press Start microphone to resume.",
-            clear = !captureViewModel.isChoosingDocument)
-        if (!isChangingConfigurations) lanViewModel.stop()
+        if (captureViewModel.uiState.value.awaitingPermission) captureViewModel.stop()
         super.onStop()
     }
-    override fun onStart() { super.onStart(); if (::timeViewModel.isInitialized) timeViewModel.foreground(true) }
+    override fun onStart() { super.onStart(); receiveRuntime.foreground(true) }
 }
 
 @Composable
 fun EightCbApp(
     station: StationSettingsUiState,
+    receiveSession: ReceiveSessionState = ReceiveSessionState(),
+    onStopSession: () -> Unit = {},
     logbook: LogbookState = LogbookState(),
     logbookContent: @Composable () -> Unit = {},
     manual: ManualOperatingState = ManualOperatingState(),
@@ -391,9 +425,7 @@ fun EightCbApp(
     val pageStates = rememberSaveableStateHolder()
     fun navigate(next: AppDestination) {
         if (destination == AppDestination.OPERATE && next != destination) onLeaveOperate()
-        if (destination == AppDestination.MESSAGES && next != destination) { onStopPreview(); onLeaveAudio() }
-        if (stopsLocalReception(destination, next)) onLeaveAudio()
-        if (next == AppDestination.CHAT) onStopLan()
+        if (destination == AppDestination.MESSAGES && next != destination) onStopPreview()
         destination = next
     }
     BackHandler(enabled = destination != AppDestination.OPERATE) {
@@ -403,6 +435,15 @@ fun EightCbApp(
     RadioTheme {
         Scaffold(
             modifier = Modifier.imePadding(),
+            topBar = {
+                if (receiveSession.active || receiveSession.error != null) Surface {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text(receiveSession.error ?: "${receiveSession.source?.label ?: "RX"} · ${receiveSession.phase.name.lowercase()}",
+                            modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        if (receiveSession.active) TextButton(onClick = onStopSession) { Text("Stop RX") }
+                    }
+                }
+            },
             bottomBar = {
                 NavigationBar(containerColor = RadioColors.background, tonalElevation = 0.dp) {
                     listOf(AppDestination.OPERATE, AppDestination.SETTINGS, AppDestination.CHAT).forEach { tab ->

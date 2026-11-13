@@ -78,8 +78,10 @@ start RX and enable/send again; nothing resumes silently.
 Applying a profile or changing operating setup clears speaker selection and
 calibration. Starting a new process restores neither pending work nor armed TX;
 station/profile/server preferences remain saved. Manual output stops when
-leaving Operate. An active RX may continue into the detailed microphone monitor;
-configuration, Chat, background and rotation stop local capture. Continuous screen-off/background operation is not implemented.
+leaving Operate, backgrounding or rotating. An active receiver continues through
+configuration, Chat, background and screen-off via the [receive service](CONTINUOUS_RECEPTION.md).
+Cancelled output still cannot silently resume an input it paused. Background TX
+session ownership remains separate.
 
 ## Reference and physical checks
 

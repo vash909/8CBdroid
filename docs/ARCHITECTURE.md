@@ -7,11 +7,12 @@ For current capabilities and tested revisions, see [validation](VALIDATION.md).
 
 The UI shell has Operate, Settings and Chat destinations. Operate renders one
 selected source; local estimates and desktop reports keep distinct labels.
-Settings owns configuration/tool pages, while ViewModels retain existing backend
-ownership. Operate and the full microphone monitor are explicit receiving views;
-leaving them for configuration or Chat stops local reception and clears its
-session. Background and rotation cleanup remain unchanged. The Chat page performs
-no networking. ManualOperatingViewModel freezes one explicit CB message and owns
+Settings owns configuration/tool pages. `ReceiveRuntime` holds the process-local
+capture, clock, profile and LAN graph outside Activity stores; `ReceiveService`
+owns explicit active reception and its foreground notification/Stop. Navigation,
+rotation, background and screen-off observe the same session. The Chat page
+performs no chat networking, while an already started receiver can continue.
+ManualOperatingViewModel freezes one explicit CB message and owns
 one scheduled speaker send, using the same retained PhoneAudioCoordinator as
 Message tools. Protocol templates/peer selection and QSO admission/advice live in core; Android output and
 capture stay behind contracts. Sent records audio only; QSO advice infers protocol
@@ -56,12 +57,12 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Saved operating profiles | `ProfilesViewModel` / DataStore / pure JVM profile codec | Bounded versioned configuration; no device IDs or sessions. Startup/apply joins receiver cleanup and clears timing before configuring disconnected backends. |
 | Saved station callsign/locator | DataStore repository | Durable across process restarts; written only by explicit Save. |
 | Station draft/load/save status | `StationSettingsViewModel` | Retained across rotation; unread data cannot be overwritten while loading or after a read failure. |
-| LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Endpoint restored from an applied profile; temporary edits survive rotation. Backgrounding stops the listener and clears peer/history. |
+| LAN endpoint, peer/status/history | `LanViewModel` / `WsjtCbBridge` | Endpoint restored from an applied profile; temporary edits survive rotation. Navigation/background retain active listening; Stop/process death ends it. |
 | USB inventory and pending permission | `UsbViewModel` / `AndroidUsbInventory` | Application-context inventory retained by the ViewModel; detach invalidates pending state. Android grants are rechecked. |
 | Hamlib catalog/search/selection and Dummy result | `HamlibViewModel` / `NativeHamlibCatalog` | Explicit requests, rotation retained, process-local. Serialized native calls; cancellation discards late results. No hardware handles or profile persistence. |
 | Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
 | Generated waveform/export snapshot | `WaveformViewModel` | Edits invalidate old PCM; rotation retained, process restart discards it. Exported documents remain outside the session. |
-| Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit foreground session; stops/clears on Audio exit, rotation or background. No automatic restart or saved PCM. |
+| Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit service-owned RX survives navigation/rotation/background. Stop joins cleanup; no restart after process death or automatic saved PCM. |
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
 Operating profiles, station identity and NTP preset/custom-server preferences are stored as app configuration.
@@ -135,8 +136,8 @@ no Reply, QSO log import or radio/TX control.
 
 Socket close unblocks receive without joining on the UI thread. A new bind waits
 on IO for the old receiver to exit, and session guards reject stale publications.
-The activity stops listening on background transitions except rotation; there is
-no foreground/background operating service. See [the LAN contract](WSJT_CB_INTEGRATION.md).
+The explicit receive service keeps listening through background/rotation and
+provides Stop; Activity destruction never creates or closes a second listener. See [the LAN contract](WSJT_CB_INTEGRATION.md).
 LAN SNR/timing are supplied by the desktop, separately from local recorded estimates.
 
 ## Offline message and audio-file paths
@@ -211,7 +212,7 @@ and serially calls the shared `Ft8Engine` gate on a worker dispatcher. A newer
 pending slot replaces an older one rather than growing a queue or blocking the
 recorder. Metadata/UI delivery is conflated; PCM is not sent to Compose.
 Each run owns a `CbMessageSession`, commits full-call learning after a complete
-decode batch, and retains at most 60 message rows. Stop/background/station change
+decode batch, and retains at most 60 message rows. Stop/input/station change
 cancel the decoder and clear its results/cache; restart waits for cleanup.
 LAN, recorded files and message previews cannot populate the live session.
 See [live reception](LIVE_RECEIVE.md).
@@ -230,7 +231,8 @@ Radio VOX setup is operator-configured; acoustic bench evidence does not observe
 RF transmission. The pure JVM UTC planner and timestamp-based speaker scheduling
 are described in [one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md).
 [Foreground AutoSeq](AUTOSEQ.md) reuses that owner with early receive windows;
-CAT/PTT and background-service lifecycles remain unimplemented.
+CAT/PTT and background TX session ownership remain unimplemented.
+[Continuous receive ownership](CONTINUOUS_RECEPTION.md) is separate from foreground TX.
 
 ## Microphone visualization
 

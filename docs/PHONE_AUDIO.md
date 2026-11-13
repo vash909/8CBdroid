@@ -40,8 +40,10 @@ the fixed guard is not characterized; this is not acoustic echo cancellation.
   audio. Cancellation keeps that ownership until hardware cleanup returns.
 - Receive reopening can fail normally, for example because Android denies the
   recorder. The capture error is shown and an explicit retry is required.
-- Leaving Message tools stops both paths. Current operating sessions remain
-  foreground-only; reopening the page or process never restarts them.
+- Leaving Message tools cancels output. An idle receiver continues through
+  navigation/background/rotation via the [receive service](CONTINUOUS_RECEPTION.md);
+  cancelling output still does not resume a paused input. TX remains foreground-only
+  and process death never restores either path.
 
 `PhoneAudioCoordinator` is a JVM contract owner; Android recorder/output I/O
 stays behind the existing audio interfaces. The recovery attempt is one-use and

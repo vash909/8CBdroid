@@ -49,9 +49,9 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
             val model = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; output = model
-            val capture = main { ViewModelProvider(current)[CaptureViewModel::class.java] }; audio = capture
-            val time = main { ViewModelProvider(current)[TimeViewModel::class.java] }
-            val profiles = main { ViewModelProvider(current)[ProfilesViewModel::class.java] }
+            val capture = main { current.receiveRuntime.capture }; audio = capture
+            val time = main { current.receiveRuntime.time }
+            val profiles = main { current.receiveRuntime.profiles }
             await("phone profile and station initialization") { main { profiles.uiState.value.ready && model.uiState.value.available && model.uiState.value.outputs.isNotEmpty() } }
             check(main { model.uiState.value.station?.callsign == "1AT106" }) { "Save test station 1AT106 and a valid locator first." }
             val measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }

@@ -17,7 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import net.vash.ft8cbdroid.core.audio.*
 import kotlin.math.pow
 
-/** Foreground-only input. No playback, audio-focus changes, persisted recording or decoder calls. */
+/** Explicit input owned by the receive foreground service. No playback, persisted recording or decoder calls. */
 class AndroidMicrophoneCapture(context: Context) : TimestampedMicrophoneCapture, PcmMicrophoneCapture {
     private val app = context.applicationContext
     private val manager = app.getSystemService(AudioManager::class.java)

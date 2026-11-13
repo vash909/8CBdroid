@@ -23,7 +23,7 @@ fun TimePanel(state: TimeUiState, actions: TimeActions) {
         Text("Time synchronization", style = MaterialTheme.typography.titleLarge)
         Text("UTC slots require a valid NTP or GPS measurement. Only this app's time is corrected; Android's clock is unchanged.")
         Text("Active time: ${state.sourceDescription}")
-        Text("An applied NTP source refreshes every five minutes while this app is visible. Updates wait for an idle audio boundary. GPS never starts an NTP request.")
+        Text("An applied NTP source refreshes every five minutes while the app is visible or reception is active. Updates wait for a safe audio boundary. GPS never starts an NTP request.")
         if (state.refreshing) Text("Refreshing NTP…")
         if (state.refreshPending) Text("NTP measurement ready; waiting for a safe audio boundary.")
         state.refreshWarning?.let { Text(it, color = MaterialTheme.colorScheme.error) }

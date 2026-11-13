@@ -436,6 +436,10 @@ class ManualOperatingViewModel(
         state.value = state.value.copy(armed = false, notice = reason)
         job?.cancel()
     }
+    suspend fun stopAndJoin(reason: String = "Receive session stopped. TX disabled.") {
+        val automatic = autoJob
+        stop(reason); automatic?.join(); job?.join()
+    }
     suspend fun stopForProfile() {
         stop("Profile changed. TX disabled."); job?.join()
         state.value = state.value.copy(outputId = null, latency = null, available = false)

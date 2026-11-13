@@ -25,15 +25,18 @@ settings remain manual.
    most five seconds, with no UTC or FT8-slot claim. It cannot be imported by
    the separate recorded-slot decoder, which requires a complete 15-second slot.
 
-Capture stops and clears its PCM when leaving the receive screens for Settings or Chat, rotating or backgrounding.
+An explicit [receive service](CONTINUOUS_RECEPTION.md) keeps capture active through
+Settings/Chat navigation, rotation, background and screen-off. Notification Stop
+ends the session.
 A permission result arriving after Stop cannot restart it. Stop waits for worker
 cleanup before another start is allowed. Startup, interruption, permission loss,
 Android silencing, route loss/change and a two-second no-data stall require an
-explicit retry. No service or automatic reconnect/rearm is included.
+explicit retry. The non-sticky service never automatically reconnects or rearms
+after process death.
 
 Only explicit WAV export writes microphone audio to a document. Other samples
 remain in memory, are overwritten after five seconds and are cleared on a new
-start, input change, capture failure or foreground-session end. Export destinations
+start, input change, capture failure or process death. Export destinations
 are user-owned documents; the app does not delete them. Station preferences are
 unaffected. The permission and Android privacy indicator belong to the OS.
 
@@ -101,7 +104,8 @@ than substituting an internally generated buffer for physical capture.
 
 Also test the main UI: deny/allow permission, select/start, observe levels, stop
 and save, repeat start/stop, navigate away, rotate and background/reopen. Confirm
-idle state with no automatic restart and persistent station settings. Test actual
+continuous RX across those transitions, explicit Stop and no restart after process
+death, with persistent station settings. Test actual
 wired/USB removal when that hardware is available. The built-in A51 path does not
 qualify external inputs, radio coupling, drift, sustained operation or live FT8.
 Record the tested revision, device, CI run and actual observations with test results.

@@ -52,8 +52,8 @@ class UtcPhoneChecks(private val instrumentation: Instrumentation) {
             }
             activity = instrumentation.startActivitySync(Intent(targetContext, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
-            val timing = main { ViewModelProvider(activity)[TimeViewModel::class.java] }; time = timing
-            val audio = main { ViewModelProvider(activity)[CaptureViewModel::class.java] }; capture = audio
+            val timing = main { activity.receiveRuntime.time }; time = timing
+            val audio = main { activity.receiveRuntime.capture }; capture = audio
             await("saved time settings") { main { !timing.uiState.value.loading } }
             check(main { timing.uiState.value.saved != null })
             if (scenario == "gps") {
