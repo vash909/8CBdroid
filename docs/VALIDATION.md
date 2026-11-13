@@ -23,12 +23,11 @@ qualification or a statement that all possible checks passed.
 | CB operating context | Offline division/country labels and receive filters for local/LAN activity. | 350 pinned divisions and 1,249 original C++ lookup comparisons; message/filter tests and a short physical acoustic/UDP UI regression described in [the guide](CB_OPERATING_CONTEXT.md). Worked uses saved local contacts. |
 | Local QSO log | Durable completion candidates, operator-confirmed dial, saved/manual contacts, edit/search and Worked history. | Domain/ViewModel tests and [real SQLite/acoustic/UI reproduction](LOGBOOK.md#reproduce-checks); feature PR records the exact tested CI/device. No CAT readback or RF confirmation is inferred. |
 
-There is no implemented CAT/PTT,
-live radio TX,
-background TX/AutoSeq session ownership. The local log records reviewed/operator
-contacts; it is not RF verification. Foreground acoustic AutoSeq
-is implemented with [reproducible qualification](AUTOSEQ.md); its feature PR
-records matching-artifact phone evidence, including any incomplete attempts.
+CAT/PTT and qualified USB audio remain unimplemented. The operating service owns
+explicitly started acoustic TX and AutoSeq across screens and background; see
+the continuous-session checks below and [PR #44](https://github.com/vash909/8CBdroid/pull/44)
+for finite device qualification. The local log records reviewed/operator contacts;
+neither a saved contact nor a completed waveform independently verifies RF.
 
 ## Reproducible coverage
 
@@ -446,7 +445,7 @@ PR; synthetic callback traces alone do not qualify physical integration.
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
 - Durable QSO logging and automation through the deferred CAT/USB backends.
-  Foreground acoustic AutoSeq has the separate finite qualification described below.
+  Acoustic AutoSeq has the separate finite qualification described below.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.
