@@ -147,17 +147,15 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
             }
         }
         scope.launch {
-            combine(capture.controls, session.uiState, manual.uiState.map { Triple(it.busy, it.armed, it.autoSequence.active) }.distinctUntilChanged()) { mic, owner, tx -> Triple(mic, owner, tx) }
-                .combine(audioCoordinator.phase) { inputs, audio -> inputs to audio }
-                .collect { (inputs, _) ->
-                    val (mic, owner, tx) = inputs
+            receiveObservations(capture.uiState, session.uiState, manual.uiState, audioCoordinator.phase,
+                capture.controls).collect { (mic, owner, tx, audio) ->
                     time.foreground(visible || owner.active)
                     time.operating(mic.phase != CapturePhase.IDLE || mic.outputBusy || serviceStarting ||
-                        tx.first || tx.second || tx.third || audioCoordinator.phase.value != PhoneAudioPhase.IDLE)
-                    if (!tx.first && !tx.second && !tx.third) operating.clear()
+                        tx.busy || tx.armed || tx.autoSequence.active || audio != PhoneAudioPhase.IDLE)
+                    if (!tx.busy && !tx.armed && !tx.autoSequence.active) operating.clear()
                     if (owner.phase == ReceivePhase.RUNNING && !serviceStarting && stopJob == null) {
                         val ended = when (owner.source) {
-                            ReceiveSource.MICROPHONE -> microphoneSessionEnded(mic.phase == CapturePhase.IDLE, mic.outputBusy, audioCoordinator.phase.value)
+                            ReceiveSource.MICROPHONE -> microphoneSessionEnded(mic.phase == CapturePhase.IDLE, mic.outputBusy, audio)
                             ReceiveSource.LAN -> !lan.receivingOrStarting
                             null -> false
                         }
