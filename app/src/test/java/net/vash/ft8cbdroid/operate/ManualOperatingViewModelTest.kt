@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
+import net.vash.ft8cbdroid.receive.OperatingSession
+import net.vash.ft8cbdroid.receive.ReceiveSession
+import net.vash.ft8cbdroid.receive.ReceiveSource
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.audio.CapturePhase
 import net.vash.ft8cbdroid.core.qso.CbQsoPhase
@@ -96,6 +100,23 @@ class ManualOperatingViewModelTest {
     }
     @Before fun before() { Dispatchers.setMain(dispatcher); sync() }
     @After fun after() { stores.forEach { it.clear() }; Dispatchers.resetMain() }
+    @Test fun anImmediateObserverCannotRevokeTheArmWhileItBecomesOutput() = runTest(dispatcher) {
+        val owner = ReceiveSession()
+        owner.running(requireNotNull(owner.request(ReceiveSource.MICROPHONE)))
+        val permit = OperatingSession()
+        val vm = model(authorize = { permit.authorize(owner.uiState.value, true) {} })
+        ready(vm)
+        backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) {
+            vm.uiState.collect { if (!it.busy && !it.armed && !it.autoSequence.active) permit.clear() }
+        }
+        vm.enableTx(); runCurrent()
+        assertTrue(permit.authorized(owner.uiState.value))
+        vm.send()
+        assertTrue(vm.uiState.value.busy)
+        assertTrue("Arm-to-output transition must retain its service authorization", permit.authorized(owner.uiState.value))
+        vm.stop(); runCurrent()
+        assertFalse(permit.authorized(owner.uiState.value))
+    }
     @Test fun deniedServicePromotionCannotArmStartAutomationOrGenerateAudio() = runTest(dispatcher) {
         val player = Player(); val engine = Engine()
         val vm = model(engine, player, authorize = { phase ->

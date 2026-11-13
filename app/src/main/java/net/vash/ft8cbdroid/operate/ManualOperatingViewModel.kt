@@ -417,9 +417,10 @@ class ManualOperatingViewModel(
             state.value = state.value.copy(error = error.message)
             return
         }
-        cancelOutput()
+        invalidateOutput()
         val ticket = revision
-        state.value = state.value.copy(busy = true, phase = phase, error = null, notice = null, playback = null)
+        // Publish arm-to-output as one transition so an immediate session observer cannot revoke its permit.
+        state.value = state.value.copy(armed = false, busy = true, phase = phase, error = null, notice = null, playback = null)
         val next = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 withTimeout(OUTPUT_TIMEOUT_MILLIS) {
@@ -455,9 +456,12 @@ class ManualOperatingViewModel(
         cancelOutput(reason); advisor?.abort(); resetLogTracking(); receivingRun = null; qsoClockRevision = null; publishQso()
     }
     private fun cancelOutput(reason: String = "TX stopped. Start RX explicitly if needed.") {
+        invalidateOutput()
+        state.value = state.value.copy(armed = false, notice = reason)
+    }
+    private fun invalidateOutput() {
         advisor?.cancelPending(); publishQso()
         revision++; guard?.cancel(); guard = null
-        state.value = state.value.copy(armed = false, notice = reason)
         job?.cancel()
     }
     suspend fun stopAndJoin(reason: String = "Receive session stopped. TX disabled.") {
