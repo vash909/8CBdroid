@@ -45,6 +45,13 @@ credentials. Stop/failure/service destruction releases its resources. Continuous
 capture/decoding uses battery; Samsung or other vendor power policy can still end
 the process. No unlimited-runtime or all-Android-version qualification is implied.
 
+Each Android NTP request also holds short CPU/Wi-Fi leases, with an eight-second
+deadline and release on success, failure or cancellation. Radio preparation precedes
+the timestamped packet; it changes neither the five-minute cadence nor the 100 ms
+quality limit. The Wi-Fi request is best effort and subject to the platform's
+[Wi-Fi lock policy](https://developer.android.com/reference/android/net/wifi/WifiManager#WIFI_MODE_FULL_HIGH_PERF);
+it cannot guarantee that an Internet server or route will meet that limit.
+
 **Explicit operating output also continues.** After starting local FT8 RX, select
 and calibrate the speaker, then explicitly enable one manual message or start
 Auto CQ/answer. The same session retains output, timing, QSO tracking and log

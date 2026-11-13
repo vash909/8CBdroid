@@ -19,7 +19,10 @@ retains completed exchanges for review, operator-confirmed contacts and manual
 entries. [Continuous reception](docs/CONTINUOUS_RECEPTION.md) keeps explicitly
 started microphone/LAN RX alive across screens, background and screen-off, with
 notification Stop controls. Explicitly armed manual TX and started AutoSeq also
-continue across screens, background and screen-off in that session. CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
+continue across screens, background and screen-off in that session. NTP requests
+briefly prepare CPU/Wi-Fi resources within an eight-second budget; the five-minute
+refresh cadence, quality checks and expiry remain unchanged.
+CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 

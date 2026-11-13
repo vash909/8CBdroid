@@ -15,7 +15,6 @@ import net.vash.ft8cbdroid.audio.*
 import net.vash.ft8cbdroid.core.audio.*
 import net.vash.ft8cbdroid.core.message.*
 import net.vash.ft8cbdroid.core.qso.*
-import net.vash.ft8cbdroid.ntp.UdpNtpClient
 import net.vash.ft8cbdroid.operate.*
 import net.vash.ft8cbdroid.profile.ProfilesViewModel
 import net.vash.ft8cbdroid.time.*
@@ -57,7 +56,7 @@ class ManualPhoneChecks(private val instrumentation: Instrumentation, private va
             val profiles = main { current.receiveRuntime.profiles }
             await("phone profile and station initialization") { main { profiles.uiState.value.ready && model.uiState.value.available && model.uiState.value.outputs.isNotEmpty() } }
             check(main { model.uiState.value.station?.callsign == "1AT106" }) { "Save test station 1AT106 and a valid locator first." }
-            val measurement = runBlocking { UdpNtpClient(AndroidTimeSource, ntpPort).measure(ntpHost) }
+            val measurement = runBlocking { AndroidNtpClient(context, ntpPort).measure(ntpHost) }
             main { time.clock.apply(measurement) }
             report.put("ntp_rtt_ms", measurement.roundTripMillis).put("ntp_uncertainty_ms", measurement.uncertaintyMillis)
             await("Operate accessibility window") {

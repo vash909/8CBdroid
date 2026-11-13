@@ -17,7 +17,6 @@ import net.vash.ft8cbdroid.audio.CaptureViewModel
 import net.vash.ft8cbdroid.core.audio.SpectrumState
 import net.vash.ft8cbdroid.core.message.UnpackResult
 import net.vash.ft8cbdroid.core.qso.CbQsoPhase
-import net.vash.ft8cbdroid.ntp.UdpNtpClient
 import net.vash.ft8cbdroid.operate.ManualOperatingViewModel
 import net.vash.ft8cbdroid.profile.ProfilesViewModel
 import net.vash.ft8cbdroid.time.AndroidTimeSource
@@ -86,7 +85,7 @@ class AutomaticPhoneChecks(
             await("Phone profile and time settings") { main { profiles.uiState.value.ready && model.uiState.value.available && time.uiState.value.saved != null } }
             check(main { model.uiState.value.station?.callsign == "1AT106" }) { "Save station 1AT106 and a Phone profile first." }
             val server = main { requireNotNull(time.uiState.value.saved).host }
-            val measured = runBlocking { UdpNtpClient(AndroidTimeSource).measure(server) }
+            val measured = runBlocking { AndroidNtpClient(context).measure(server) }
             main { time.clock.apply(measured) }
             val initialRevision = time.clock.revision
             val clockEvents = JSONArray(); var previousRevision = initialRevision
