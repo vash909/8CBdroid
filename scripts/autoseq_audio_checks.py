@@ -356,8 +356,13 @@ def main():
                         if args.continuous and progress.get('active') and not service_verified:
                             services = adb('shell', 'dumpsys', 'activity', 'services', PACKAGE).decode()
                             (output/'foreground-service.txt').write_text(services)
-                            types = [int(v, 0) for v in re.findall(r'foregroundServiceType=(0x[0-9a-fA-F]+|[0-9]+)', services)]
-                            assert any(value & 0x82 == 0x82 for value in types), 'Microphone/mediaPlayback foreground service not observed'
+                            # Vendor dumps may omit types. The device probe reads Service.getForegroundServiceType().
+                            api = progress['android_api']
+                            types = progress['foreground_service_types']
+                            required = 0x82 if api >= 30 else 0x2 if api >= 29 else 0
+                            assert type(types) is int and types & required == required, 'Microphone/mediaPlayback foreground service not observed'
+                            assert 'isForeground=true foregroundId=2901' in services, 'Operating service is not in the foreground'
+                            (output/'foreground-service-types.json').write_text(json.dumps(dict(android_api=api, actual=types, required=required)))
                             service_verified = True
                         for index, sent in enumerate(progress['sent']):
                             key = (role, index)

@@ -123,6 +123,7 @@ class AutomaticPhoneChecks(
                 check(main { time.uiState.value.refreshWarning == null && !model.uiState.value.autoSequence.active && !model.uiState.value.armed })
                 previousRevision = time.clock.revision
             }
+            var foregroundTypes: Int? = null
             fun progress(role: String, since: Long): JSONObject = main {
                 val value = model.uiState.value; val rx = input.uiState.value
                 val sends = JSONArray()
@@ -140,6 +141,7 @@ class AutomaticPhoneChecks(
                     previousRevision = time.clock.revision
                 }
                 JSONObject().put("run", run).put("role", role).put("active", value.autoSequence.active)
+                    .put("android_api", android.os.Build.VERSION.SDK_INT).put("foreground_service_types", foregroundTypes)
                     .put("reason", value.autoSequence.reason).put("qso", value.qso?.phase?.name)
                     .put("sent", sends).put("rows", rows).put("last_slot_utc", rx.live.lastSlotUtcMillis)
                     .put("receive_started_utc", rx.receiveStartedUtcMillis).put("error", value.error ?: rx.error)
@@ -238,6 +240,13 @@ class AutomaticPhoneChecks(
                     await("AutoSeq started") { main { model.uiState.value.autoSequence.active || model.uiState.value.error != null } }
                     check(main { model.uiState.value.error == null }) { main { model.uiState.value.error.orEmpty() } }
                     if (continuous) {
+                        // Samsung's service dump omits this field. Read the actual Android service API once per role.
+                        foregroundTypes = main {
+                            val field = net.vash.ft8cbdroid.receive.ReceiveRuntime::class.java.getDeclaredField("serviceOwner").apply { isAccessible = true }
+                            val service = requireNotNull(field.get(activity.receiveRuntime) as? android.app.Service)
+                            if (android.os.Build.VERSION.SDK_INT >= 29) service.foregroundServiceType else 0
+                        }
+                        report.put("foreground_service_types", foregroundTypes).put("android_api", android.os.Build.VERSION.SDK_INT)
                         val calibration = main { model.uiState.value.latency }
                         if (role == "calling") {
                             PhoneNavigation.click(instrumentation, "Settings")
