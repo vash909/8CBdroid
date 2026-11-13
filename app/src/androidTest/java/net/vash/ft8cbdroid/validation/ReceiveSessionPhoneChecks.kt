@@ -109,7 +109,8 @@ class ReceiveSessionPhoneChecks(private val instrumentation: Instrumentation, pr
                 PhoneNavigation.click(instrumentation, "Operate")
                 val samples = main { requireNotNull(runtime.capture.uiState.value.metrics).inputSamples }
                 val rotation = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
-                main { current.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+                main { current.requestedOrientation = if (current.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
                 current = requireNotNull(rotation.waitForActivityWithTimeout(8000)) as MainActivity
                 activity = current; instrumentation.removeMonitor(rotation)
                 SystemClock.sleep(500)

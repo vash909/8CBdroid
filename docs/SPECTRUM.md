@@ -24,8 +24,9 @@ samples as local microphone audio. Phone evidence is in [validation](VALIDATION.
    select that frequency. Unsupported/unresolved CB text can still have a valid
    channel frequency; selecting it does not establish a peer or a QSO.
 5. Moving between Operate and the detailed monitor preserves a running capture.
-   Stop clears spectrum, waterfall and decoded markers. Rotation, background,
-   leaving the receive screens for Settings or Chat, route/station changes and capture failure also discard history.
+   Stop clears spectrum, waterfall and decoded markers. Navigation, rotation,
+   background and screen-off preserve an active receive session and its history;
+   route/station changes and capture failure discard it.
    Restart remains explicit. Cursor/zoom choices survive Stop and rotation in
    the current ViewModel, but are not saved across process recreation.
 

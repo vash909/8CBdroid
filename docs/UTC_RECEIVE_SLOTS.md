@@ -131,8 +131,9 @@ metadata for diagnosis, without audio or station/location data.
 Slot-only mode retains one working slot and the latest complete slot. Optional
 live decoding adds one active slot and one latest pending slot; neither mode has
 an unbounded queue. Stop discards the unfinished window and retains the last
-complete one for export. Input/mode changes, ordinary rotation/background or
-leaving the receive screens for Settings or Chat clear captured slots. A pending document export preserves the
+complete one for export. Input/mode/station/time changes and capture errors clear
+captured slots. Navigation, rotation, background and screen-off preserve the
+[explicit receive service](CONTINUOUS_RECEPTION.md). A pending document export preserves the
 stopped snapshot through the picker, including cancellation/retry. Nothing rearms.
 
 ## Verification
@@ -167,7 +168,7 @@ verify the private JSON report against instrumentation output. Audio remains in
 private phone cache unless explicitly copied/exported. Also exercise the actual
 UI: presets/custom host validation, save/reopen, permission denial/allow,
 measurement cancel/retry/apply, slot start/stop/export/picker retry, and
-rotation/background without restart. Record tested CI commit/device/results in
+rotation/background continuity and cold-process behavior without restart. Record tested CI commit/device/results in
 the PR and [validation](VALIDATION.md); failed or blocked hardware checks stay open.
 
 Android contracts: [AudioRecord timestamps](https://developer.android.com/reference/android/media/AudioRecord#getTimestamp(android.media.AudioTimestamp,%20int)),

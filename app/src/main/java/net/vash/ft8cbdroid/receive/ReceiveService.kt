@@ -91,7 +91,7 @@ class ReceiveService : Service() {
         val stop = PendingIntent.getService(this, 1, Intent(this, ReceiveService::class.java).setAction(STOP), immutable)
         return Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_receive)
             .setContentTitle(source.label).setContentText("Reception continues across screens. Tap Stop to end the session.")
-            .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
+            .setContentIntent(open).setDeleteIntent(stop).setOngoing(true).setOnlyAlertOnce(true)
             .setCategory(Notification.CATEGORY_SERVICE).setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(Notification.Action.Builder(null, "Stop RX", stop).build()).build()
     }

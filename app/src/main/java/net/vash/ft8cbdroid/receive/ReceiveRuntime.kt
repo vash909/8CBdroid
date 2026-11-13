@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.receive
 
 import android.Manifest
 import android.app.Application
+import android.app.AppOpsManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModelProvider
@@ -107,7 +108,13 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
         }
     }
     fun foreground(active: Boolean) { visibility.value = active; time.foreground(active || session.uiState.value.active) }
-    fun hasMicrophonePermission() = app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    @Suppress("DEPRECATION") // Check our own app-op on every supported API, including pre-29 phones.
+    fun hasMicrophonePermission(): Boolean {
+        if (app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return false
+        val mode = app.getSystemService(AppOpsManager::class.java).checkOpNoThrow(
+            AppOpsManager.OPSTR_RECORD_AUDIO, android.os.Process.myUid(), app.packageName)
+        return mode != AppOpsManager.MODE_IGNORED && mode != AppOpsManager.MODE_ERRORED
+    }
     private fun gate(source: ReceiveSource): Boolean {
         val current = session.uiState.value
         if (current.source == source && (serviceStarting || current.phase == ReceivePhase.RUNNING)) return true
