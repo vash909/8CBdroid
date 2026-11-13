@@ -73,7 +73,8 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
     onReceive: () -> Unit, onMonitor: () -> Unit, onStop: () -> Unit,
     onView: (SpectrumView) -> Unit, spectrum: @Composable () -> Unit,
     profileName: String? = null, referenceFrequencyHz: Long = 27_265_000L, profileReady: Boolean = true,
-    manual: ManualOperatingState = ManualOperatingState(), manualActions: ManualActions = ManualActions()) {
+    manual: ManualOperatingState = ManualOperatingState(), manualActions: ManualActions = ManualActions(),
+    workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false, pendingQsos: Int = 0) {
     var sent by rememberSaveable { mutableStateOf(false) }
     var filterName by rememberSaveable { mutableStateOf(ActivityFilter.ALL.name) }
     val filter = ActivityFilter.entries.firstOrNull { it.name == filterName } ?: ActivityFilter.ALL
@@ -83,9 +84,14 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
         val small = source == OperatingSource.LOCAL || maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
         Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { onDestination(AppDestination.PROFILES) }, contentPadding = PaddingValues(0.dp)) {
-                Text(if (profileReady) "Profile: ${profileName ?: "Default"}" else "Profiles need attention · open settings",
-                    style = MaterialTheme.typography.labelSmall)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = { onDestination(AppDestination.PROFILES) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(0.dp)) {
+                    Text(if (profileReady) "Profile: ${profileName ?: "Default"}" else "Profiles need attention · open settings",
+                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                TextButton(onClick = { onDestination(AppDestination.LOGBOOK) }) {
+                    Text(if (pendingQsos > 0) "Logbook · $pendingQsos pending" else "Logbook")
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -140,7 +146,7 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 if (small) Modifier.fillMaxWidth().height(280.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView,
                 manual.sent.map { entry -> ActivityMessage(utcTime.format(java.time.Instant.ofEpochMilli(entry.utcMillis)), entry.text,
                     "—", entry.frequencyHz.roundToInt(), "Completed speaker audio · radio TX unconfirmed · reference dial ${entry.referenceDialHz} Hz") },
-                manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty())
+                manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty(), workedCalls, workedAvailable)
             (if (source == OperatingSource.LOCAL) capture.error else lan.error ?: lan.connection.error)?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
@@ -197,8 +203,9 @@ private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: M
 @Composable
 private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boolean) -> Unit,
     source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView, sentRows: List<ActivityMessage> = emptyList(), onPeer: (ManualPeer) -> Unit = {},
-    filter: ActivityFilter = ActivityFilter.ALL, onFilter: (ActivityFilter) -> Unit = {}, ownCall: String = "") {
-    val filtered = rows.filter { it.context.matches(filter, ownCall) }
+    filter: ActivityFilter = ActivityFilter.ALL, onFilter: (ActivityFilter) -> Unit = {}, ownCall: String = "",
+    workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false) {
+    val filtered = rows.filter { it.context.matches(filter, ownCall, if (workedAvailable) workedCalls else emptySet()) }
     val visible = if (sent) sentRows else filtered
     Surface(modifier, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
         Column(Modifier.padding(10.dp)) {
@@ -217,10 +224,12 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                     for ((choice, label) in listOf(ActivityFilter.ALL to "All", ActivityFilter.CQ to "CQ", ActivityFilter.TO_ME to "To me")) {
                         FilterChip(selected = filter == choice, onClick = { onFilter(choice) }, label = { Text(label) })
                     }
-                    FilterChip(selected = false, enabled = false, onClick = {}, label = { Text("Worked") },
-                        modifier = Modifier.semantics { contentDescription = "Worked filter unavailable until QSO logging is implemented" })
+                    FilterChip(selected = filter == ActivityFilter.WORKED, enabled = workedAvailable,
+                        onClick = { onFilter(ActivityFilter.WORKED) }, label = { Text("Worked") },
+                        modifier = Modifier.semantics { contentDescription = "Show senders saved in this station's QSO log" })
                 }
-                Text("Worked filter needs a QSO log.", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                Text(if (workedAvailable) "Worked uses saved contacts for your station." else "Worked is unavailable until the log loads.",
+                    style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
             }
             HorizontalDivider(color = RadioColors.line)
             if (visible.isEmpty()) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {

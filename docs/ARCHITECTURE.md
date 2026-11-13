@@ -99,6 +99,27 @@ and keep editing disabled. The application-context delegate supplies one
 DataStore instance per process. Unsaved station drafts do not change RX hash
 context. No station setting arms TX or opens hardware.
 
+## Durable local log
+
+`core/logbook` validates CB contact fields and tracks one completion identity
+from qualified receiver/confirmed output events. `ManualOperatingViewModel`
+dispatches candidates to `LogbookViewModel` without blocking audio or putting
+storage in Compose. `SqliteQsoLogRepository` uses an app-context singleton,
+serialized IO transactions and SQLite schema 1. Candidate insertion is durable;
+operator-reviewed insertion and candidate removal form one transaction. Unique
+completion identities prevent duplicate records; edit versions prevent stale
+overwrites. Accepted writes survive Activity teardown.
+
+Radio dial frequency requires explicit confirmation. Origin, UTC provenance and
+the last confirmed audio offset stay separate; no CAT/RF measurement is inferred.
+Read/schema/corruption failures preserve existing data and expose recovery;
+the corruption handler never deletes the database. Existing preferences are
+separate. See [logbook storage and checks](LOGBOOK.md).
+
+Worked derives only from saved contacts for the current station. Filters and
+log searches are presentation projections, never QSO/AutoSeq input or peer
+selection. LAN/imported decodes cannot stage a local completion.
+
 ## LAN monitoring
 
 `LanViewModel` validates IPv4/port inputs and serializes Start/Stop/Replay.

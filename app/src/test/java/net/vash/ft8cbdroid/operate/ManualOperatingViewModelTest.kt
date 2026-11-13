@@ -82,10 +82,10 @@ class ManualOperatingViewModelTest {
         }
         override fun close() {}
     }
-    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow(), recovery: suspend () -> Unit = {}): ManualOperatingViewModel {
+    private fun model(engine: Engine = Engine(), player: Player = Player(), prepare: suspend () -> Unit = {}, rx: Flow<CaptureUiState> = emptyFlow(), recovery: suspend () -> Unit = {}, completion: (net.vash.ft8cbdroid.core.logbook.QsoCompletion) -> Unit = {}): ManualOperatingViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider(store, viewModelFactory { initializer {
-            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {}, awaitAutomaticRecovery = recovery)
+            ManualOperatingViewModel(engine, player, coordinator, clock, { receiving }, prepare, dispatcher, rx, prepareAutomaticReceive = {}, awaitAutomaticRecovery = recovery, completedQso = completion)
         } })[ManualOperatingViewModel::class.java]
     }
     private fun sync() { val r = source.read(); clock.apply(TimeMeasurement("NTP/test", r.monotonicNanos, r.unixMillis * 1_000_000, 1.0, r)) }
@@ -228,7 +228,8 @@ class ManualOperatingViewModelTest {
         vm.stop()
     }
     @Test fun automaticCallingConsumesEarlyQualifiedRepliesAndConfirmsOnlyActualWaveforms() = runTest(dispatcher) {
-        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        val logged = mutableListOf<net.vash.ft8cbdroid.core.logbook.QsoCompletion>()
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx, completion = logged::add)
         ready(vm); vm.startAutomatic(true); runCurrent(); assertTrue(vm.uiState.value.autoSequence.active)
         at(44_000); assertEquals("CQ 1AT106", vm.uiState.value.sent.single().text)
         suspend fun incoming(time: Long, slot: Long, text: String, run: Long) {
@@ -248,21 +249,26 @@ class ManualOperatingViewModelTest {
         assertFalse(vm.uiState.value.autoSequence.active); assertTrue(vm.uiState.value.autoSequence.completed)
         assertEquals(3, vm.uiState.value.sent.size); assertTrue(vm.uiState.value.sent.all { it.frames == 161280L })
         assertFalse(vm.uiState.value.armed); at(180_000); assertEquals(3, player.slots)
+        assertEquals(1, logged.size); assertEquals(1_800_000_030_000L, logged.single().details.startedUtcMillis)
+        assertEquals(1_800_000_120_000L, logged.single().details.endedUtcMillis)
+        assertEquals(-12, logged.single().details.sentReport); assertEquals(-7, logged.single().details.receivedReport)
     }
     @Test fun automaticStopEditsClockLossAndBackendFailureCannotRepeatOrRearm() = runTest(dispatcher) {
         for (change in listOf<(ManualOperatingViewModel) -> Unit>({ it.stop() }, { it.frequency("1200") }, { clock.reset() })) {
             receiving = true; sync()
             val rx = MutableStateFlow(automaticInput().copy(receiveTimeRevision = clock.revision,
                 receiveStartedUtcMillis = source.read().unixMillis))
-            val player = Player(); val vm = model(player = player, rx = rx); ready(vm); vm.startAutomatic(true); runCurrent()
+            val logged = mutableListOf<net.vash.ft8cbdroid.core.logbook.QsoCompletion>()
+            val player = Player(); val vm = model(player = player, rx = rx, completion = logged::add); ready(vm); vm.startAutomatic(true); runCurrent()
             repeat(2000) { if (vm.uiState.value.busy) return@repeat; advanceTimeBy(20); runCurrent() }
             assertTrue(vm.uiState.value.busy)
             change(vm); runCurrent(); advanceTimeBy(60_000); runCurrent()
-            assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed); assertTrue(vm.uiState.value.sent.isEmpty())
+            assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed); assertTrue(vm.uiState.value.sent.isEmpty()); assertTrue(logged.isEmpty())
         }
     }
     @Test fun automaticAnswerCompletesAfterTheConfirmed73AndNeverRestartsCalling() = runTest(dispatcher) {
-        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        val logged = mutableListOf<net.vash.ft8cbdroid.core.logbook.QsoCompletion>()
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx, completion = logged::add)
         ready(vm); vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.ODD)); vm.startAutomatic(false); runCurrent()
         at(29_000); assertEquals("<26AT101> 1AT106", vm.uiState.value.sent.single().text)
         at(44_200)
@@ -279,6 +285,10 @@ class ManualOperatingViewModelTest {
         assertEquals(CbQsoPhase.COMPLETE, vm.uiState.value.qso?.phase)
         assertTrue(vm.uiState.value.autoSequence.completed); assertFalse(vm.uiState.value.autoSequence.active)
         assertFalse(vm.uiState.value.armed); at(150_000); assertEquals(3, player.slots)
+        assertEquals(1, logged.size); assertEquals(1_800_000_015_000L, logged.single().details.startedUtcMillis)
+        assertEquals(1_800_000_090_000L, logged.single().details.endedUtcMillis)
+        assertEquals(1500, logged.single().txAudioHz); assertEquals(27_265_000L, logged.single().details.dialHz)
+        vm.resetQso(); vm.stop(); runCurrent(); assertEquals(1, logged.size)
     }
     @Test fun qualifiedLiveReportSuggestsRReportWithoutChangingOrArmingManualTx() = runTest(dispatcher) {
         val rx = MutableStateFlow(liveInput()); val player = Player(); val vm = model(player = player, rx = rx)

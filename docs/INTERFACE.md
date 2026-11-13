@@ -17,9 +17,12 @@ system language. No connection or microphone session starts on launch.
   complete local CB sender and suggests a reply, report, opposite period and TX
   frequency without arming. **Sent** records only completed speaker audio.
 - Received **All / CQ / To me** filters change the display only. Identified senders
-  show their CB division/country; an unknown sender has no label. **Worked** is
-  disabled pending a durable QSO log. A selected local peer also shows country.
+  show their CB division/country; an unknown sender has no label. **Worked** shows
+  senders in the current station's saved log. A selected local peer also shows country.
   See [CB countries and filters](CB_OPERATING_CONTEXT.md) for provenance and limits.
+- **Logbook** opens durable completion reviews and saved contacts. Review and
+  confirm the radio dial before logging; manual entries, editing and search are
+  available. Leaving Operate still stops/disarms audio. See [the logbook guide](LOGBOOK.md).
 - **RX Hz** controls the 200–2950 Hz display cursor. **TX Hz** also selects actual
   manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
   LAN offsets are unavailable; the separate offline waveform editor is unchanged.
@@ -42,6 +45,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Page | Contents |
 | --- | --- |
 | Operating profiles | Named radio/audio/LAN setups, save/apply, validation, discard/delete and disconnected startup. See [profiles](OPERATING_PROFILES.md). |
+| Logbook | Persistent pending exchanges, reviewed contacts, manual entry, edit/search and recovery. |
 | Station | Persistent callsign and Maidenhead locator. |
 | Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; manual output selects the phone speaker on Operate. |
 | Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |

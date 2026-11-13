@@ -14,7 +14,9 @@ phone-speaker exchanges: explicit peer/message selection, enable and one-slot se
 the next CB exchange message; applying advice still requires an explicit action.
 [Foreground acoustic AutoSeq](docs/AUTOSEQ.md) explicitly starts bounded CQ/answer
 exchanges. [CB country labels and receive filters](docs/CB_OPERATING_CONTEXT.md)
-provide offline division context and All/CQ/To-me views. CAT/PTT, persistent QSO logging and qualified USB audio remain unimplemented.
+provide offline division context and receive filters. The [local logbook](docs/LOGBOOK.md)
+retains completed exchanges for review, operator-confirmed contacts and manual
+entries. CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 
@@ -22,7 +24,7 @@ not independently confirm radio TX or a QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me receive filters, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked filtering awaits a durable QSO log. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground operation with bounded retries; LAN remains read-only. |
+| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me/Worked receive filters, Logbook access, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked uses saved contacts for the current station. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Foreground operation with bounded retries; LAN remains read-only. |
 | **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
@@ -69,13 +71,16 @@ commands and debug-signature limitations.
    frequency; **Use peer** selects a complete CB sender without arming TX.
    **All**, **CQ** and **To me** filter displayed rows without changing reception
    or AutoSeq input. Known senders show CB division/country; unidentified senders
-   have no extra label. **Worked** remains disabled until a QSO log exists.
+   have no extra label. **Worked** shows senders in your station's saved log.
    For manual audio exchanges, select and calibrate the speaker, choose a message/period,
    then explicitly Enable TX and Send one slot. Review QSO advice and press
    **Use suggested message** to apply the next template without arming TX.
    **Reset QSO** clears tracking. **Auto CQ** or **Auto answer** starts a bounded
    automatic exchange; edits, Stop or leaving Operate cancel it. See
    [manual operation](docs/MANUAL_OPERATION.md) and [AutoSeq](docs/AUTOSEQ.md).
+   A completed local exchange becomes a durable pending review in **Logbook**.
+   Confirm its actual radio dial before saving; manual entries, search and editing
+   are available there too. Pending reviews do not count as worked contacts.
    **Monitor** displays plain audio
    without time sync. Stop clears local results and hash learning.
 7. For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,
@@ -88,7 +93,8 @@ commands and debug-signature limitations.
 Android's system document picker can use the phone's own language. App controls
 and messages remain English. Ordinary WAV import/export requires no broad
 storage permission. Saved operating profiles, station identity and server preferences are persistent; measured time, hash sessions, decoded
-recordings and generated PCM are temporary. Exported documents remain in the
+recordings and generated PCM are temporary. The local QSO log and pending reviews
+are durable; unsaved manual drafts are temporary. Exported documents remain in the
 chosen location.
 
 See [the interface guide](docs/INTERFACE.md) for navigation and operating controls,

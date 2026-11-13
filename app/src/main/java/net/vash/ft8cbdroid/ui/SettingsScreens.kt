@@ -18,6 +18,7 @@ import net.vash.ft8cbdroid.settings.*
 
 @Composable
 fun SettingsMenu(onOpen: (AppDestination) -> Unit) {
+    SettingsLink("Logbook", "Review, search and edit saved contacts", { onOpen(AppDestination.LOGBOOK) })
     Text("YOUR STATION", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
     SettingsLink("Operating profiles", "Saved radio, audio and LAN setups", { onOpen(AppDestination.PROFILES) })
     SettingsLink("Station", "Callsign and Maidenhead locator", { onOpen(AppDestination.STATION) })
