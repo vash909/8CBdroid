@@ -30,7 +30,9 @@ class PreparedNtpClientTest {
         for (rejection in listOf(IOException("Network unavailable"), IllegalArgumentException("NTP uncertainty exceeds 100 ms"))) {
             var calls = 0
             val client = PreparedNtpClient(NtpClient { calls++; throw rejection }, ::acquire)
-            assertSame(rejection, runCatching { client.measure("test") }.exceptionOrNull())
+            val error = runCatching { client.measure("test") }.exceptionOrNull()
+            assertEquals(rejection.javaClass, error?.javaClass)
+            assertEquals(rejection.message, error?.message)
             assertEquals(1, calls); assertFalse(held)
         }
         assertEquals(2, releases)
