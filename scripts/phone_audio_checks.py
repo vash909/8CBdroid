@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify foreground phone RX/output/recovery using physical PC speakers and microphone.
+"""Qualify phone RX/output/recovery using physical PC speakers and microphone.
 
 Install matching app/test/probe APKs and grant microphone permission first. Requires
 an unlocked phone, NTP-synchronized Linux host, PipeWire and libpulse-simple.
@@ -78,9 +78,10 @@ def main():
                 '-e', 'scenario', scenario, '-e', 'preview_run', run, '-e', 'ntp_host', args.ntp_host,
                 '-e', 'ntp_port', str(args.ntp_port), package+'.test/'+package+'.validation.WaveformPhoneChecks'],
                 env=env, stdout=log, stderr=subprocess.STDOUT)
-            until = time.monotonic()+660
+            deadline_seconds = 840 if args.manual else 660
+            until = time.monotonic()+deadline_seconds
             while process.poll() is None:
-                assert time.monotonic() < until, 'Phone audio check exceeded 660 seconds.'
+                assert time.monotonic() < until, f'Phone audio check exceeded {deadline_seconds} seconds.'
                 if recorder is not None:
                     assert recorder.poll() is None, 'Physical recording ended before the phone completed its output stage.'
                 if scheduled is not None and time.time() >= scheduled:

@@ -1,4 +1,4 @@
-# Foreground acoustic AutoSeq
+# Acoustic AutoSeq
 
 Auto CQ and Auto answer execute the qualified CB QSO decisions through the phone
 microphone and speaker. They require an applied Phone input/output profile,
@@ -19,11 +19,13 @@ progress. Unknown hashes, unrelated finals and invalid messages retain the
 [admission rules](QSO_ADVICE.md). Actual completed output confirms sent facts.
 
 **Stop**, **Stop AutoSeq**, edits, a peer/period/source/profile change,
-navigation, backgrounding, recreation, clock/latency failure, or an audio error
-cancel automatic work. An interrupted waveform is not added to Sent. Returning
+clock/latency failure, or an audio error cancel automatic work. An interrupted waveform is not added to Sent. Returning
 to the page, regaining focus, refreshing time or recreating the process never
-arms or restarts a transmission. Keep Operate visible; this is not a background
-operating service. Recalibrate when its five-minute latency measurement expires.
+arms or restarts a stopped transmission. Once started explicitly, the operating
+service preserves the exchange across navigation, Activity recreation, background
+and screen-off. Use **Stop TX** or **Stop session** in the ongoing notification
+or global in-app controls. Recalibrate when the five-minute latency measurement
+expires. See [continuous sessions](CONTINUOUS_RECEPTION.md).
 
 ## Immediate response timing
 
@@ -52,7 +54,7 @@ passing an offline decoder probe alone does not establish immediate RX recovery.
 ## Time renewal
 
 After an initial explicitly applied NTP measurement, the selected server is
-measured nominally every five minutes while the app is visible. No per-message
+measured nominally every five minutes while the app is visible or reception is active. No per-message
 request or automatic server failover is used. A fresh measurement waits until
 input is released and no output plan exists. Queued/playing plans retain their
 immutable clock mapping. A periodic correction above 50 ms requires explicit
@@ -61,7 +63,8 @@ review/application; it cannot silently move an active exchange.
 A small accessible warning on Operate links to Time synchronization when a
 refresh fails or time expires. Failure preserves the previous measurement's
 original ten-minute expiry; it does not extend it. Expiry disables TX. A later
-successful renewal can restore time while idle but cannot restart RX or AutoSeq.
+successful renewal can restore time at an idle boundary but cannot restart a stopped
+RX session or AutoSeq.
 GPS remains explicit, with no hidden NTP dependency. See [time synchronization](UTC_RECEIVE_SLOTS.md).
 
 ## Reproduce checks
@@ -86,8 +89,8 @@ The test uses actual Operate buttons, five calling outputs with an intentionally
 lost reply and repeated reply, three answering outputs and three no-response
 CQs. All expected peer responses use the immediately following RX period; a
 whole-cycle delay fails acceptance. It observes a real five-minute NTP renewal,
-then checks queued/playing Stop, edits, clock reset, focus, navigation and retained
-recreation. The PC decodes each actual phone waveform with installed WSJT-CB
+then checks queued/playing Stop, edits, clock reset, focus, profile and microphone
+access loss; navigation/recreation retain automation until an explicit Stop. The PC decodes each actual phone waveform with installed WSJT-CB
 before supplying its response, using a genuine 15-second observation ending at
 slot +13.4 seconds. It tries desktop depth 1 first, with a depth-2 retry on the
 same samples only while the fixed next-response deadline allows. All eleven
@@ -111,3 +114,9 @@ The relevant PR records tested commit, CI, device, results and limitations.
 This is acoustic software interoperability and inferred protocol completion;
 it does not establish radio TX, an RF QSO or USB/CAT operation. The separate
 [logbook checks](LOGBOOK.md#reproduce-checks) qualify completion review and storage.
+
+Add `--continuous` to run interruption guards first, then calling and no-response
+exchanges in the background and a complete answering exchange with the screen
+off. This mode verifies the actual microphone/mediaPlayback foreground service
+and omits the separate network-outage/UI-recovery phase. Both modes remove only
+their staged bench log completions by ID; existing operator data stays intact.

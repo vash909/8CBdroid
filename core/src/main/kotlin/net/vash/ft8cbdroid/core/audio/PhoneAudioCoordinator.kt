@@ -15,7 +15,7 @@ interface PhoneAudioReceiver {
     suspend fun pause(): (() -> Boolean)?
 }
 
-/** Foreground owner shared by calibration, immediate playback and one queued slot.
+/** Audio owner shared by explicit operating sessions and foreground-only bench output.
  * Call on the same dispatcher as receiver controls. Output must return only after device cleanup.
  */
 class PhoneAudioCoordinator(private val receiver: PhoneAudioReceiver) {

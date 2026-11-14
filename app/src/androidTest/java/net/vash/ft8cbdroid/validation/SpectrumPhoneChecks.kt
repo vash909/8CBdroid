@@ -79,7 +79,7 @@ class SpectrumPhoneChecks(private val instrumentation: Instrumentation) {
             val context = instrumentation.targetContext
             activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
-            val station = main { ViewModelProvider(activity)[StationSettingsViewModel::class.java] }
+            val station = main { activity.receiveRuntime.station }
             await("saved station loaded") { main { !station.uiState.value.isLoading } }
             val audio = main { activity.receiveRuntime.capture }; capture = audio
             PhoneNavigation.open(instrumentation, "Microphone tools")

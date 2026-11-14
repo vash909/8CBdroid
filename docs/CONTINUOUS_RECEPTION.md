@@ -1,4 +1,4 @@
-# Continuous reception
+# Continuous operating sessions
 
 An explicit **Start RX**, **Monitor** or **Start microphone** request starts one
 receive foreground service. The same microphone or WSJT-CB LAN listener continues
@@ -9,8 +9,9 @@ Returning observes that session; it does not open another input or socket.
 
 Allow microphone access for local audio and **receive notifications** when asked.
 Notifications must remain enabled so **Stop RX** stays available outside the app.
-The ongoing notification identifies Microphone RX or WSJT-CB LAN RX and opens the
-app. Its Stop action and the in-app Stop controls invalidate pending starts and
+The ongoing notification identifies the phone audio or WSJT-CB LAN session and
+opens the app. During TX/AutoSeq it shows **Stop TX** and **Stop session**;
+with RX alone, **Stop RX** ends reception. Its session Stop and the in-app controls invalidate pending starts and
 recovery, cancel output, join recorder/socket cleanup and remove the notification.
 A normal microphone Stop retains recent diagnostic PCM/the last full slot for
 explicit WAV export; live rows/hash learning are cleared. Profile changes and
@@ -44,17 +45,42 @@ credentials. Stop/failure/service destruction releases its resources. Continuous
 capture/decoding uses battery; Samsung or other vendor power policy can still end
 the process. No unlimited-runtime or all-Android-version qualification is implied.
 
-**Transmit remains foreground-only.** Leaving Operate, backgrounding or rotating
-cancels/disarms queued speaker output and acoustic AutoSeq. Successful foreground
-speaker output may recover an existing input through its qualified coordinator;
-cancelled output cannot silently restart it. Receive continuity does not authorize
-background transmission. CAT/USB hardware and full TX session ownership are separate.
+Each Android NTP request also holds short CPU/Wi-Fi leases, with an eight-second
+deadline and release on success, failure or cancellation. Radio preparation precedes
+the timestamped packet; it changes neither the five-minute cadence nor the 100 ms
+quality limit. The Wi-Fi request is best effort and subject to the platform's
+[Wi-Fi lock policy](https://developer.android.com/reference/android/net/wifi/WifiManager#WIFI_MODE_FULL_HIGH_PERF);
+it cannot guarantee that an Internet server or route will meet that limit.
+
+**Explicit operating output also continues.** After starting local FT8 RX, select
+and calibrate the speaker, then explicitly enable one manual message or start
+Auto CQ/answer. The same session retains output, timing, QSO tracking and log
+completion through navigation, Activity recreation, background and screen-off.
+Returning observes the same owner; it never arms an idle or restarted process.
+
+**Stop TX** cancels queued/playing output and AutoSeq. A still-running receiver
+can remain active; a receiver paused by cancelled output does not silently reopen.
+**Stop session** ends both RX and TX. Source/profile/station changes, invalid time,
+permission loss, audio-focus/route errors and service destruction invalidate work.
+Restoring a prerequisite never restarts TX. Completed audio alone is added to Sent.
+
+An unused manual TX arm expires after two minutes. Each audio operation, including
+preparation and cleanup, has a 60-second coroutine deadline. AutoSeq retains its
+three-copy, two-minute no-progress and four-minute session limits, with an
+additional monotonic four-minute deadline that includes preparation. These bounds
+never reschedule late audio or bypass UTC, calibration or permission checks.
+Standalone calibration/test tone without RX and Message tools previews remain
+foreground-only. An explicit bench output cancels competing operating output
+before acquiring the shared audio coordinator. CAT/USB hardware remains separate.
 
 The service uses Android's microphone type for local input and connected-device
-type for the network listener. Start and notification behavior follows the platform
+type for the network listener. Before authorizing continuous speaker output, the
+existing microphone service adds the mediaPlayback type; failed promotion cannot
+grant TX authorization. No second audio service is created. Start and notification behavior follows the platform
 [service types](https://developer.android.com/develop/background-work/services/fgs/service-types),
 [foreground launch restrictions](https://developer.android.com/develop/background-work/services/fgs/launch)
 and [notification permission](https://developer.android.com/develop/ui/compose/notifications/notification-permission).
+Background playback retains the existing [audio-focus checks](https://developer.android.com/media/optimize/audio-focus).
 
 ## Reproduce phone checks
 
@@ -84,3 +110,38 @@ After host force-stop, run the `receive-cold` device-check scenario with a uniqu
 Real USB detach qualification requires the separately supported physical USB route;
 this change does not qualify USB audio. Exact tested device/OS and CI revision
 belong in the feature PR and [validation record](VALIDATION.md).
+
+## Reproduce continuous TX and AutoSeq
+
+Use matching successful-CI app/test/probe APKs, test station `1AT106`, a Phone
+profile, a working selected NTP server, a synchronized Linux host and physical
+PC speakers/microphone. See [manual operation](MANUAL_OPERATION.md#reference-and-physical-checks)
+for the manual acoustic suite. It records three full output waveforms, including
+background/Activity destruction and real rotation, checks explicit UI/notification
+Stop and a real two-minute unused-arm timeout, then removes only its staged log
+fixtures by ID. Independently decode the physical recordings and measure onset.
+
+For full automatic calling, bounded no-response and a final complete screen-off
+answering exchange, use the original installed WSJT-CB decoder:
+
+```bash
+source scripts/env.sh
+timeout 1500 python3 scripts/autoseq_audio_checks.py --continuous \
+  --output /path/to/new-private-directory --jt9 /path/to/wsjt-cb/jt9
+```
+
+This checks queued/playing Stop, edits, clock reset, real focus and microphone
+access loss, profile replacement, navigation/Activity recreation and notification
+Stop before the acoustic exchanges. It verifies the actual microphone/mediaPlayback
+foreground type, live desktop decoding of all eleven physical phone outputs,
+complete peer responses, receive recovery and a real periodic NTP update. The
+last answering exchange runs with the screen off and needs no UI intervention.
+Completed bench exchanges must stage exactly one log review each; fixtures are
+removed by ID while existing contacts/pending entries are preserved.
+
+This mode omits the separate NTP outage/UI-recovery scenario; the default
+[AutoSeq suite](AUTOSEQ.md#reproduce-checks) retains it. Follow with force-stop and
+`receive-cold` as above to check that a new process leaves RX/TX/AutoSeq off.
+Keep ambient recordings, device identifiers and settings backups private. Actual
+Android device/CI results belong in the feature PR; these steps alone are not a
+qualification claim for every phone or Android version.

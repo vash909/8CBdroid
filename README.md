@@ -8,17 +8,21 @@ project documentation use English.
 and recorded-slot decoding are implemented, along with microphone capture,
 NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
 software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
-microphone pause/recovery are available. Operate now offers foreground manual
+microphone pause/recovery are available. Operate offers session-owned manual
 phone-speaker exchanges: explicit peer/message selection, enable and one-slot send.
 [Local QSO advice](docs/QSO_ADVICE.md) now qualifies peer messages and suggests
 the next CB exchange message; applying advice still requires an explicit action.
-[Foreground acoustic AutoSeq](docs/AUTOSEQ.md) explicitly starts bounded CQ/answer
+[Acoustic AutoSeq](docs/AUTOSEQ.md) explicitly starts bounded CQ/answer
 exchanges. [CB country labels and receive filters](docs/CB_OPERATING_CONTEXT.md)
 provide offline division context and receive filters. The [local logbook](docs/LOGBOOK.md)
 retains completed exchanges for review, operator-confirmed contacts and manual
 entries. [Continuous reception](docs/CONTINUOUS_RECEPTION.md) keeps explicitly
 started microphone/LAN RX alive across screens, background and screen-off, with
-a notification Stop action. TX/AutoSeq remain foreground-only. CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
+notification Stop controls. Explicitly armed manual TX and started AutoSeq also
+continue across screens, background and screen-off in that session. NTP requests
+briefly prepare CPU/Wi-Fi resources within an eight-second budget; the five-minute
+refresh cadence, quality checks and expiry remain unchanged.
+CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 
@@ -26,7 +30,7 @@ not independently confirm radio TX or a QSO.
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me/Worked receive filters, Logbook access, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked uses saved contacts for the current station. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Continuous RX; foreground TX/AutoSeq with bounded retries. LAN remains read-only. |
+| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me/Worked receive filters, Logbook access, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked uses saved contacts for the current station. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Continuous RX and explicitly started TX/AutoSeq with bounded retries. LAN remains read-only. |
 | **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 

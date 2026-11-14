@@ -89,9 +89,9 @@ class LogbookPhoneChecks(private val instrumentation: Instrumentation, private v
                 var current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
                 activity = current
-                val model = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; operating = model
+                val model = main { current.receiveRuntime.manual }; operating = model
                 val input = main { current.receiveRuntime.capture }; capture = input
-                val log = main { ViewModelProvider(current)[LogbookViewModel::class.java] }
+                val log = main { current.receiveRuntime.logbook }
                 val time = main { current.receiveRuntime.time }
                 await("saved setup and real log") { main { model.uiState.value.available && log.uiState.value.loaded && !log.uiState.value.busy && time.uiState.value.saved != null } }
                 if (scenario == "logbook-reopen") {

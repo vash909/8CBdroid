@@ -18,17 +18,16 @@ qualification or a statement that all possible checks passed.
 | Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. Complete desktop decoder parity remains unverified. |
 | Microphone capture | Selected explicit input, levels, bounded PCM, resampling and diagnostic export. | R10 built-in A51 microphone and acoustic PC/phone tone checks. |
 | UTC receive slots | Complete timestamped windows using measured NTP/GPS app time. | R11 A51/S25 FE checks below; incomplete or interrupted windows are discarded. |
-| Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. RX continuity uses the receive service; TX remains foreground-only. |
+| Live local reception | Automatic complete-slot decoding, bounded work/history and per-run CB hash learning. | R12 desktop-speaker to A51-microphone reception plus real UI/lifecycle checks below. RX and explicitly started TX/AutoSeq use the operating service; see continuous-session checks below. |
 | Spectrum and waterfall | 2 Hz microphone display, 96-row history, zoom/pan, independent RX/TX selection and decoded-frequency markers. | A51 physical-tone, acoustic FT8 and UI checks below. Cursors do not filter, tune or transmit. |
 | CB operating context | Offline division/country labels and receive filters for local/LAN activity. | 350 pinned divisions and 1,249 original C++ lookup comparisons; message/filter tests and a short physical acoustic/UDP UI regression described in [the guide](CB_OPERATING_CONTEXT.md). Worked uses saved local contacts. |
 | Local QSO log | Durable completion candidates, operator-confirmed dial, saved/manual contacts, edit/search and Worked history. | Domain/ViewModel tests and [real SQLite/acoustic/UI reproduction](LOGBOOK.md#reproduce-checks); feature PR records the exact tested CI/device. No CAT readback or RF confirmation is inferred. |
 
-There is no implemented CAT/PTT,
-live radio TX,
-background TX/AutoSeq session ownership. The local log records reviewed/operator
-contacts; it is not RF verification. Foreground acoustic AutoSeq
-is implemented with [reproducible qualification](AUTOSEQ.md); its feature PR
-records matching-artifact phone evidence, including any incomplete attempts.
+CAT/PTT and qualified USB audio remain unimplemented. The operating service owns
+explicitly started acoustic TX and AutoSeq across screens and background; see
+the continuous-session checks below and [PR #44](https://github.com/vash909/8CBdroid/pull/44)
+for finite device qualification. The local log records reviewed/operator contacts;
+neither a saved contact nor a completed waveform independently verifies RF.
 
 ## Reproducible coverage
 
@@ -446,7 +445,7 @@ PR; synthetic callback traces alone do not qualify physical integration.
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
 - Durable QSO logging and automation through the deferred CAT/USB backends.
-  Foreground acoustic AutoSeq has the separate finite qualification described below.
+  Acoustic AutoSeq has the separate finite qualification described below.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.
@@ -542,3 +541,20 @@ socket start. The [real-phone reproduction](CONTINUOUS_RECEPTION.md#reproduce-ph
 uses actual microphone FT8, interruptions and UDP traffic. Exact successful CI and
 physical device evidence must be recorded in the feature PR before qualification;
 implementation alone does not establish all Android/OEM or USB support.
+
+## Continuous operating validation
+
+The process-owned graph now also owns manual output, AutoSeq, station context
+and log completion callbacks. The existing service promotes microphone sessions
+with mediaPlayback before authorizing output; generation-bound authorization is
+never restored. JVM tests cover failed promotion, stopped/replacement generations,
+manual arm expiry and stalled generation/automatic-preparation watchdogs.
+
+The updated [manual](MANUAL_OPERATION.md#reference-and-physical-checks) and
+[continuous AutoSeq](CONTINUOUS_RECEPTION.md#reproduce-continuous-tx-and-autoseq)
+checks exercise actual complete waveforms through lifecycle transitions, explicit
+UI/notification Stop, permission/focus/profile failures, bounded retries and
+headless completion staging. Match the successful CI APKs to the tested commit,
+independently decode and measure the physical recordings, and record exact device
+results in the feature PR. Prior foreground cancellation evidence remains
+historical; it does not assert that navigation cancels current operating output.

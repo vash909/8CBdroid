@@ -50,7 +50,7 @@ class OperatingContextPhoneChecks(private val instrumentation: Instrumentation, 
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             activity = current
             val input = main { current.receiveRuntime.capture }; capture = input
-            val operating = main { ViewModelProvider(current)[ManualOperatingViewModel::class.java] }; model = operating
+            val operating = main { current.receiveRuntime.manual }; model = operating
             val time = main { current.receiveRuntime.time }
             await("saved Phone setup") { main { input.uiState.value.canStart && operating.uiState.value.available && time.uiState.value.saved != null } }
             check(main { operating.uiState.value.station?.callsign == "1AT106" })

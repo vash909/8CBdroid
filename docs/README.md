@@ -1,7 +1,7 @@
 # Documentation index
 
 8CBdroid currently supports LAN monitoring and offline CB message/audio-file
-experiments, plus foreground microphone capture and local FT8 reception. Start with the [repository README](../README.md) for screen-level
+experiments, plus continuous microphone capture/local FT8 reception and explicit acoustic operating sessions. Start with the [repository README](../README.md) for screen-level
 capabilities and a first test. The [validation record](VALIDATION.md) separates
 implemented behavior, device evidence and checks still pending.
 
@@ -17,7 +17,7 @@ implemented behavior, device evidence and checks still pending.
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
-| [Foreground acoustic AutoSeq](AUTOSEQ.md) | Explicit automatic CQ/answer, bounded retries, immediate RX recovery and periodic NTP refresh. |
+| [Acoustic AutoSeq](AUTOSEQ.md) | Explicit automatic CQ/answer, bounded retries, immediate RX recovery and periodic NTP refresh. |
 | [Manual acoustic operation](MANUAL_OPERATION.md) | Explicit CB peer/messages, one-slot speaker sends, receive recovery and limits. |
 | [Acoustic desktop interoperability](ACOUSTIC_INTEROP.md) | Reproducible numeric/slash exchanges, hash resets, degraded input and independent desktop decodes of physical phone audio. |
 | [One-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md) | Measured output latency, even/odd slots and cancellation of stale work. |
@@ -64,4 +64,4 @@ implemented behavior, device evidence and checks still pending.
   a claim of radio interoperability. Keep private backups, device identifiers
   and personal recordings out of committed documentation.
 
-- [Continuous reception](CONTINUOUS_RECEPTION.md): service ownership, notification Stop, permissions and phone checks.
+- [Continuous sessions](CONTINUOUS_RECEPTION.md): RX/TX/AutoSeq ownership, notification Stop, permissions and phone checks.

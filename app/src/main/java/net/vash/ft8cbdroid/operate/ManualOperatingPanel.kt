@@ -36,7 +36,7 @@ fun ManualOperatingPanel(state: ManualOperatingState, actions: ManualActions) {
             OutlinedButton(onClick = { actions.startAutomatic(true) }, enabled = state.canArm) { Text("Auto CQ") }
             OutlinedButton(onClick = { actions.startAutomatic(false) }, enabled = state.canArm && state.peer.isNotEmpty()) { Text("Auto answer") }
         }
-        Text("AutoSeq stays on this page: three sends per message, a two-minute no-progress timeout and a four-minute session limit. Edits or Stop cancel it; it never restarts itself.", style = MaterialTheme.typography.bodySmall)
+        Text("AutoSeq continues across screens and screen-off: three sends per message, a two-minute no-progress timeout and a four-minute session limit. Edits or Stop cancel it; it never restarts itself.", style = MaterialTheme.typography.bodySmall)
         state.qso?.let { qso ->
             Text("QSO: ${qso.phase.name.lowercase().replace('_', ' ')} · ${qso.peer ?: "No peer"}")
             state.suggestion?.let { suggestion ->
@@ -91,6 +91,6 @@ fun ManualOperatingPanel(state: ManualOperatingState, actions: ManualActions) {
         }
         state.latency?.let { Text(java.lang.String.format(java.util.Locale.ROOT, "Speaker latency: %.1f ms · valid for 5 minutes", it.nanos / 1e6)) }
         state.validation?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        Text("Each completed speaker slot disables TX. Choose and enable the next message manually. Stop, edits, navigation, rotation, profile changes and background disarm TX; interrupted slots are not added to Sent.", style = MaterialTheme.typography.bodySmall)
+        Text("Each completed speaker slot disables TX. Choose and enable the next message manually; an unused TX arm expires after two minutes. The session continues across screens, rotation and screen-off. Stop, edits, profile changes or audio/time errors disarm TX; interrupted slots are not added to Sent.", style = MaterialTheme.typography.bodySmall)
     }
 }

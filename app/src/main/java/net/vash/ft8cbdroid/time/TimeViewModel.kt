@@ -199,7 +199,7 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
     companion object {
         fun factory(context: Context) = viewModelFactory {
             initializer { TimeViewModel(DataStoreTimePreferencesRepository(context.applicationContext.timePreferences),
-                UdpNtpClient(AndroidTimeSource), AndroidGpsTimeClient(context), ReceiveClock(AndroidTimeSource)) }
+                AndroidNtpClient(context), AndroidGpsTimeClient(context), ReceiveClock(AndroidTimeSource)) }
         }
     }
 }

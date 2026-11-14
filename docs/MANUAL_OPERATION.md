@@ -43,7 +43,7 @@ sending. Select free-text mode explicitly when wanted; its limit is 13 encoded
 characters. Lossy content changes require consent, which any edit revokes.
 Unsupported input, unresolved placeholders and incomplete CB identities block TX.
 
-Press **Enable TX**, then **Send one slot**. Enabling alone produces no audio.
+Press **Enable TX**, then **Send one slot**. Enabling alone produces no audio; an unused arm expires after two minutes.
 The message, payload, peer, level, output, period and time mapping are frozen for
 one slot with at least two seconds of preparation margin. A changed correction
 cancels rather than moving the transmission. The microphone and decoder are
@@ -70,18 +70,20 @@ Stop cannot be recalled.
 
 **Stop** cancels queued/playing audio, disarms TX and stops reception. Message,
 peer, report, period, frequency, level or output edits also cancel/disarm.
-Navigation away from Operate, backgrounding, rotation, source/profile changes,
-audio-focus loss, invalid/expired time or calibration, and route changes require
-explicit recovery. Output errors never restart RX. Check the displayed error,
-start RX and enable/send again; nothing resumes silently.
+Source/profile/station changes, audio-focus loss, invalid/expired time or
+calibration, and route changes require explicit recovery. Output errors never
+restart RX. Check the displayed error, start RX and enable/send again; nothing
+resumes silently. The session notification and every page expose **Stop TX**
+while armed or active; **Stop session** ends RX and TX together.
 
-Applying a profile or changing operating setup clears speaker selection and
-calibration. Starting a new process restores neither pending work nor armed TX;
-station/profile/server preferences remain saved. Manual output stops when
-leaving Operate, backgrounding or rotating. An active receiver continues through
-configuration, Chat, background and screen-off via the [receive service](CONTINUOUS_RECEPTION.md).
-Cancelled output still cannot silently resume an input it paused. Background TX
-session ownership remains separate.
+With an explicitly started microphone session, navigating, recreating the
+Activity, switching apps and screen-off preserve the same manual output owner.
+Speaker selection/calibration and QSO tracking survive these transitions.
+Standalone calibration/tone without RX and Message tools previews remain
+foreground-only. Applying a profile or changing operating setup clears speaker
+selection/calibration. A new process restores neither queued work nor armed TX;
+station/profile/server preferences remain saved. Cancelled output cannot silently
+resume its paused input. See [continuous sessions](CONTINUOUS_RECEPTION.md).
 
 ## Reference and physical checks
 
@@ -106,7 +108,9 @@ six incoming messages acoustically, including RRR and a foreign final, and recor
 microphone timestamps. The phone checks actual Operate controls, manual peer/
 message advice/application without arming, actual report/final progression through
 confirmed output, RX/output recovery, cold/warm receive context, bounded tone,
-Stop, edits, focus loss, time reset, navigation, recreation and profile cleanup.
+Stop, edits, focus loss, time reset, actual navigation/Activity destruction and
+rotation through complete output, notification Stop, a real unused-arm watchdog
+and profile cleanup. It removes only its staged bench log fixtures by ID.
 Independently decode all recorded outgoing payloads/tones and measure onset;
 Android playback counters alone are insufficient. These are acoustic software
 checks, not radio/RF observations or the complete desktop GUI/search pipeline.
