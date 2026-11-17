@@ -5,7 +5,7 @@ enum class AppDestination(val title: String) {
     OPERATE("Operate"), SETTINGS("Settings"), CHAT("Chat"),
     PROFILES("Operating profiles"), STATION("Station"), AUDIO("Audio & source"), TIME("Time synchronization"),
     LAN("WSJT-CB LAN"), USB("USB / CAT"), CAPTURE("Microphone tools"),
-    MESSAGES("Message tools"), RECORDINGS("Recorded audio"), LOGBOOK("Logbook");
+    MESSAGES("Message tools"), RECORDINGS("Recorded audio"), LOGBOOK("Logbook"), DIAGNOSTICS("Session diagnostics");
     val showsReceiver get() = this == OPERATE || this == CAPTURE
     val tab get() = when (this) { OPERATE -> OPERATE; CHAT -> CHAT; else -> SETTINGS }
 }

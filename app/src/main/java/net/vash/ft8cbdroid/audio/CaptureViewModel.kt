@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import net.vash.ft8cbdroid.core.audio.*
+import net.vash.ft8cbdroid.core.diagnostics.*
 import net.vash.ft8cbdroid.core.time.*
 import net.vash.ft8cbdroid.core.Ft8Engine
 import net.vash.ft8cbdroid.core.Ft8DecodeProfile
@@ -57,7 +58,8 @@ private data class CapturePublication(val metrics: CaptureMetrics, val progress:
 
 /** Each start is explicit. Permission callbacks and late worker updates cannot restart stopped capture. */
 class CaptureViewModel(private val capture: MicrophoneCapture, private val writer: CaptureWriter, private val clock: ReceiveClock? = null,
-    private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default, private val startSession: (() -> Boolean)? = null) : ViewModel() {
+    private val engine: Ft8Engine? = null, private val worker: CoroutineDispatcher = Dispatchers.Default, private val startSession: (() -> Boolean)? = null,
+    private val diagnostics: ReceiveDiagnosticSink = ReceiveDiagnosticSink { _, _ -> }) : ViewModel() {
     private val state = MutableStateFlow(CaptureUiState())
     val uiState = state.asStateFlow()
     // Fast observations have their own UI subscribers; only controls invalidate the app shell.
@@ -233,7 +235,7 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                     state.value = state.value.copy(receiveRun = ticket,
                         receiveStartedUtcMillis = mapping.at(clock.source.read().monotonicNanos) / 1_000_000,
                         receiveTimeRevision = mapping.revision)
-                    val live = LiveSlotReceiver(requireNotNull(engine), this, call, profile, worker)
+                    val live = LiveSlotReceiver(requireNotNull(engine), this, call, profile, worker, diagnostics)
                     receiver = live
                     liveRender = launch {
                         live.uiState.collect { result ->
@@ -243,18 +245,31 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                     }
                 }
                 if (state.value.assembleUtc) assembler = UtcSlotAssembler(requireNotNull(clock)) {
-                    completedSlot.set(it); if (!earlyEnabled) receiver?.offer(it)
+                    completedSlot.set(it)
+                    diagnostics.record(ReceiveDiagnosticEvent.WINDOW_COMPLETE, null)
+                    if (!earlyEnabled) receiver?.offer(it)
                 }
                 if (earlyEnabled) earlyAssembler = UtcReceiveWindowAssembler(requireNotNull(clock)) { receiver?.offer(it) }
                 // Conflate UI observations without suspending the hardware reader on the main thread.
+                var inputStarted = false
                 val update: suspend (CaptureMetrics) -> Unit = { metrics ->
                     if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) {
+                        if (!inputStarted) { inputStarted = true; diagnostics.record(ReceiveDiagnosticEvent.INPUT_STARTED, null) }
                         val slot = completedSlot.get()
                         updates.value = CapturePublication(metrics, assembler?.progress(), slot?.utcStartMillis,
                             slot?.source, slot?.uncertaintyMillis)
                     }
                 }
+                var seenDiscarded = 0L
                 val slotBuilder = assembler
+                fun push(chunk: TimedCaptureChunk) {
+                    slotBuilder?.push(chunk); earlyAssembler?.push(chunk)
+                    val discarded = slotBuilder?.progress()?.discarded ?: 0
+                    repeat((discarded - seenDiscarded).coerceIn(0, 2).toInt()) {
+                        diagnostics.record(ReceiveDiagnosticEvent.WINDOW_DISCARDED, null)
+                    }
+                    seenDiscarded = discarded
+                }
                 if (capture is PcmMicrophoneCapture) {
                     val monitor = SpectrumMonitor(this, worker); spectrum = monitor
                     spectrumRender = launch {
@@ -263,18 +278,19 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
                                 state.value = state.value.copy(spectrum = value)
                         }
                     }
-                    capture.capturePcm(id, update, { monitor.offer(it) }, slotBuilder?.let { builder ->
-                        { chunk -> if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { builder.push(chunk); earlyAssembler?.push(chunk) } }
+                    capture.capturePcm(id, update, { monitor.offer(it) }, slotBuilder?.let { _ ->
+                        { chunk -> if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { push(chunk) } }
                     })
                 } else if (slotBuilder != null) {
                     val timed = capture as? TimestampedMicrophoneCapture ?: throw CaptureException("This audio backend does not provide timestamps.")
                     timed.captureTimed(id, update) {
-                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { slotBuilder.push(it); earlyAssembler?.push(it) }
+                        if (ticket == generation && state.value.phase in listOf(CapturePhase.STARTING, CapturePhase.CAPTURING)) { push(it) }
                     }
                 } else capture.capture(id, update)
                 throw CaptureException("Microphone capture ended. Press Start microphone to retry.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
+                diagnostics.record(ReceiveDiagnosticEvent.INPUT_FAILED, null)
                 capture.clear(); latestSlot = null; completedSlot.set(null); updates.value = null
                 state.value = state.value.copy(metrics = null, slots = null, latestSlotUtcMillis = null, live = LiveReceiveState(), spectrum = SpectrumState(),
                     error = if (error is CaptureException || error is TimeException) error.message
@@ -363,13 +379,14 @@ class CaptureViewModel(private val capture: MicrophoneCapture, private val write
     }
     override fun onCleared() { job?.cancel(); capture.close() }
     companion object {
-        fun factory(context: Context, resolver: ContentResolver, clock: ReceiveClock, startSession: (() -> Boolean)? = null) = viewModelFactory {
+        fun factory(context: Context, resolver: ContentResolver, clock: ReceiveClock, startSession: (() -> Boolean)? = null,
+            diagnostics: ReceiveDiagnosticSink = ReceiveDiagnosticSink { _, _ -> }) = viewModelFactory {
             initializer { CaptureViewModel(AndroidMicrophoneCapture(context), CaptureWriter { document, bytes ->
                 withContext(Dispatchers.IO) {
                     val output = resolver.openOutputStream(Uri.parse(document), "wt") ?: error("No output stream")
                     output.use { it.write(bytes) }
                 }
-            }, clock, NativeFt8Engine(), startSession = startSession) }
+            }, clock, NativeFt8Engine(), startSession = startSession, diagnostics = diagnostics) }
         }
     }
 }

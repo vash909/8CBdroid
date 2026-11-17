@@ -3,6 +3,7 @@ package net.vash.ft8cbdroid.core.audio
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
 import net.vash.ft8cbdroid.core.*
+import net.vash.ft8cbdroid.core.diagnostics.*
 import net.vash.ft8cbdroid.core.message.*
 import net.vash.ft8cbdroid.core.recording.RecordedDecodeFlag
 import org.junit.Assert.*
@@ -36,6 +37,21 @@ class LiveSlotReceiverTest {
         assertEquals(listOf(Ft8DecodeProfile.FAST, Ft8DecodeProfile.FAST), engine.calls)
         assertEquals(2, receiver.uiState.value.decodedSlots)
         assertEquals(listOf(slot(5).utcStartMillis, slot(0).utcStartMillis), receiver.uiState.value.rows.map { it.decode.slotStartUtc.toEpochMilli() })
+        receiver.cancel()
+    }
+    @Test fun diagnosticsCountActualDecodeFailureAndUnprocessedWindowsWithoutMessages() = runTest {
+        val engine = Engine().apply { gate = CompletableDeferred(); frames = listOf(frame("CQ 1AT106")) }
+        val recorder = SessionDiagnostics(); recorder.start(0)
+        val receiver = LiveSlotReceiver(engine, backgroundScope, null, Ft8DecodeProfile.FAST,
+            StandardTestDispatcher(testScheduler), ReceiveDiagnosticSink { event, time -> recorder.event(testScheduler.currentTime, event, time) })
+        receiver.offer(slot(0)); runCurrent(); receiver.offer(slot(1)); receiver.offer(slot(2))
+        engine.gate!!.complete(Unit); runCurrent()
+        assertEquals(2L, recorder.snapshot().events[ReceiveDiagnosticEvent.DECODE_COMPLETE])
+        assertEquals(1L, recorder.snapshot().events[ReceiveDiagnosticEvent.WINDOW_UNPROCESSED])
+        assertEquals(42L, recorder.snapshot().decodeTotalMillis)
+        engine.failure = Ft8EngineTimeoutException("private failure text")
+        receiver.offer(slot(3)); runCurrent()
+        assertEquals(1L, recorder.snapshot().events[ReceiveDiagnosticEvent.DECODE_FAILED])
         receiver.cancel()
     }
     @Test fun hashesAreCommittedOnlyBetweenCompleteSlotsAndNeverSharedWithAnotherRun() = runTest {

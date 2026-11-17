@@ -27,6 +27,7 @@ import org.json.JSONObject
  */
 class WaveformPhoneChecks : Instrumentation() {
     private var scenario: String? = null
+    private var radioInput = false
     private var previewRun: String = ""
     private var ntpHost: String = "time.cloudflare.com"
     private var ntpPort: Int = 123
@@ -98,8 +99,11 @@ class WaveformPhoneChecks : Instrumentation() {
         show(text)
         check(requireNotNull(button(text)).performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click: $text" }
     }
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; ntpHost = arguments?.getString("ntp_host") ?: "time.cloudflare.com"; ntpPort = arguments?.getString("ntp_port")?.toInt() ?: 123; start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); radioInput = arguments?.getString("radio_input") == "true"; scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; ntpHost = arguments?.getString("ntp_host") ?: "time.cloudflare.com"; ntpPort = arguments?.getString("ntp_port")?.toInt() ?: 123; start() }
     override fun onStart() {
+        if (scenario in setOf("diagnostics-smoke", "diagnostics-interrupt", "diagnostics-cold", "diagnostics-sustained", "diagnostics-lan")) {
+            DiagnosticsPhoneChecks(this, previewRun, requireNotNull(scenario), radioInput).run(); return
+        }
         if (scenario == "receive-session" || scenario == "receive-cold") { ReceiveSessionPhoneChecks(this, previewRun, cold = scenario == "receive-cold").run(); return }
         if (scenario in setOf("logbook", "logbook-reopen", "logbook-cleanup", "logbook-store")) {
             LogbookPhoneChecks(this, previewRun, requireNotNull(scenario)).run(); return
