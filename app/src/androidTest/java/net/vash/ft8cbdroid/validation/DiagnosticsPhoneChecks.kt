@@ -94,7 +94,17 @@ class DiagnosticsPhoneChecks(private val instrumentation: Instrumentation, priva
                     check(main { runtime.diagnostics === vm && vm.uiState.value.active && vm.uiState.value.report == before })
                     PhoneNavigation.open(instrumentation, "Session diagnostics")
                     PhoneNavigation.click(instrumentation, "Export diagnostic report")
-                    SystemClock.sleep(500); shell("input keyevent KEYCODE_BACK")
+                    await("document picker opened", 8000) {
+                        val root = PhoneNavigation.root(instrumentation)
+                        root?.packageName?.toString()?.let { it != context.packageName && it != "com.android.systemui" } == true
+                    }
+                    // Back can first dismiss the save-name keyboard; do not send it before the picker opens.
+                    repeat(3) {
+                        val external = PhoneNavigation.root(instrumentation)?.packageName?.toString()
+                        if (main { vm.uiState.value.choosing } && external != null && external != context.packageName) {
+                            shell("input keyevent KEYCODE_BACK"); SystemClock.sleep(500)
+                        }
+                    }
                     await("picker cancelled") { main { !vm.uiState.value.choosing } }
                     check(main { vm.uiState.value.notice == "No diagnostic report exported." })
                     exportCheck()
