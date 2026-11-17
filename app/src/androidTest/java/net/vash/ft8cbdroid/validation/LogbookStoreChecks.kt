@@ -52,13 +52,37 @@ object LogbookStoreChecks {
                 check(results.map { it.id }.distinct().size == 1)
             }
             check(repo.read().records.size == 3 && repo.read().pending.isEmpty())
+            // Simulate the previous schema's actual layout, saved and pending rows.
+            val legacy = repo.read(); repo.close()
+            open(name).use { it.version = 1 }
+            repo = SqliteQsoLogRepository(context, name)
+            check(repo.read() == legacy); open(name).use { check(it.version == 2) }
+            val imported = QsoRecord("adif-$run", null, 1, QsoOrigin.ADIF_IMPORT,
+                detail.copy(peerCall = "14AT101", startedUtcMillis = 12000, notes = "Imported café"), timeBasis = QsoTimeBasis.IMPORTED_UTC)
+            val extra = imported.copy(id = "second-$run", details = imported.details.copy(peerCall = "161AT101"))
+            val restoredPending = completion.copy(id = "restored-$run")
+            val incoming = QsoLogSnapshot(listOf(imported, extra), listOf(restoredPending))
+            val merge = LogMergeCommand(repo.read(), incoming, checkDuplicates = false)
+            open(name).use { it.execSQL("CREATE TRIGGER import_abort BEFORE INSERT ON pending_qsos BEGIN SELECT RAISE(ABORT,'import rollback'); END") }
+            check(runCatching { repo.merge(merge) }.isFailure)
+            check(repo.read() == legacy) // Both earlier inserts rolled back with the pending write.
+            open(name).use { it.execSQL("DROP TRIGGER import_abort") }
+            repo.merge(merge); repo.merge(merge)
+            repo.close(); repo = SqliteQsoLogRepository(context, name)
+            val reopened = repo.read()
+            check(reopened.records.size == legacy.records.size + 2 && reopened.pending.single() == restoredPending)
+            check(reopened.records.first { it.id == imported.id } == imported)
+            check(runCatching { repo.merge(merge.copy(incoming = QsoLogSnapshot(listOf(imported.copy(id = "stale-$run"))))) }.isFailure)
+            check(repo.read() == reopened)
+            val full = LogBackup.decode(LogBackup.encode(reopened))
+            check(full.records.toSet() == reopened.records.toSet() && full.pending == reopened.pending)
             context.openOrCreateDatabase(futureName, Context.MODE_PRIVATE, null).use {
-                it.execSQL("CREATE TABLE marker (value TEXT)"); it.execSQL("INSERT INTO marker VALUES ('preserve')"); it.version = 2
+                it.execSQL("CREATE TABLE marker (value TEXT)"); it.execSQL("INSERT INTO marker VALUES ('preserve')"); it.version = 3
             }
             val future = SqliteQsoLogRepository(context, futureName)
             try { check(runCatching { future.read() }.isFailure) } finally { future.close() }
             open(futureName).use { db ->
-                check(db.version == 2)
+                check(db.version == 3)
                 db.rawQuery("SELECT value FROM marker", null).use { check(it.moveToFirst() && it.getString(0) == "preserve") }
             }
             val badFile = context.getDatabasePath(corruptName); val bad = byteArrayOf(1, 2, 3, 4, 5)
@@ -72,7 +96,8 @@ object LogbookStoreChecks {
             return JSONObject().put("result", "PASS").put("restart_and_duplicate_completion", true)
                 .put("atomic_rollback_and_retry", true).put("concurrent_idempotence", true)
                 .put("optimistic_edits_and_time_provenance", true).put("manual_origin_and_worked_scope", true)
-                .put("future_schema_preserved", true).put("corrupt_bytes_preserved", true)
+                .put("schema1_upgrade_preserves_rows", true).put("import_atomic_rollback_idempotence_cold_reopen", true)
+                .put("stale_preview_rejected_and_full_backup_roundtrip", true).put("future_schema_preserved", true).put("corrupt_bytes_preserved", true)
         } finally {
             repo.close()
             listOf(name, futureName, corruptName).forEach { context.deleteDatabase(it) }

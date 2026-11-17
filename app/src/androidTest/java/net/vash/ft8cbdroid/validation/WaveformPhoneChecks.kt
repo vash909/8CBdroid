@@ -105,6 +105,9 @@ class WaveformPhoneChecks : Instrumentation() {
             DiagnosticsPhoneChecks(this, previewRun, requireNotNull(scenario), radioInput).run(); return
         }
         if (scenario == "receive-session" || scenario == "receive-cold") { ReceiveSessionPhoneChecks(this, previewRun, cold = scenario == "receive-cold").run(); return }
+        if (scenario in setOf("log-files", "log-files-cold", "log-files-cleanup")) {
+            LogTransferPhoneChecks(this, previewRun, requireNotNull(scenario)).run(); return
+        }
         if (scenario in setOf("logbook", "logbook-reopen", "logbook-cleanup", "logbook-store")) {
             LogbookPhoneChecks(this, previewRun, requireNotNull(scenario)).run(); return
         }

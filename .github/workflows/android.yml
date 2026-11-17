@@ -60,6 +60,7 @@ jobs:
           python3 scripts/wsjtcb_reference.py --check
           python3 scripts/wsjtcb_packing.py --check
           python3 scripts/wsjtcb_packing.py --check --optimization O2
+          python3 scripts/wsjtcb_adif.py --check
           python3 scripts/wsjtcb_qso.py --check
           python3 scripts/wsjtcb_qso.py --check --optimization O2
           python3 scripts/wsjtcb_admission.py --check

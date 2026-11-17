@@ -4,5 +4,19 @@
             android:name="net.vash.ft8cbdroid.validation.WaveformTestProvider"
             android:authorities="net.vash.ft8cbdroid.test.r07"
             android:exported="true" />
+        <provider android:name="net.vash.ft8cbdroid.validation.LogDocumentProvider"
+            android:authorities="net.vash.ft8cbdroid.test.logfiles" android:exported="true" />
+        <provider android:name="net.vash.ft8cbdroid.validation.LogSafProvider"
+            android:authorities="net.vash.ft8cbdroid.test.logdocuments" android:exported="true"
+            android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
+        </provider>
+        <activity android:name="net.vash.ft8cbdroid.validation.LogShareReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/x-adif" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

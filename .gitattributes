@@ -2,3 +2,6 @@
 reference/wsjtcb/source/** -text
 native/third_party/ft8_lib/** -text
 reference/wsjtcb/channel/*.wav binary
+
+# ADIF reference bytes include intentional CRLF from the Android writer.
+core/src/test/resources/wsjtcb/adif/*.adi -text

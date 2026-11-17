@@ -17,6 +17,7 @@ and [notices](../../THIRD_PARTY_NOTICES.md).
 | --- | --- | --- |
 | CB predicates and comparison sources | `sources.json`, `cases.json`, `core/src/test/resources/wsjtcb/predicates.tsv` | Complete-call/type 4 predicates and immutable WSJT-X comparison revisions. The TSV is relative to the repository root. |
 | [Payloads and hashes](PACKING.md) | `packing-sources.json`, `packing-cases.json`, `packing.json` | Original packing/unpacking and stateful RX behavior. |
+| [ADIF files](../../docs/ADIF.md) | `adif-sources.json`, `adif-cases.json`, `core/src/test/resources/wsjtcb/adif/` | Exact desktop writer/loader/extractor and Android export fixtures; DXCC stubbed, no GUI/LAN/radio claims. |
 | [QSO traces](QSO.md) | `qso-sources.json`, `qso-cases.json`, `qso.json` | Extracted parser/generation/AutoSeq methods, not a complete desktop operating session. |
 | [CB countries](../../docs/CB_OPERATING_CONTEXT.md) | `context-sources.json`, `core/src/main/resources/wsjtcb/countries.tsv`, `core/src/test/resources/wsjtcb/country-cases.tsv` | 350 runtime CB divisions and 1,249 original desktop lookup cases; paths relative to repository root. Only the runtime country table is packaged in the main app. |
 | [Channel fixtures](../../docs/FT8_ENGINE.md#independent-desktop-checks) | `channel-sources.json`, `channel/channel.json`, four WAVs | 131 payload/codeword/tone vectors and original desktop waveforms. |

@@ -107,7 +107,7 @@ context. No station setting arms TX or opens hardware.
 from qualified receiver/confirmed output events. `ManualOperatingViewModel`
 dispatches candidates to `LogbookViewModel` without blocking audio or putting
 storage in Compose. `SqliteQsoLogRepository` uses an app-context singleton,
-serialized IO transactions and SQLite schema 1. Candidate insertion is durable;
+serialized IO transactions and SQLite schema 2 (a layout-preserving upgrade from schema 1). Candidate insertion is durable;
 operator-reviewed insertion and candidate removal form one transaction. Unique
 completion identities prevent duplicate records; edit versions prevent stale
 overwrites. Accepted writes survive Activity teardown.
@@ -116,7 +116,13 @@ Radio dial frequency requires explicit confirmation. Origin, UTC provenance and
 the last confirmed audio offset stay separate; no CAT/RF measurement is inferred.
 Read/schema/corruption failures preserve existing data and expose recovery;
 the corruption handler never deletes the database. Existing preferences are
-separate. See [logbook storage and checks](LOGBOOK.md).
+separate. `Adif` and `LogBackup` are bounded JVM codecs. `LogTransferViewModel` owns
+frozen exports and read-only previews in the application graph. A reviewed merge
+compares the current log with the preview snapshot and inserts the selected
+records/pending items in one transaction; stale previews cannot overwrite data.
+`AndroidLogDocuments` owns cancellable descriptor I/O and a narrowly scoped cache
+FileProvider. Compose only renders state and requests actions. See
+[logbook storage](LOGBOOK.md) and [file exchange](ADIF.md).
 
 Worked derives only from saved contacts for the current station. Filters and
 log searches are presentation projections, never QSO/AutoSeq input or peer

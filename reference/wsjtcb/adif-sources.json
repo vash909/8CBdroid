@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/vash909/WSJT-CB",
+  "revision": "94f776d54946fe43db5e0bb9c966b1595c7b7d97",
+  "license": "GPL-3.0-only",
+  "scope": "Exact non-contest QSOToADIF writer and WorkedBefore loader/extractor; DXCC lookup stubbed, no radio/network.",
+  "files": [
+    {
+      "path": "logbook/logbook.cpp",
+      "local": "source/adif/logbook.cpp",
+      "sha256": "969a2b36592b92b79cba4bb1505396c59a552664d39ef6870568f9fdec7028e1"
+    },
+    {
+      "path": "logbook/WorkedBefore.cpp",
+      "local": "source/adif/WorkedBefore.cpp",
+      "sha256": "3c247152747cb03eec1d06821762a4c709bc4f8d0d03452cf8b6b82977746fdd"
+    },
+    {
+      "path": "models/Bands.cpp",
+      "local": "source/adif/Bands.cpp",
+      "sha256": "ef4e8cd1f6ee26e746a2fca74b615151d44a28996e612a7f2658c6b029862662"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ android {
         versionName = "0.1.0-dev"
         testInstrumentationRunner = "net.vash.ft8cbdroid.validation.WaveformPhoneChecks"
     }
+    sourceSets["androidTest"].assets.srcDir("../core/src/test/resources/wsjtcb/adif")
     androidResources { localeFilters += "en" }
     buildFeatures { compose = true }
     compileOptions {

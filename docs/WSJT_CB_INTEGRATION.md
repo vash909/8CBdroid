@@ -20,9 +20,12 @@ and the WSJT-X comparison inventory are documented in
 - Recovery from malformed datagrams, unknown message types and bind failures.
 - An explicit receive foreground service keeps the listener alive across navigation, rotation, background and screen-off; notification Stop ends it.
 
-ADIF/log parsing, radio-control commands, audio streaming, multicast and
+Desktop LAN QSO/LoggedADIF parsing, radio-control commands, audio streaming, multicast and
 automatic network scanning are not implemented. LAN options
 are retained across rotation, but are not persisted after process termination.
+
+File-based ADIF exchange is implemented separately; see [ADIF exchange](ADIF.md).
+It does not enable LAN log events or remote TX.
 
 ## Desktop setup and phone test
 

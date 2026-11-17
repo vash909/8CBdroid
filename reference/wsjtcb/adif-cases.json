@@ -1,0 +1,28 @@
+[
+  {
+    "call": "26AT101",
+    "station": "1AT106",
+    "grid": "IO91",
+    "station_grid": "JN44",
+    "start": "2026-11-16T23:59:45Z",
+    "end": "2026-11-17T00:00:30Z",
+    "frequency": "27.265125",
+    "band": "11m",
+    "sent": "-07",
+    "received": "+03",
+    "comment": "Portable CB"
+  },
+  {
+    "call": "161AT001",
+    "station": "1AT106",
+    "grid": "",
+    "station_grid": "",
+    "start": "2026-11-17T12:00:00Z",
+    "end": "2026-11-17T12:01:00Z",
+    "frequency": "26.965000",
+    "band": "11m",
+    "sent": "-15",
+    "received": "-12",
+    "comment": ""
+  }
+]

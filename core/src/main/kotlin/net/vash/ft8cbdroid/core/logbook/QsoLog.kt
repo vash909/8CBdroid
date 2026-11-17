@@ -7,8 +7,8 @@ import net.vash.ft8cbdroid.core.StationIdentity
 import net.vash.ft8cbdroid.core.qso.CbQsoPhase
 import net.vash.ft8cbdroid.core.qso.CbQsoSnapshot
 
-enum class QsoOrigin { LOCAL_AUDIO, MANUAL }
-enum class QsoTimeBasis { CORRECTED_APP_UTC, OPERATOR_UTC }
+enum class QsoOrigin { LOCAL_AUDIO, MANUAL, ADIF_IMPORT }
+enum class QsoTimeBasis { CORRECTED_APP_UTC, OPERATOR_UTC, IMPORTED_UTC }
 
 /** Dial frequency is operator-confirmed, never CAT readback or a measured RF frequency. */
 data class QsoDetails(
@@ -44,7 +44,11 @@ data class QsoRecord(val id: String, val completionId: String?, val version: Int
     val details: QsoDetails, val txAudioHz: Int? = null,
     val timeBasis: QsoTimeBasis = QsoTimeBasis.OPERATOR_UTC) {
     val mode get() = "FT8"
-    val routeDescription get() = if (origin == QsoOrigin.LOCAL_AUDIO) "Built-in phone microphone / speaker" else "Operator entry; route unverified"
+    val routeDescription get() = when (origin) {
+        QsoOrigin.LOCAL_AUDIO -> "Built-in phone microphone / speaker"
+        QsoOrigin.MANUAL -> "Operator entry; route unverified"
+        QsoOrigin.ADIF_IMPORT -> "Imported ADIF; route unverified"
+    }
     fun validate() {
         require(id.isNotBlank() && id.length <= 80 && version > 0)
         details.validate()
@@ -72,6 +76,8 @@ interface QsoLogRepository {
     suspend fun stage(completion: QsoCompletion)
     /** Atomic candidate removal + record insertion, idempotent by completion/id; edits use optimistic versions. */
     suspend fun save(command: SaveQso): QsoRecord
+    /** Atomic, non-destructive import. A stale preview must be reviewed again. */
+    suspend fun merge(command: LogMergeCommand): QsoLogSnapshot = error("Log import is unavailable.")
 }
 
 /** Consumes only qualified receive/confirmed-output events. Observations/aborts alone produce nothing. */
