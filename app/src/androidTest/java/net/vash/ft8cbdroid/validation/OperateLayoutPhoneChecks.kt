@@ -167,7 +167,7 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             await("local fixture row") { visible("CQ 26AT101") }
             fun stationRow() = all().first { it.contentDescription?.toString()?.startsWith("Message: CQ 26AT101;") == true }
             check(!stationRow().isSelected)
-            check(stationRow().performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK))
+            PhoneNavigation.hold(instrumentation, "CQ 26AT101")
             await("explicit hold callback") { answerCount == 1 }
             check(answered?.decode?.frame?.payload == payload && !visible("Message details"))
             main { answering = true }; SystemClock.sleep(200)
