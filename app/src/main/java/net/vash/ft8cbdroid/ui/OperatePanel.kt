@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -13,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
@@ -77,12 +80,15 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
     workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false, pendingQsos: Int = 0) {
     var sent by rememberSaveable { mutableStateOf(false) }
     var filterName by rememberSaveable { mutableStateOf(ActivityFilter.ALL.name) }
+    var detail by remember { mutableStateOf<ActivityMessage?>(null) }
+    LaunchedEffect(source) { detail = null }
     val filter = ActivityFilter.entries.firstOrNull { it.name == filterName } ?: ActivityFilter.ALL
     val receiving = if (source == OperatingSource.LOCAL) capture.phase != CapturePhase.IDLE || capture.awaitingPermission else lan.active || lan.busy
     val rows = remember(source, capture.live.rows, lan.connection.decodes, station.saved?.callsign) { activityMessages(source, capture, lan, station.saved?.callsign.orEmpty()) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val small = source == OperatingSource.LOCAL || maxHeight < 740.dp || LocalDensity.current.fontScale > 1.2f || capture.error != null || lan.error != null
-        Column(Modifier.fillMaxSize().then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxWidth().weight(1f).then(if (small) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { onDestination(AppDestination.PROFILES) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(0.dp)) {
@@ -143,10 +149,10 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                     style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
             }
             ActivityLog(rows, sent, { sent = it }, source,
-                if (small) Modifier.fillMaxWidth().height(280.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView,
+                if (small) Modifier.fillMaxWidth().height(420.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView,
                 manual.sent.map { entry -> ActivityMessage(utcTime.format(java.time.Instant.ofEpochMilli(entry.utcMillis)), entry.text,
                     "—", entry.frequencyHz.roundToInt(), "Completed speaker audio · radio TX unconfirmed · reference dial ${entry.referenceDialHz} Hz") },
-                manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty(), workedCalls, workedAvailable)
+                { detail = it }, manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty(), workedCalls, workedAvailable)
             (if (source == OperatingSource.LOCAL) capture.error else lan.error ?: lan.connection.error)?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
@@ -187,6 +193,25 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
             Text(time.sourceDescription, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        Ft8PeriodStrip(time)
+        }
+    }
+    detail?.let { row ->
+        AlertDialog(onDismissRequest = { detail = null }, title = { Text("Message details") }, text = {
+            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(row.message, fontFamily = FontFamily.Monospace)
+                Text("UTC ${row.time} · ${row.signal} dB · ${row.offset} Hz")
+                Text(row.detail)
+                if (!sent) countryLabel(row.context).takeIf { it.isNotEmpty() }?.let { Text(it) }
+            }
+        }, confirmButton = { TextButton(onClick = { detail = null }) { Text("Close") } }, dismissButton = {
+            if (!sent && source == OperatingSource.LOCAL) Row {
+                TextButton(onClick = {
+                    onView(capture.spectrumView.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat())); detail = null
+                }) { Text("→ RX") }
+                row.peer?.let { peer -> TextButton(onClick = { manualActions.selectPeer(peer); detail = null }) { Text("Use peer") } }
+            }
+        })
     }
 }
 
@@ -202,13 +227,13 @@ private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: M
 
 @Composable
 private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boolean) -> Unit,
-    source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView, sentRows: List<ActivityMessage> = emptyList(), onPeer: (ManualPeer) -> Unit = {},
+    source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView, sentRows: List<ActivityMessage> = emptyList(), onOpen: (ActivityMessage) -> Unit = {}, onPeer: (ManualPeer) -> Unit = {},
     filter: ActivityFilter = ActivityFilter.ALL, onFilter: (ActivityFilter) -> Unit = {}, ownCall: String = "",
     workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false) {
     val filtered = rows.filter { it.context.matches(filter, ownCall, if (workedAvailable) workedCalls else emptySet()) }
     val visible = if (sent) sentRows else filtered
     Surface(modifier, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
-        Column(Modifier.padding(10.dp)) {
+        Column(Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(onClick = { onSent(false) }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                     Text(if (filter == ActivityFilter.ALL) "Received ${rows.size}" else "Received ${filtered.size}/${rows.size}", color = if (!sent) RadioColors.gold else RadioColors.muted)
@@ -228,8 +253,6 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                         onClick = { onFilter(ActivityFilter.WORKED) }, label = { Text("Worked") },
                         modifier = Modifier.semantics { contentDescription = "Show senders saved in this station's QSO log" })
                 }
-                Text(if (workedAvailable) "Worked uses saved contacts for your station." else "Worked is unavailable until the log loads.",
-                    style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
             }
             HorizontalDivider(color = RadioColors.line)
             if (visible.isEmpty()) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -238,26 +261,32 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                     Text(if (sent) "Only completed speaker slots appear here; this is not a QSO log." else if (rows.isNotEmpty()) "Choose All to show every received message." else "${if (source == OperatingSource.LOCAL) "Start RX after time synchronization" else "Start RX to listen for a desktop"}.",
                         style = MaterialTheme.typography.bodySmall, color = RadioColors.muted)
                 }
-            } else LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
-                itemsIndexed(visible) { _, row ->
-                    Column(Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(row.time, style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
-                            Text("${row.signal} dB", style = MaterialTheme.typography.labelSmall, color = RadioColors.olive)
-                            Text("${row.offset} Hz", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
-                        }
-                        Text(row.message, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
-                        if (!sent) countryLabel(row.context).takeIf { it.isNotEmpty() }?.let { label ->
-                            Text(label, style = MaterialTheme.typography.labelSmall, color = RadioColors.gold)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(row.detail, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
-                            if (!sent && source == OperatingSource.LOCAL) TextButton(onClick = {
-                                onView(view.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat()))
-                            }, contentPadding = PaddingValues(4.dp)) { Text("→ RX", style = MaterialTheme.typography.labelMedium) }
-                            if (!sent && source == OperatingSource.LOCAL) row.peer?.let { peer ->
-                                TextButton(onClick = { onPeer(peer) }, contentPadding = PaddingValues(4.dp)) { Text("Use peer", style = MaterialTheme.typography.labelMedium) }
-                            }
+            } else {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
+                    Text("UTC", Modifier.width(54.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                    Text("dB", Modifier.width(30.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                    Text("Hz", Modifier.width(36.dp), style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                    Text("Message · tap for details", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+                }
+                LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+                    itemsIndexed(visible) { _, row ->
+                        Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Open message details") { onOpen(row) }
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = listOf("Message: ${row.message}; UTC ${row.time}, ${row.signal} dB, ${row.offset} Hz",
+                                    countryLabel(row.context), row.detail).filter { it.isNotEmpty() }.joinToString("; ")
+                                if (!sent && source == OperatingSource.LOCAL) customActions = buildList {
+                                    add(CustomAccessibilityAction("→ RX") { onView(view.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat())); true })
+                                    row.peer?.let { peer -> add(CustomAccessibilityAction("Use peer") { onPeer(peer); true }) }
+                                }
+                            }.padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(row.time, Modifier.width(54.dp), fontSize = 10.sp, lineHeight = 18.sp,
+                                fontFamily = FontFamily.Monospace, color = RadioColors.muted, maxLines = 1)
+                            Text(row.signal, Modifier.width(30.dp), fontSize = 10.sp, lineHeight = 18.sp,
+                                fontFamily = FontFamily.Monospace, color = RadioColors.olive, maxLines = 1)
+                            Text(row.offset.toString(), Modifier.width(36.dp), fontSize = 10.sp, lineHeight = 18.sp,
+                                fontFamily = FontFamily.Monospace, color = RadioColors.muted, maxLines = 1)
+                            Text(row.message, Modifier.weight(1f), fontSize = 12.sp, lineHeight = 18.sp,
+                                fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         HorizontalDivider(color = RadioColors.line)
                     }

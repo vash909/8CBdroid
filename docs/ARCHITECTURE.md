@@ -224,7 +224,7 @@ and serially calls the shared `Ft8Engine` gate on a worker dispatcher. A newer
 pending slot replaces an older one rather than growing a queue or blocking the
 recorder. Metadata/UI delivery is conflated; PCM is not sent to Compose.
 Each run owns a `CbMessageSession`, commits full-call learning after a complete
-decode batch, and retains at most 60 message rows. Stop/input/station change
+decode batch, and retains at most 300 message rows. Stop/input/station change
 cancel the decoder and clear its results/cache; restart waits for cleanup.
 LAN, recorded files and message previews cannot populate the live session.
 See [live reception](LIVE_RECEIVE.md).

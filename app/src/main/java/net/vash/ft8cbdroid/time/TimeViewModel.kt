@@ -15,6 +15,7 @@ data class TimeUiState(
     val awaitingGpsPermission: Boolean = false, val measurement: TimeMeasurement? = null,
     val sourceDescription: String = "Not synchronized. Choose NTP or GPS.", val ageMillis: Long? = null,
     val error: String? = null, val notice: String? = null,
+    val period: Ft8PeriodProgress? = null, val periodCorrected: Boolean = false,
     val refreshing: Boolean = false, val refreshPending: Boolean = false, val refreshWarning: String? = null,
 ) {
     val validation: String? get() = runCatching { value() }.exceptionOrNull()?.message
@@ -115,7 +116,11 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         val usable = runCatching { clock.snapshot() }.isSuccess
         if (usable) wasApplied = true
         val expired = wasApplied && !usable
-        state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(clock.source.read()),
+        val displayMapping = runCatching { clock.snapshot() }.getOrNull()
+        val displayNow = clock.source.read()
+        val displayUtc = displayMapping?.at(displayNow.monotonicNanos)?.div(1_000_000) ?: displayNow.unixMillis
+        state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(displayNow),
+            period = Ft8PeriodProgress.atUtcMillis(displayUtc), periodCorrected = displayMapping != null,
             refreshWarning = if (expired) "Time synchronization is unavailable. TX is disabled until a valid measurement is applied." else state.value.refreshWarning)
     }
     fun load() {

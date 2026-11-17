@@ -1,7 +1,8 @@
 # CB countries and receive filters
 
 Operate adds read-only country/division labels to local and WSJT-CB LAN received
-messages. A recognized sender shows its complete callsign, numeric CB division
+messages. Tap a compact row for its full details and country context; the same
+information is available to accessibility readers. A recognized sender shows its complete callsign, numeric CB division
 and country/territory, for example `From 26AT101 · CB 026 · England`. Selecting
 a local peer also displays that peer's country. This is a division label, not
 the station's measured location. Locator and distance displays are not provided.

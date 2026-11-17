@@ -33,7 +33,7 @@ class OperatingContextPhoneChecks(private val instrumentation: Instrumentation, 
     }
     private fun contains(node: AccessibilityNodeInfo?, text: String): Boolean {
         if (node == null) return false
-        if (node.text?.toString() == text) return true
+        if (node.text?.toString() == text || node.contentDescription?.toString()?.contains(text) == true) return true
         repeat(node.childCount) { if (contains(node.getChild(it), text)) return true }
         return false
     }

@@ -88,5 +88,5 @@ class LiveSlotReceiver(
             failedSlots = it.failedSlots + 1, skippedSlots = dropped.get(), decodeMillis = null, error = message) }
     }
     fun cancel() { pending.cancel(); job.cancel() }
-    companion object { const val MAX_ROWS = 60 }
+    companion object { const val MAX_ROWS = 300 }
 }
