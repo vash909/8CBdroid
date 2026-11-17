@@ -17,7 +17,7 @@ object PhoneNavigation {
     }
     private fun clickable(node: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo? {
         if (node == null) return null
-        if (node.text?.toString() == text || node.contentDescription?.toString() == text) {
+        if (node.text?.toString() == text || node.contentDescription?.toString() == text || node.contentDescription?.toString()?.startsWith("Message: $text;") == true) {
             var parent: AccessibilityNodeInfo? = node
             while (parent != null && !parent.isScrollable) {
                 if (parent.isClickable) return parent
@@ -28,6 +28,16 @@ object PhoneNavigation {
         return null
     }
     fun click(instrumentation: Instrumentation, text: String) {
+        // Dense message rows expose the same explicit actions to accessibility users.
+        fun custom(node: AccessibilityNodeInfo?): Boolean {
+            if (node == null) return false
+            node.actionList.firstOrNull { it.label?.toString() == text }?.let {
+                return node.performAction(it.id)
+            }
+            repeat(node.childCount) { if (custom(node.getChild(it))) return true }; return false
+        }
+        if (text in setOf("Use peer", "→ RX") && custom(root(instrumentation))) { SystemClock.sleep(180); return }
+
         fun scroller(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
             if (node == null) return null
             if (node.isScrollable) return node

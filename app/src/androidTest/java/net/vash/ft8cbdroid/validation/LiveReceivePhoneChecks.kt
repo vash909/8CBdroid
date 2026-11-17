@@ -121,7 +121,7 @@ class LiveReceivePhoneChecks(private val instrumentation: Instrumentation, priva
                 check(requireNotNull(markerButton).performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 check(main { audio.uiState.value.spectrumView.rxHz } == markers.first().frequencyHz.roundToInt().coerceIn(200, 2950))
                 show("Live local decodes")
-                show("Source: local microphone • Standard • latest 60 frames")
+                show("Source: local microphone • Standard • latest 300 frames")
                 show("<1AT106> 26AT101")
                 main { audio.stop(clear = true) }
             }

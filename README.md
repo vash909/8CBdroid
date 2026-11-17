@@ -6,7 +6,7 @@ project documentation use English.
 
 **Current state:** phone-microphone FT8 reception, phone-speaker manual exchanges
 and explicitly started acoustic AutoSeq are implemented. NTP/GPS time correction,
-CB message generation, a compact 2 Hz waterfall and continuous operating sessions
+CB message generation, a 15-second period bar, compact message rows and a 2 Hz waterfall and continuous operating sessions
 support the phone-audio path. Started RX/TX/AutoSeq sessions continue across
 navigation, rotation, background and screen-off, with explicit Stop controls.
 
@@ -52,7 +52,7 @@ ADB commands and debug-signature limitations.
    press **Calibrate speaker**, then **Start RX** and grant microphone permission.
    Complete receive windows appear in Received. Plain **Monitor** needs no time
    correction but cannot supply the timed FT8 RX prerequisite for sending.
-4. **Use peer** selects a complete decoded CB sender and suggests a reply,
+4. Tap a received message for details. **Use peer** selects a complete decoded CB sender and suggests a reply,
    opposite period and TX audio offset without enabling TX. Review the message,
    offset, level and period. For manual output press **Enable TX**, then
    **Send one slot**. Advice can suggest the next message without sending it.

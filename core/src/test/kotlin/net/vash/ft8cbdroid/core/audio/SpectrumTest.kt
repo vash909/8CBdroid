@@ -109,6 +109,7 @@ class SpectrumTest {
         val markers = localSpectrumMarkers(listOf(row(15000, 1000f), row(30000, 1700f), row(30000, 1700f), row(30000, Float.NaN), row(30000, 4000f)))
         assertEquals(listOf(SpectrumMarker(1700f, 30000)), markers)
         assertTrue(localSpectrumMarkers(emptyList()).isEmpty())
+        assertEquals(60, localSpectrumMarkers(List(300) { row(30000, 200f + it) }).size)
     }
 
 }

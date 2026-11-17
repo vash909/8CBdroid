@@ -26,10 +26,10 @@ reviewed contacts; this guide covers manual output;
 
 ## Exchange messages
 
-**Use peer** appears only for an integrity-checked local message with a complete,
+Tap a received row to open **Message details**. **Use peer** appears there only for an integrity-checked local message with a complete,
 unambiguous CB sender different from your own station. It suggests a reply,
 opposite UTC period, TX audio frequency and editable estimated SNR report.
-Selection never enables TX. **→ RX** changes only the RX cursor. You can instead
+Selection never enables TX. **→ RX** in the same dialog changes only the RX cursor. You can instead
 enter a complete **CB peer** manually; unknown hashes cannot supply an identity.
 
 Choose CQ, Reply, Report, R-report, RR73 or 73. Templates follow the pinned

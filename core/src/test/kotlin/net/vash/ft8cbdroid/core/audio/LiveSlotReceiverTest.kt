@@ -111,12 +111,14 @@ class LiveSlotReceiverTest {
     @Test fun historyIsBoundedAndEmptySlotsStillAdvanceTheReceiveSummary() = runTest {
         val engine = Engine().apply { frames = listOf(frame("CQ 1AT106")) }
         val receiver = LiveSlotReceiver(engine, backgroundScope, null, Ft8DecodeProfile.STANDARD, StandardTestDispatcher(testScheduler))
-        repeat(75) { receiver.offer(slot(it)); runCurrent() }
-        assertEquals(60, receiver.uiState.value.rows.size)
-        engine.frames = emptyList(); receiver.offer(slot(75)); runCurrent()
-        assertEquals(76, receiver.uiState.value.decodedSlots)
-        assertEquals(slot(75).utcStartMillis, receiver.uiState.value.lastSlotUtcMillis)
-        assertEquals(60, receiver.uiState.value.rows.size)
+        repeat(330) { receiver.offer(slot(it)); runCurrent() }
+        assertEquals(300, receiver.uiState.value.rows.size)
+        assertEquals(slot(329).utcStartMillis, receiver.uiState.value.rows.first().decode.slotStartUtc.toEpochMilli())
+        assertEquals(slot(30).utcStartMillis, receiver.uiState.value.rows.last().decode.slotStartUtc.toEpochMilli())
+        engine.frames = emptyList(); receiver.offer(slot(330)); runCurrent()
+        assertEquals(331, receiver.uiState.value.decodedSlots)
+        assertEquals(slot(330).utcStartMillis, receiver.uiState.value.lastSlotUtcMillis)
+        assertEquals(300, receiver.uiState.value.rows.size)
         receiver.cancel()
     }
 }

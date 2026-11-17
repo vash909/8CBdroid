@@ -128,11 +128,13 @@ data class SpectrumView(val startHz: Float = 0f, val spanHz: Float = 3000f,
 
 data class SpectrumMarker(val frequencyHz: Float, val utcMillis: Long)
 
+private const val MAX_DECODE_MARKERS = 60
+
 /** Frequency indicators for the latest decoded local slot, not timestamps of waterfall pixels. */
 fun localSpectrumMarkers(rows: List<LiveDecodeRow>): List<SpectrumMarker> {
     val utc = rows.maxOfOrNull { it.decode.slotStartUtc.toEpochMilli() } ?: return emptyList()
     return rows.filter { it.decode.slotStartUtc.toEpochMilli() == utc }
         .map { SpectrumMarker(it.decode.frame.audioFrequencyHz, utc) }
         .filter { it.frequencyHz.isFinite() && it.frequencyHz in 0f..3000f }
-        .distinctBy { it.frequencyHz }.take(LiveSlotReceiver.MAX_ROWS)
+        .distinctBy { it.frequencyHz }.take(MAX_DECODE_MARKERS)
 }

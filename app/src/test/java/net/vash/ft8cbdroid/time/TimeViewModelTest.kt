@@ -58,6 +58,22 @@ class TimeViewModelTest {
         source.advance(300_000); vm.poll(); runCurrent(); assertEquals(1, calls)
         vm.foreground(true); vm.poll(); runCurrent(); assertEquals(2, calls)
     }
+    @Test fun periodDisplayUsesAppliedCorrectionAndLabelsDeviceTimeAfterResetOrExpiry() = runTest(dispatcher) {
+        val source = MovingSource(); val clock = ReceiveClock(source)
+        val vm = TimeViewModel(Repository(), NtpClient { host -> source.measured(host).let { it.copy(utcNanos = it.utcNanos + 4_000_000_000L) } }, GpsTimeClient { error("Unused") }, clock, false)
+        runCurrent(); vm.poll()
+        assertFalse(vm.uiState.value.periodCorrected)
+        assertEquals(Ft8PeriodProgress.atUtcMillis(source.now.unixMillis), vm.uiState.value.period)
+        vm.measureNtp(); runCurrent(); vm.applyMeasurement(); vm.poll()
+        assertTrue(vm.uiState.value.periodCorrected)
+        assertEquals(Ft8PeriodProgress.atUtcMillis(source.now.unixMillis + 4000), vm.uiState.value.period)
+        source.advance(15_000); vm.poll()
+        assertEquals(Ft8PeriodProgress.atUtcMillis(source.now.unixMillis + 4000), vm.uiState.value.period)
+        clock.reset(); vm.poll(); assertFalse(vm.uiState.value.periodCorrected)
+        vm.measureNtp(); runCurrent(); vm.applyMeasurement(); source.advance(600_000); vm.poll()
+        assertFalse(vm.uiState.value.periodCorrected)
+        assertEquals(Ft8PeriodProgress.atUtcMillis(source.now.unixMillis), vm.uiState.value.period)
+    }
     private val dispatcher = StandardTestDispatcher()
     private class Repository : TimePreferencesRepository {
         var value = TimeSettings(); var readFailure = false; var writeFailure = false

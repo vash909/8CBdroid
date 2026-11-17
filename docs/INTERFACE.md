@@ -13,9 +13,18 @@ system language. No connection or microphone session starts on launch.
   96-row history. **Expand ↗** opens the full monitor. LAN supplies no waterfall
   audio, so that source shows an explanation rather than invented samples.
 - **Received** shows the selected source, with estimated local SNR and desktop
-  confidence/replay flags. **→ RX** changes the RX cursor; **Use peer** selects a
+  confidence/replay flags. the message details' **→ RX** changes the RX cursor; **Use peer** selects a
   complete local CB sender and suggests a reply, report, opposite period and TX
   frequency without arming. **Sent** records only completed speaker audio.
+- Message rows use compact UTC/dB/Hz/text columns. Tap a row for its full text,
+  source/confidence flags and country context. Local-message details retain
+  **→ RX** and **Use peer**; both are also accessibility actions. Long text is
+  available in details even when the narrow row is ellipsized. Local history
+  retains the latest 300 rows; LAN retains 200 distinct decodes.
+- A small bottom-right bar follows each UTC-aligned 15-second FT8 period, showing
+  Even/Odd and elapsed seconds. It stays visible while Operate scrolls. Applied
+  NTP/GPS correction drives it when valid; otherwise it explicitly shows
+  **Unsynced** using device UTC. The display never authorizes TX or measures time.
 - Received **All / CQ / To me** filters change the display only. Identified senders
   show their CB division/country; an unknown sender has no label. **Worked** shows
   senders in the current station's saved log. A selected local peer also shows country.
@@ -72,6 +81,23 @@ Station and NTP server preferences retain their existing persistence. Operating
 profiles persist separately. Temporary source choices survive navigation/rotation
 in the current process, including a new Activity; a new process restores the active saved profile. Manual drafts and completed-audio history are process-local. Applying a profile
 clears output selection/calibration; no pending or armed TX is restored.
+
+## Verify the operating layout
+
+With matching debug app/device-check APKs, an unlocked phone and notification
+permission, run:
+
+```bash
+timeout 180 adb shell am instrument -w -e scenario operate-layout -e preview_run layout-check-1 \
+  net.vash.ft8cbdroid.test/net.vash.ft8cbdroid.validation.WaveformPhoneChecks
+```
+
+This checks real UTC ticks and rollover, 15 simultaneous on-device UDP decodes,
+compact-row visibility, details/flags, filters, navigation, recreation and actual
+rotation. A labeled clock fixture checks corrected display; it does not qualify
+NTP/GPS acquisition. Local presentation fixtures check peer/RX actions and large
+text without starting a microphone or output. Saved settings are preserved;
+reports/screenshots stay in private app cache. A UI test is not radio evidence.
 
 ## Chat
 

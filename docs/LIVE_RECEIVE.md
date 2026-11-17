@@ -47,7 +47,7 @@ candidate/iteration caps and deadlines. A busy/deadline failure is visible and
 counts as a failed slot; reception can decode the next complete slot. There is
 no retry loop on the same PCM. [Profile limits](DECODER_PROFILES.md) apply.
 
-At most **60 decoded rows** are retained, newest slots first. Empty periods
+At most **300 decoded rows** are retained, newest slots first. Empty periods
 advance the slot counter without erasing earlier messages. Each run owns a
 bounded `CbMessageSession` initialized from the saved station snapshot. Full
 identities from supported integrity-checked messages are staged during a batch
