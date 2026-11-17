@@ -24,6 +24,7 @@ implemented behavior, device evidence and checks still pending.
 | [Coordinated phone audio](PHONE_AUDIO.md) | Exclusive microphone/speaker ownership, opt-in receive recovery and physical acoustic checks. |
 | [Speaker audio preview](AUDIO_PREVIEW.md) | Explicit generated-slot playback, level/ramps, Stop, focus and output lifetime. |
 | [Offline WAV generation](OFFLINE_WAVEFORM.md) | Generate/export a fixed FT8 slot with explicit frequency, level and loss consent. |
+| [Session diagnostics](SESSION_DIAGNOSTICS.md) | Optional bounded checkpoints, report export/deletion and sustained-operation checks. |
 | [Microphone capture](MICROPHONE_CAPTURE.md) | Select an input, inspect levels/processing, capture/resample and save recent audio. |
 | [UTC receive slots and time synchronization](UTC_RECEIVE_SLOTS.md) | Regional/custom NTP, offline GPS/GNSS time and complete microphone windows. |
 | [Spectrum and waterfall](SPECTRUM.md) | Local microphone visualization, bounded history, zoom/pan and display-only RX/TX cursors. |

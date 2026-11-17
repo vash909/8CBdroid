@@ -2,6 +2,9 @@ package net.vash.ft8cbdroid.receive
 
 import android.Manifest
 import android.app.Application
+import android.os.SystemClock
+import net.vash.ft8cbdroid.diagnostics.*
+import net.vash.ft8cbdroid.core.diagnostics.*
 import android.app.AppOpsManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -38,9 +41,12 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val session = ReceiveSession()
     val time = ViewModelProvider(this, TimeViewModel.factory(app))[TimeViewModel::class.java]
-    val capture = ViewModelProvider(this, CaptureViewModel.factory(app, app.contentResolver, time.clock) {
-        gate(ReceiveSource.MICROPHONE)
-    })[CaptureViewModel::class.java]
+    val diagnostics by lazy { ViewModelProvider(this, viewModelFactory { initializer {
+        val resources = AndroidDiagnosticResources(app)
+        DiagnosticsViewModel(AndroidDiagnosticsArchive(app), ::diagnosticObservation, resources::read, SystemClock::elapsedRealtime)
+    } })[DiagnosticsViewModel::class.java] }
+    val capture = ViewModelProvider(this, CaptureViewModel.factory(app, app.contentResolver, time.clock,
+        startSession = { gate(ReceiveSource.MICROPHONE) }, diagnostics = diagnostics.sink))[CaptureViewModel::class.java]
     val audioCoordinator = capture.audioCoordinator(::hasMicrophonePermission)
     val lan = ViewModelProvider(this, LanViewModel.factory { gate(ReceiveSource.LAN) })[LanViewModel::class.java]
     val station by lazy { ViewModelProvider(this, StationSettingsViewModel.factory(
@@ -63,6 +69,24 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
                 time.applyPendingAtBoundary(audioPaused = true)
             }, authorizeOutput = ::authorizeOperation)
     } })[ManualOperatingViewModel::class.java] }
+    private fun diagnosticObservation(): DiagnosticObservation {
+        val owner = session.uiState.value; val mic = capture.uiState.value
+        val mapping = runCatching { time.clock.snapshot() }.getOrNull()
+        return DiagnosticObservation(
+            source = when (owner.source) { ReceiveSource.MICROPHONE -> DiagnosticSource.MICROPHONE; ReceiveSource.LAN -> DiagnosticSource.LAN; null -> DiagnosticSource.IDLE },
+            phase = when { owner.error != null -> DiagnosticPhase.ERROR; else -> when (owner.phase) {
+                ReceivePhase.IDLE -> DiagnosticPhase.STOPPED; ReceivePhase.STARTING -> DiagnosticPhase.STARTING
+                ReceivePhase.RUNNING -> DiagnosticPhase.RUNNING; ReceivePhase.STOPPING -> DiagnosticPhase.STOPPING
+            } }, decoder = mic.liveProfile,
+            inputRun = mic.receiveRun.takeIf { owner.source == ReceiveSource.MICROPHONE },
+            inputRate = mic.metrics?.route?.clientRate?.takeIf { owner.source == ReceiveSource.MICROPHONE },
+            clippedSamples = mic.metrics?.clippedSamples?.takeIf { owner.source == ReceiveSource.MICROPHONE },
+            driftPpm = mic.slots?.driftPpm?.takeIf { it.isFinite() && owner.source == ReceiveSource.MICROPHONE },
+            retainedLanRows = lan.uiState.value.connection.decodes.size, timeRevision = mapping?.revision,
+            timeUsable = mapping != null, timeUncertaintyMillis = mapping?.uncertaintyMillis?.takeIf { it.isFinite() },
+            txActive = manual.uiState.value.hasTxOperation,
+        )
+    }
     private val operating = OperatingSession()
     private var serviceOwner: Any? = null
     private var promoteOutput: (() -> Unit)? = null

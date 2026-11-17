@@ -6,6 +6,7 @@ import net.vash.ft8cbdroid.logbook.*
 import net.vash.ft8cbdroid.time.*
 import net.vash.ft8cbdroid.radio.*
 import net.vash.ft8cbdroid.receive.*
+import net.vash.ft8cbdroid.diagnostics.*
 import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
@@ -101,6 +102,9 @@ class MainActivity : ComponentActivity() {
     private val wavSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         recordedSlotViewModel.importDocument(it?.toString())
     }
+    private val diagnosticDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) {
+        receiveRuntime.diagnostics.export(it?.toString())
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -154,6 +158,13 @@ class MainActivity : ComponentActivity() {
             }
             EightCbApp(
                 station = station,
+                diagnosticsContent = {
+                    val diagnostics by receiver.diagnostics.uiState.collectAsStateWithLifecycle()
+                    DiagnosticsPanel(diagnostics, receiver.diagnostics::start, receiver.diagnostics::stop,
+                        receiver.diagnostics::delete, {
+                            if (receiver.diagnostics.prepareExport()) diagnosticDestination.launch("8CBdroid-session-report.json")
+                        }, receiver.diagnostics::load)
+                },
                 receiveSession = receiveSession,
                 onStopSession = { receiveRuntime.stop() },
                 onStopTx = { manualViewModel.stop("TX stopped by operator. Restart explicitly.") },
@@ -279,6 +290,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EightCbApp(
     station: StationSettingsUiState,
+    diagnosticsContent: @Composable () -> Unit = {},
     receiveSession: ReceiveSessionState = ReceiveSessionState(),
     onStopSession: () -> Unit = {},
     onStopTx: () -> Unit = {},
@@ -416,6 +428,7 @@ fun EightCbApp(
                             AppDestination.SETTINGS -> SettingsMenu(::navigate)
                             AppDestination.PROFILES -> profilesContent()
                             AppDestination.LOGBOOK -> logbookContent()
+                            AppDestination.DIAGNOSTICS -> diagnosticsContent()
                             AppDestination.STATION -> StationSettingsPanel(station, onCallsignChange, onGridChange, onSaveStation, onRetryLoad)
                             AppDestination.TIME -> TimePanel(time, timeActions)
                             AppDestination.AUDIO -> AudioSourceSettings(source, capture,

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import net.vash.ft8cbdroid.core.*
+import net.vash.ft8cbdroid.core.diagnostics.*
 import net.vash.ft8cbdroid.core.message.CbMessageSession
 import net.vash.ft8cbdroid.core.recording.*
 
@@ -33,13 +34,16 @@ class LiveSlotReceiver(
     stationCall: String?,
     private val profile: Ft8DecodeProfile,
     worker: CoroutineDispatcher = Dispatchers.Default,
+    private val diagnostics: ReceiveDiagnosticSink = ReceiveDiagnosticSink { _, _ -> },
 ) {
     private val state = MutableStateFlow(LiveReceiveState())
     val uiState = state.asStateFlow()
     private val dropped = AtomicLong()
     private data class Input(val utcStartMillis: Long, val source: String, val uncertaintyMillis: Double?,
         val slot: Ft8PcmSlot? = null, val window: Ft8ReceiveWindow? = null)
-    private val pending = Channel<Input>(1, BufferOverflow.DROP_OLDEST) { dropped.incrementAndGet() }
+    private val pending = Channel<Input>(1, BufferOverflow.DROP_OLDEST) {
+        dropped.incrementAndGet(); diagnostics.record(ReceiveDiagnosticEvent.WINDOW_UNPROCESSED, null)
+    }
     // Validate before launching a child, so a bad station becomes the capture owner's visible error.
     private val session = CbMessageSession(stationCall)
     private val job = scope.launch(worker) {
@@ -51,6 +55,7 @@ class LiveSlotReceiver(
                 currentCoroutineContext().ensureActive()
                 val result = interpretSlot(channel, RecordedSlotContext(Instant.ofEpochMilli(slot.utcStartMillis)), session)
                 session.commitPending()
+                diagnostics.record(ReceiveDiagnosticEvent.DECODE_COMPLETE, result.decodeMillis)
                 val rows = result.decodes.map { LiveDecodeRow(it, slot.source, slot.uncertaintyMillis, if (slot.window != null) Ft8ReceiveWindow.sampleCount else Ft8PcmSlot.sampleCount) }
                 state.update { it.copy(decodingUtcMillis = null, lastSlotUtcMillis = slot.utcStartMillis,
                     decodedSlots = it.decodedSlots + 1, skippedSlots = dropped.get(), rows = (rows + it.rows).take(MAX_ROWS),
@@ -78,6 +83,7 @@ class LiveSlotReceiver(
         state.update { it.copy(skippedSlots = dropped.get()) }
     }
     private fun failed(slot: Input, message: String) {
+        diagnostics.record(ReceiveDiagnosticEvent.DECODE_FAILED, null)
         state.update { it.copy(decodingUtcMillis = null, lastSlotUtcMillis = slot.utcStartMillis,
             failedSlots = it.failedSlots + 1, skippedSlots = dropped.get(), decodeMillis = null, error = message) }
     }

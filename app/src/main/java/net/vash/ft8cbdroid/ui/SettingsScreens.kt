@@ -28,6 +28,7 @@ fun SettingsMenu(onOpen: (AppDestination) -> Unit) {
     SettingsLink("USB / CAT", "Discover adapters and manage permissions", { onOpen(AppDestination.USB) })
     Spacer(Modifier.height(8.dp))
     Text("TOOLS & DIAGNOSTICS", style = MaterialTheme.typography.labelSmall, color = RadioColors.muted)
+    SettingsLink("Session diagnostics", "Optional performance reports and local deletion", { onOpen(AppDestination.DIAGNOSTICS) })
     SettingsLink("Microphone tools", "Detailed spectrum, capture and WAV export", { onOpen(AppDestination.CAPTURE) })
     SettingsLink("Message tools", "CB codec, hash sessions and offline WAV generation", { onOpen(AppDestination.MESSAGES) })
     SettingsLink("Recorded audio", "Import and decode a 15-second FT8 WAV", { onOpen(AppDestination.RECORDINGS) })

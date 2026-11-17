@@ -260,3 +260,14 @@ invalidates cancelled results; Compose only renders state/actions. A hardcoded
 Dummy operation is the only native open path. No physical model/device path is
 accepted, and `PendingRadioController` remains the hardware placeholder. See
 [the Hamlib guide](HAMLIB.md) for source pin, build, API bounds and transport gaps.
+
+## Optional session diagnostics
+
+The application graph owns `DiagnosticsViewModel` independently of Activity stores.
+A Kotlin/JVM `SessionDiagnostics` journal accepts typed counters and bounded
+observations; passive capture/decoder events never include payloads or audio.
+Android adapters read low-rate process/power metrics and atomically checkpoint one
+report in backup-excluded private storage. Document export uses the selected
+ContentResolver destination. Stop/delete join checkpoint work; reopening an active
+checkpoint marks it interrupted without starting any session. See
+[session diagnostics](SESSION_DIAGNOSTICS.md) for limits and reproduction commands.

@@ -31,7 +31,7 @@ not independently confirm radio TX or a QSO.
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
 | **Operate** | Selected-source activity, CB country labels, All/CQ/To-me/Worked receive filters, Logbook access, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked uses saved contacts for the current station. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Continuous RX and explicitly started TX/AutoSeq with bounded retries. LAN remains read-only. |
-| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, optional bounded session reports, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
 
 The intended connection paths are acoustic phone microphone/speaker with radio
@@ -164,6 +164,10 @@ The [acoustic interoperability suite](docs/ACOUSTIC_INTEROP.md) provides repeata
 phone/desktop exchange checks, including numeric/slash calls, hash-session resets
 and degraded input. It independently decodes recordings of the phone speaker;
 it does not enable automatic QSO progression.
+
+Optional [session diagnostics](docs/SESSION_DIAGNOSTICS.md) collect bounded technical
+statistics in private storage for up to one hour. Reports can be exported or deleted;
+no audio or message text is included, and collection never restarts automatically.
 
 ## Documentation and contributions
 
