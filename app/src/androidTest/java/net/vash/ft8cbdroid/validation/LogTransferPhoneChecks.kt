@@ -175,6 +175,7 @@ class LogTransferPhoneChecks(private val instrumentation: Instrumentation, priva
                 check(imported.origin == QsoOrigin.ADIF_IMPORT && imported.timeBasis == QsoTimeBasis.IMPORTED_UTC && imported.txAudioHz == null)
                 check(imported.details.notes == detail.notes && imported.details.dialHz == detail.dialHz)
                 report.put("actual_ui_duplicate_choice_review_and_import", true)
+                await("imported row available for editing") { main { !runtime.logbook.uiState.value.busy && runtime.logbook.uiState.value.snapshot.records.any { it.id == importedId } } }
                 main { runtime.logbook.editRecord(importedId) }
                 PhoneNavigation.replace(instrumentation, "Notes", "Reviewed imported $run")
                 click("Confirm actual radio dial frequency"); click("Save QSO")

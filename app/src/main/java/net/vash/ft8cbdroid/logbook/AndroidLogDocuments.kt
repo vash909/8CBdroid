@@ -27,7 +27,9 @@ class AndroidLogDocuments(private val context: Context) : LogDocuments {
                         try { awaitCancellation() } finally { signal.cancel(); runCatching { current.getAndSet(null)?.close() } }
                     }
                     try {
-                        val file = context.contentResolver.openFileDescriptor(Uri.parse(document), mode, signal) ?: throw IOException("No document descriptor.")
+                        val uri = Uri.parse(document)
+                        require(uri.scheme == "content") { "Choose a file using Android's document picker." }
+                        val file = context.contentResolver.openFileDescriptor(uri, mode, signal) ?: throw IOException("No document descriptor.")
                         current.set(file); ensureActive()
                         if (Build.VERSION.SDK_INT >= 30) {
                             Os.fcntlInt(file.fileDescriptor, OsConstants.F_SETFL, Os.fcntlInt(file.fileDescriptor, OsConstants.F_GETFL, 0) or OsConstants.O_NONBLOCK)
@@ -37,7 +39,9 @@ class AndroidLogDocuments(private val context: Context) : LogDocuments {
                             }
                         }
                         block(file)
-                    } finally { runCatching { current.getAndSet(null)?.close() }; cancellation.cancelAndJoin() }
+                    } finally {
+                        try { current.getAndSet(null)?.close() } finally { cancellation.cancelAndJoin() }
+                    }
                 }
             }
         }
@@ -66,6 +70,7 @@ class AndroidLogDocuments(private val context: Context) : LogDocuments {
             catch (e: ErrnoException) { if (e.errno == OsConstants.EAGAIN || e.errno == OsConstants.EINTR) continue else throw e }
             check(written > 0) { "Document writer closed early." }; position += written
         }
+        if (OsConstants.S_ISREG(Os.fstat(file.fileDescriptor).st_mode)) Os.fsync(file.fileDescriptor)
     } }
     override suspend fun share(bytes: ByteArray): String = withContext(Dispatchers.IO) {
         require(bytes.size <= LogBackup.MAX_BYTES)
