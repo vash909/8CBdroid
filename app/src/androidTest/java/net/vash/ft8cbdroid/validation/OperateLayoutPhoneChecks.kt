@@ -166,9 +166,14 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             } } } }
             await("local fixture row") { visible("CQ 26AT101") }
             fun stationRow() = all().first { it.contentDescription?.toString()?.startsWith("Message: CQ 26AT101;") == true }
-            // Compose exposes generic selected rows as checked; only tab roles use isSelected.
-            fun highlighted() = stationRow().let { it.isSelected || it.isChecked }
-            check(!highlighted())
+            // Check the rendered background of an untouched row, independent of accessibility selection mapping or touch ripples.
+            fun highlightPixel(): Int {
+                val node = all().first { it.contentDescription?.toString()?.startsWith("Message: $longText;") == true }
+                val bounds = Rect(); node.getBoundsInScreen(bounds)
+                val image = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+                return try { image.getPixel(bounds.left + 3, bounds.centerY()) } finally { image.recycle() }
+            }
+            val unselectedPixel = highlightPixel()
             PhoneNavigation.hold(instrumentation, "CQ 26AT101")
             await("explicit hold callback") { answerCount == 1 }
             check(answered?.decode?.frame?.payload == payload && !visible("Message details"))
@@ -178,9 +183,13 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             click("CQ 26AT101"); await("local details") { visible("Message details") && visible("Use peer") }
             click("Use peer"); check(selected?.callsign == "26AT101" && answerCount == 1)
             click("CQ 26AT101"); click("→ RX"); check(rx == 1200)
-            await("RX frequency highlight") { highlighted() && stationRow().contentDescription.toString().contains("On RX frequency") }
+            await("rendered RX frequency highlight") { highlightPixel() != unselectedPixel }
+            instrumentation.uiAutomation.takeScreenshot()?.let { image ->
+                try { File(context.cacheDir, "operate-layout-rx-highlight.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+                finally { image.recycle() }
+            }
             main { view = view.copy(rxHz = 1300) }
-            await("RX highlight moves without removing messages") { !highlighted() && visible("CQ 26AT101") }
+            await("RX highlight moves without removing messages") { highlightPixel() == unselectedPixel && visible("CQ 26AT101") }
             report.put("rx_highlight_and_explicit_hold_presentation_callbacks", true)
             main { fontScale = 1.4f }; SystemClock.sleep(400)
             click(longText); check(all().any { it.text?.toString() == longText })
