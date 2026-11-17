@@ -2,6 +2,7 @@ package net.vash.ft8cbdroid.validation
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.ClipData
 import android.content.ComponentName
 import android.content.Intent
@@ -74,9 +75,18 @@ class LogTransferPhoneChecks(private val instrumentation: Instrumentation, priva
         }
         await("picker cancellation") { main { !vm.uiState.value.choosing } }
     }
+    private fun find(node: AccessibilityNodeInfo?, test: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+        if (node == null || test(node)) return node
+        repeat(node.childCount) { find(node.getChild(it), test)?.let { return it } }; return null
+    }
     private fun pickerRoot() {
         await("external picker") { PhoneNavigation.root(instrumentation)?.packageName?.toString()?.let { it != context.packageName } == true }
-        click("Show roots"); click("R26 test logs")
+        // The system picker follows the phone locale, independently of the English app.
+        val drawer = requireNotNull(find(PhoneNavigation.root(instrumentation)) {
+            it.className?.toString() == "android.widget.ImageButton" && it.isClickable
+        }) { "Document picker navigation button missing" }
+        check(drawer.performAction(AccessibilityNodeInfo.ACTION_CLICK)); SystemClock.sleep(200)
+        click("R26 test logs")
     }
     private fun pickerSaveName(name: String) {
         fun editable(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
@@ -87,7 +97,8 @@ class LogTransferPhoneChecks(private val instrumentation: Instrumentation, priva
         check(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, name)
         }))
-        click("Save")
+        val save = requireNotNull(find(PhoneNavigation.root(instrumentation)) { it.viewIdResourceName == "android:id/button1" && it.isEnabled }) { "Document picker Save button missing" }
+        check(save.performAction(AccessibilityNodeInfo.ACTION_CLICK))
         await("successful SAF export") { main { !vm.uiState.value.choosing && !vm.uiState.value.busy && vm.uiState.value.notice == "Log file saved." } }
     }
     private fun readFile(kind: LogFileKind, uri: String) {
@@ -96,7 +107,7 @@ class LogTransferPhoneChecks(private val instrumentation: Instrumentation, priva
     }
     private fun shareCheck(bytes: ByteArray, grant: Boolean) {
         val uri = Uri.parse(runBlocking { documents.share(bytes) })
-        val intent = Intent(Intent.ACTION_SEND).setComponent(ComponentName("net.vash.ft8cbdroid.test", LogShareReceiver::class.java.name))
+        val intent = Intent(if (grant) Intent.ACTION_SEND else "net.vash.ft8cbdroid.test.NO_URI_GRANT").setComponent(ComponentName("net.vash.ft8cbdroid.test", LogShareReceiver::class.java.name))
             .setType("application/x-adif").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (grant) intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).clipData = ClipData.newRawUri("ADIF log", uri)
         main { context.startActivity(intent) }
@@ -110,6 +121,9 @@ class LogTransferPhoneChecks(private val instrumentation: Instrumentation, priva
         val result = Bundle(); var code = Activity.RESULT_CANCELED; var activity: MainActivity? = null
         try {
             require(run.matches(Regex("[a-zA-Z0-9-]{1,64}")))
+            instrumentation.uiAutomation.serviceInfo = instrumentation.uiAutomation.serviceInfo.apply {
+                flags = flags or AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+            }
             activity = launch()
             await("log loaded") { main { runtime.logbook.uiState.value.loaded } }
             if (scenario == "log-files-cleanup") {
