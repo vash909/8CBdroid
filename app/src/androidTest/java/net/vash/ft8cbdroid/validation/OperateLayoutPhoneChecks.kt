@@ -166,7 +166,9 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             } } } }
             await("local fixture row") { visible("CQ 26AT101") }
             fun stationRow() = all().first { it.contentDescription?.toString()?.startsWith("Message: CQ 26AT101;") == true }
-            check(!stationRow().isSelected)
+            // Compose exposes generic selected rows as checked; only tab roles use isSelected.
+            fun highlighted() = stationRow().let { it.isSelected || it.isChecked }
+            check(!highlighted())
             PhoneNavigation.hold(instrumentation, "CQ 26AT101")
             await("explicit hold callback") { answerCount == 1 }
             check(answered?.decode?.frame?.payload == payload && !visible("Message details"))
@@ -176,9 +178,9 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             click("CQ 26AT101"); await("local details") { visible("Message details") && visible("Use peer") }
             click("Use peer"); check(selected?.callsign == "26AT101" && answerCount == 1)
             click("CQ 26AT101"); click("→ RX"); check(rx == 1200)
-            await("RX frequency highlight") { stationRow().isSelected && stationRow().contentDescription.toString().contains("On RX frequency") }
+            await("RX frequency highlight") { highlighted() && stationRow().contentDescription.toString().contains("On RX frequency") }
             main { view = view.copy(rxHz = 1300) }
-            await("RX highlight moves without removing messages") { !stationRow().isSelected && visible("CQ 26AT101") }
+            await("RX highlight moves without removing messages") { !highlighted() && visible("CQ 26AT101") }
             report.put("rx_highlight_and_explicit_hold_presentation_callbacks", true)
             main { fontScale = 1.4f }; SystemClock.sleep(400)
             click(longText); check(all().any { it.text?.toString() == longText })
