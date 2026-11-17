@@ -101,6 +101,13 @@ timeout 1500 python3 scripts/autoseq_audio_checks.py \
   --output /tmp/8cbdroid-autoseq --jt9 /path/to/wsjt-cb/jt9
 ```
 
+For a focused hold-to-answer check, add `--hold-answer` and use a new output
+directory. It physically holds the row of a real acoustically decoded CQ and
+qualifies one complete answering exchange with three independently decoded
+phone waveforms. It does not repeat the full suite's calling, interruption,
+screen-off or NTP outage checks. Run `operate-layout` separately for RX highlights,
+short-tap details and busy-state gesture blocking.
+
 The test uses actual Operate buttons, five calling outputs with an intentionally
 lost reply and repeated reply, three answering outputs and three no-response
 CQs. All expected peer responses use the immediately following RX period; a

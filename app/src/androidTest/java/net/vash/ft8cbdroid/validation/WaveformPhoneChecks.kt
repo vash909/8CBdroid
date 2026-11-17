@@ -116,6 +116,7 @@ class WaveformPhoneChecks : Instrumentation() {
         if (scenario == "automatic-time") { AutomaticPhoneChecks(this, previewRun, timeOnly = true).run(); return }
         if (scenario == "continuous-operating") { AutomaticPhoneChecks(this, previewRun, continuous = true).run(); return }
         if (scenario == "automatic-audio") { AutomaticPhoneChecks(this, previewRun).run(); return }
+        if (scenario == "hold-answer") { AutomaticPhoneChecks(this, previewRun, holdAnswer = true).run(); return }
         if (scenario == "acoustic") { AcousticPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "manual-audio") { ManualPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "phone-audio") {

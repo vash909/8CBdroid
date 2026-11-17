@@ -27,7 +27,16 @@ object PhoneNavigation {
         repeat(node.childCount) { clickable(node.getChild(it), text)?.let { return it } }
         return null
     }
-    fun click(instrumentation: Instrumentation, text: String) {
+    fun click(instrumentation: Instrumentation, text: String) = activate(instrumentation, text, false)
+    fun hold(instrumentation: Instrumentation, text: String) = activate(instrumentation, text, true)
+    private fun activate(instrumentation: Instrumentation, text: String, hold: Boolean) {
+        fun perform(node: AccessibilityNodeInfo, bounds: Rect) {
+            if (hold) {
+                check(node.isLongClickable) { "Cannot hold $text" }
+                ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(
+                    "timeout 4 input swipe ${bounds.centerX()} ${bounds.centerY()} ${bounds.centerX()} ${bounds.centerY()} 900")).use { it.readBytes() }
+            } else check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click $text" }
+        }
         // Dense message rows expose the same explicit actions to accessibility users.
         fun custom(node: AccessibilityNodeInfo?): Boolean {
             if (node == null) return false
@@ -36,7 +45,7 @@ object PhoneNavigation {
             }
             repeat(node.childCount) { if (custom(node.getChild(it))) return true }; return false
         }
-        if (text in setOf("Use peer", "→ RX") && custom(root(instrumentation))) { SystemClock.sleep(180); return }
+        if (!hold && text in setOf("Use peer", "→ RX") && custom(root(instrumentation))) { SystemClock.sleep(180); return }
 
         fun scroller(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
             if (node == null) return null
@@ -50,7 +59,7 @@ object PhoneNavigation {
                 val node = clickable(root, text); val bounds = Rect(); node?.getBoundsInScreen(bounds)
                 val screen = Rect(); root.getBoundsInScreen(screen)
                 if (node?.isVisibleToUser == true && screen.contains(bounds) && bounds.width() > 0 && bounds.height() > 0) {
-                    check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click $text" }
+                    perform(node, bounds)
                     SystemClock.sleep(180); return
                 }
                 if (scroller(root)?.performAction(action) != true) break
@@ -63,7 +72,7 @@ object PhoneNavigation {
             val node = clickable(root, text); val bounds = Rect(); node?.getBoundsInScreen(bounds)
             val screen = Rect(); root.getBoundsInScreen(screen)
             if (node?.isVisibleToUser == true && bounds.width() > 0 && bounds.height() > 0 && screen.contains(bounds)) {
-                check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click $text" }
+                perform(node, bounds)
                 SystemClock.sleep(180); return
             }
             val y = screen.centerY(); val end = y + if (forward) -screen.height()/5 else screen.height()/5

@@ -30,6 +30,7 @@ class AutomaticPhoneChecks(
     private val run: String,
     private val timeOnly: Boolean = false,
     private val continuous: Boolean = false,
+    private val holdAnswer: Boolean = false,
 ) {
     private val context get() = instrumentation.targetContext
     private fun <T> main(block: () -> T): T {
@@ -65,7 +66,7 @@ class AutomaticPhoneChecks(
         val result = Bundle(); val report = JSONObject(); var code = Activity.RESULT_CANCELED
         try {
             require(run.matches(Regex("[a-zA-Z0-9-]{1,64}")))
-            report.put("run", run).put("result", "RUNNING").put("scope", if (timeOnly) "time-recovery" else if (continuous) "continuous" else "full")
+            report.put("run", run).put("result", "RUNNING").put("scope", if (holdAnswer) "hold-answer" else if (timeOnly) "time-recovery" else if (continuous) "continuous" else "full")
             var activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             current = activity
@@ -225,7 +226,7 @@ class AutomaticPhoneChecks(
             }
             if (!timeOnly) {
                 if (continuous) runGuards()
-                for (role in if (continuous) listOf("calling", "no-response", "answering") else listOf("calling", "answering", "no-response")) {
+                for (role in if (holdAnswer) listOf("answering") else if (continuous) listOf("calling", "no-response", "answering") else listOf("calling", "answering", "no-response")) {
                     prepare()
                     observedReceives.clear()
                     val start = System.currentTimeMillis()
@@ -233,9 +234,12 @@ class AutomaticPhoneChecks(
                     if (role == "answering") {
                         await("actual CQ for explicit answer", 45000) { main { input.uiState.value.live.rows.any {
                             (it.decode.message as? UnpackResult.Decoded)?.message?.text == "CQ 26AT101" } } }
-                        PhoneNavigation.click(instrumentation, "Use peer")
+                        if (holdAnswer) {
+                            PhoneNavigation.hold(instrumentation, "CQ 26AT101")
+                            report.put("physical_hold_on_actual_cq", true)
+                        } else PhoneNavigation.click(instrumentation, "Use peer")
                     }
-                    PhoneNavigation.click(instrumentation, if (role == "answering") "Auto answer" else "Auto CQ")
+                    if (!holdAnswer) PhoneNavigation.click(instrumentation, if (role == "answering") "Auto answer" else "Auto CQ")
                     await("AutoSeq started") { main { model.uiState.value.autoSequence.active || model.uiState.value.error != null } }
                     check(main { model.uiState.value.error == null }) { main { model.uiState.value.error.orEmpty() } }
                     if (continuous) {
@@ -300,11 +304,11 @@ class AutomaticPhoneChecks(
                     }
                 }
                 report.put("roles", roles).put("periodic_ntp_refreshes", clockEvents)
-                check(clockEvents.length() > 0) { "The physical suite did not observe a real five-minute NTP refresh" }
-                if (!continuous) runGuards()
+                if (!holdAnswer) check(clockEvents.length() > 0) { "The physical suite did not observe a real five-minute NTP refresh" }
+                if (!continuous && !holdAnswer) runGuards()
             }
             report.put("roles", roles).put("guards", guards)
-            if (!continuous) {
+            if (!continuous && !holdAnswer) {
             await("idle time refresh") { main { !time.uiState.value.refreshPending && !time.uiState.value.refreshing && !model.uiState.value.busy } }
             check(main { time.uiState.value.refreshWarning == null }) { main { "Unexpected time warning before offline scenario: ${time.uiState.value.refreshWarning}" } }
             stage("ntp-offline")
@@ -325,11 +329,11 @@ class AutomaticPhoneChecks(
             }
             await("application-owned durable completions") { main { !activity.receiveRuntime.logbook.uiState.value.busy && activity.receiveRuntime.logbook.uiState.value.unsavedCompletions == 0 } }
             val staged = requireNotNull(fixtures).cleanup()
-            if (!timeOnly) check(staged == 2) { "Expected one durable review candidate per completed bench exchange" }
+            if (!timeOnly) check(staged == if (holdAnswer) 1 else 2) { "Expected one durable review candidate per completed bench exchange" }
             fixtures = null
             report.put("application_owned_completions_staged_once_and_fixtures_removed", staged)
             report.put("guards", guards).put("result", "PASS").put("model", android.os.Build.MODEL)
-                .put("android", android.os.Build.VERSION.RELEASE).put("manual_ntp_observations", if (timeOnly) 2 else 3)
+                .put("android", android.os.Build.VERSION.RELEASE).put("manual_ntp_observations", if (holdAnswer) 1 else if (timeOnly) 2 else 3)
             File(context.cacheDir, "autoseq-report.json").writeText(report.toString(2))
             result.putString("autoseq_report", report.toString()); result.putString("autoseq_result", "PASS"); code = Activity.RESULT_OK
         } catch (error: Throwable) {
