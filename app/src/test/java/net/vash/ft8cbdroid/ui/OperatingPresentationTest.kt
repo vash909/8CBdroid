@@ -13,6 +13,10 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OperatingPresentationTest {
+    @Test fun rxHighlightUsesANarrowInclusiveDisplayWindowWithoutIntegerOverflow() {
+        for (offset in listOf(975, 1000, 1025)) assertTrue(isOnRxFrequency(offset, 1000))
+        for (offset in listOf(974, 1026, 2000, Int.MIN_VALUE, Int.MAX_VALUE)) assertFalse(isOnRxFrequency(offset, 1000))
+    }
     @Test fun invalidFrequencyEditsCannotPublishOutOfRangeCursors() {
         for (value in listOf("", "0", "199", "2951", "3000", "-1", "12.5", "abcd")) assertNull(audioOffset(value))
         assertEquals(200, audioOffset("200")); assertEquals(1000, audioOffset("1000")); assertEquals(2950, audioOffset("2950"))
@@ -26,6 +30,7 @@ class OperatingPresentationTest {
         assertEquals("England", rows.first().context.division?.countryName)
         assertEquals("Italy", rows.last().context.division?.countryName)
         assertNull(rows.first().peer)
+        assertNull(rows.first().localDecode)
         assertEquals(1, rows.count { it.context.matches(ActivityFilter.CQ, "1AT106") })
         assertEquals(1, rows.count { it.context.matches(ActivityFilter.TO_ME, "1AT106") })
         assertEquals("01:00:00", rows.first().time)

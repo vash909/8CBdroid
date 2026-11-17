@@ -14,10 +14,14 @@ data class ManualPeer(val callsign: String, val frequencyHz: Int, val report: In
 /** Explicit CB peer selection from a current integrity-checked local decode, never from free text or an unknown hash. */
 fun manualPeer(row: LiveDecodeRow, ownCall: String): ManualPeer? {
     if (RecordedDecodeFlag.CRC_LDPC_VALID !in row.decode.flags ||
-        row.decode.flags.any { it in setOf(RecordedDecodeFlag.UNKNOWN_HASH, RecordedDecodeFlag.AMBIGUOUS_HASH) }) return null
+        row.decode.flags.any { it in setOf(RecordedDecodeFlag.UNKNOWN_HASH, RecordedDecodeFlag.AMBIGUOUS_HASH, RecordedDecodeFlag.UNSUPPORTED_MESSAGE) }) return null
     val message = (row.decode.message as? UnpackResult.Decoded)?.message ?: return null
     if (message.format == MessageFormat.FREE_TEXT || message.parts.size < 2) return null
-    val sender = when (val part = message.parts[1]) {
+    if (message.parts.any { it is MessagePart.UnresolvedCall || it is MessagePart.AmbiguousCall }) return null
+    // Type 4's trailing hash names the destination; its full first callsign is the sender.
+    val senderPart = if (message.format == MessageFormat.NONSTANDARD_CALL && message.parts[0] is MessagePart.Text &&
+        message.parts[1] is MessagePart.ResolvedCall && CbCallsign.isValid((message.parts[0] as MessagePart.Text).value)) message.parts[0] else message.parts[1]
+    val sender = when (val part = senderPart) {
         is MessagePart.Text -> part.value
         is MessagePart.ResolvedCall -> part.callsign
         else -> return null

@@ -15,6 +15,7 @@ import net.vash.ft8cbdroid.ui.*
 import net.vash.ft8cbdroid.audio.CaptureUiState
 import net.vash.ft8cbdroid.lan.LanUiState
 import net.vash.ft8cbdroid.operate.ManualActions
+import net.vash.ft8cbdroid.operate.ManualOperatingState
 import net.vash.ft8cbdroid.settings.StationSettingsUiState
 import net.vash.ft8cbdroid.time.TimeUiState
 import net.vash.ft8cbdroid.core.*
@@ -150,18 +151,46 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             val utc = Instant.parse("2026-11-17T12:00:00Z")
             val decoded = RecordedDecode(Ft8DecodedFrame(payload, .8f, 1200f, 30, -7f), CbMessageCodec.unpack(payload), utc, utc, .3f, setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.SNR_ESTIMATED))
             var selected: ManualPeer? = null; var rx = 0; var fontScale by mutableStateOf(1f)
+            var view by mutableStateOf(SpectrumView())
+            var answering by mutableStateOf(false)
+            var answered: LiveDecodeRow? = null
+            var answerCount = 0
             val longText = "Unsupported: Long message text remains available in full in the scrollable details dialog"
             val longDecoded = decoded.copy(message = UnpackResult.Unsupported(longText.removePrefix("Unsupported: ")))
             main { current.setContent { CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) { RadioTheme {
                 OperatePanel(StationSettingsUiState(saved = StationIdentity("1AT106", "JN44")), OperatingSource.LOCAL,
-                    CaptureUiState(live = LiveReceiveState(rows = listOf(LiveDecodeRow(decoded, "UI fixture", null), LiveDecodeRow(longDecoded, "UI fixture", null)))), LanUiState(),
-                    TimeUiState(), {}, {}, {}, {}, { rx = it.rxHz }, { Box(Modifier.height(108.dp)) },
-                    manualActions = ManualActions(selectPeer = { selected = it }))
+                    CaptureUiState(spectrumView = view, live = LiveReceiveState(rows = listOf(LiveDecodeRow(decoded, "UI fixture", null), LiveDecodeRow(longDecoded, "UI fixture", null)))), LanUiState(),
+                    TimeUiState(), {}, {}, {}, {}, { rx = it.rxHz; view = it }, { Box(Modifier.height(108.dp)) },
+                    manual = ManualOperatingState(busy = answering),
+                    manualActions = ManualActions(selectPeer = { selected = it }, answerDecode = { answered = it; answerCount++ }))
             } } } }
             await("local fixture row") { visible("CQ 26AT101") }
+            fun stationRow() = all().first { it.contentDescription?.toString()?.startsWith("Message: CQ 26AT101;") == true }
+            // Check the rendered background of an untouched row, independent of accessibility selection mapping or touch ripples.
+            fun highlightPixel(): Int {
+                val node = all().first { it.contentDescription?.toString()?.startsWith("Message: $longText;") == true }
+                val bounds = Rect(); node.getBoundsInScreen(bounds)
+                val image = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+                return try { image.getPixel(bounds.left + 3, bounds.centerY()) } finally { image.recycle() }
+            }
+            val unselectedPixel = highlightPixel()
+            PhoneNavigation.hold(instrumentation, "CQ 26AT101")
+            await("explicit hold callback") { answerCount == 1 }
+            check(answered?.decode?.frame?.payload == payload && !visible("Message details"))
+            main { answering = true }; SystemClock.sleep(200)
+            check(!stationRow().isLongClickable)
+            main { answering = false }; SystemClock.sleep(200)
             click("CQ 26AT101"); await("local details") { visible("Message details") && visible("Use peer") }
-            click("Use peer"); check(selected?.callsign == "26AT101")
+            click("Use peer"); check(selected?.callsign == "26AT101" && answerCount == 1)
             click("CQ 26AT101"); click("→ RX"); check(rx == 1200)
+            await("rendered RX frequency highlight") { highlightPixel() != unselectedPixel }
+            instrumentation.uiAutomation.takeScreenshot()?.let { image ->
+                try { File(context.cacheDir, "operate-layout-rx-highlight.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+                finally { image.recycle() }
+            }
+            main { view = view.copy(rxHz = 1300) }
+            await("RX highlight moves without removing messages") { highlightPixel() == unselectedPixel && visible("CQ 26AT101") }
+            report.put("rx_highlight_and_explicit_hold_presentation_callbacks", true)
             main { fontScale = 1.4f }; SystemClock.sleep(400)
             click(longText); check(all().any { it.text?.toString() == longText })
             click("Close"); report.put("large_text_full_message_details", true)

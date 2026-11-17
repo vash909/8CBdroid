@@ -44,6 +44,15 @@ class ManualPeerTest {
         val directed = row(listOf(MessagePart.Text("1AT106"), MessagePart.Text("26AT101")), second = 15)
         assertEquals(SlotPeriod.EVEN, manualPeer(directed, "1AT106")!!.period)
     }
+    @Test fun trailingHashSelectsTheFullSenderAndNeverTheHashedRecipient() {
+        val h = CbCallsignHash.calculate("1AT106", 12)
+        val directed = row(listOf(MessagePart.Text("26AT101"), MessagePart.ResolvedCall(h, "1AT106")))
+        assertEquals("26AT101", manualPeer(directed, "1AT106")?.callsign)
+        assertNull(manualPeer(directed, "26AT101"))
+        assertNull(manualPeer(row(listOf(MessagePart.UnresolvedCall(h), MessagePart.Text("26AT101"))), "1AT106"))
+        assertNull(manualPeer(directed.copy(decode = directed.decode.copy(flags = setOf(
+            RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.UNSUPPORTED_MESSAGE))), "1AT106"))
+    }
     @Test fun unknownAmbiguousFreeTextSelfAndNonCbIdentitiesNeverBecomeSelectedPeers() {
         val h = CallsignHash(12, 42)
         val cases = listOf(

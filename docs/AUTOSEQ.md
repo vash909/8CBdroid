@@ -11,6 +11,22 @@ addressed reply. To answer, select a complete decoded sender with **Use peer**,
 review offset/period, then press **Auto answer**. Advice alone never starts
 AutoSeq. Reports use the local SNR estimate until sent, then remain fixed.
 
+Alternatively, hold a received local station row to select its sender, estimated
+report, audio frequency and opposite UTC period and start **Auto answer** in one
+explicit gesture. No additional Enable TX or Auto answer press is required.
+A short tap continues to open details; **Use peer** alone continues to select
+without transmitting. All normal speaker, time, profile and live-RX interlocks
+still apply, and a failure is shown on Operate.
+
+The hold accepts only a complete, CRC-valid, unambiguous sender in the active
+receiver's latest complete window (up to 15 seconds after that window ends).
+LAN, imported recordings, own-call echoes, unresolved hashes and older history
+cannot start automatic output. Holding while output or AutoSeq is already active
+does not interrupt or duplicate it. The first answer targets the next opposite
+UTC period; if preparation misses its fixed deadline, AutoSeq stops rather than
+transmitting late. After an ordinary 15-second decode, the next matching period
+can be a cycle later; early AutoSeq reception supports the immediate response.
+
 AutoSeq sends at most three copies of the same message, stops after two minutes
 without protocol progress, and has a four-minute session limit. Completed
 exchanges stop; another CQ requires an explicit new start. A lost message can
@@ -84,6 +100,13 @@ source scripts/env.sh
 timeout 1500 python3 scripts/autoseq_audio_checks.py \
   --output /tmp/8cbdroid-autoseq --jt9 /path/to/wsjt-cb/jt9
 ```
+
+For a focused hold-to-answer check, add `--hold-answer` and use a new output
+directory. It physically holds the row of a real acoustically decoded CQ and
+qualifies one complete answering exchange with three independently decoded
+phone waveforms. It does not repeat the full suite's calling, interruption,
+screen-off or NTP outage checks. Run `operate-layout` separately for RX highlights,
+short-tap details and busy-state gesture blocking.
 
 The test uses actual Operate buttons, five calling outputs with an intentionally
 lost reply and repeated reply, three answering outputs and three no-response

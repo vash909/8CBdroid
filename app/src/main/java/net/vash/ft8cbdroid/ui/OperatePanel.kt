@@ -2,7 +2,8 @@ package net.vash.ft8cbdroid.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
@@ -46,7 +48,11 @@ import java.util.Locale
 private val utcTime = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC)
 
 data class ActivityMessage(val time: String, val message: String, val signal: String, val offset: Int,
-    val detail: String, val peer: ManualPeer? = null, val context: CbActivityContext = CbActivityContext())
+    val detail: String, val peer: ManualPeer? = null, val context: CbActivityContext = CbActivityContext(),
+    val localDecode: LiveDecodeRow? = null)
+
+/** Display selection only; the decoder still searches its complete audio passband. */
+fun isOnRxFrequency(offset: Int, rxHz: Int): Boolean = kotlin.math.abs(offset.toLong() - rxHz.toLong()) <= 25L
 
 /** Local estimates and desktop reports keep their source and confidence labels. */
 fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanUiState, ownCall: String = ""): List<ActivityMessage> =
@@ -60,7 +66,7 @@ fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanU
                 if (RecordedDecodeFlag.UNKNOWN_HASH in row.decode.flags) add("Unknown hash")
                 if (RecordedDecodeFlag.AMBIGUOUS_HASH in row.decode.flags) add("Ambiguous hash")
             }.joinToString(" · "), manualPeer(row, ownCall),
-            (row.decode.message as? UnpackResult.Decoded)?.message?.let(CbOperatingContext::fromMessage) ?: CbActivityContext())
+            (row.decode.message as? UnpackResult.Decoded)?.message?.let(CbOperatingContext::fromMessage) ?: CbActivityContext(), row)
     } else lan.connection.decodes.asReversed().map { row ->
         val time = row.utcMillisOfDay?.let { String.format(Locale.ROOT, "%02d:%02d:%02d", it / 3_600_000, it / 60_000 % 60, it / 1000 % 60) } ?: "—"
         ActivityMessage(time, row.message.ifEmpty { "(empty message)" }, String.format(Locale.ROOT, "%+d", row.snr),
@@ -152,7 +158,8 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                 if (small) Modifier.fillMaxWidth().height(420.dp) else Modifier.fillMaxWidth().weight(1f), onView, capture.spectrumView,
                 manual.sent.map { entry -> ActivityMessage(utcTime.format(java.time.Instant.ofEpochMilli(entry.utcMillis)), entry.text,
                     "—", entry.frequencyHz.roundToInt(), "Completed speaker audio · radio TX unconfirmed · reference dial ${entry.referenceDialHz} Hz") },
-                { detail = it }, manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty(), workedCalls, workedAvailable)
+                { detail = it }, manualActions.selectPeer, filter, { filterName = it.name }, station.saved?.callsign.orEmpty(), workedCalls, workedAvailable,
+                manualActions.answerDecode, !manual.busy && !manual.autoSequence.active)
             (if (source == OperatingSource.LOCAL) capture.error else lan.error ?: lan.connection.error)?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
@@ -225,11 +232,13 @@ private fun OffsetField(label: String, value: Int, enabled: Boolean, modifier: M
         textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boolean) -> Unit,
     source: OperatingSource, modifier: Modifier, onView: (SpectrumView) -> Unit, view: SpectrumView, sentRows: List<ActivityMessage> = emptyList(), onOpen: (ActivityMessage) -> Unit = {}, onPeer: (ManualPeer) -> Unit = {},
     filter: ActivityFilter = ActivityFilter.ALL, onFilter: (ActivityFilter) -> Unit = {}, ownCall: String = "",
-    workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false) {
+    workedCalls: Set<String> = emptySet(), workedAvailable: Boolean = false,
+    onAnswer: (LiveDecodeRow) -> Unit = {}, canAnswer: Boolean = false) {
     val filtered = rows.filter { it.context.matches(filter, ownCall, if (workedAvailable) workedCalls else emptySet()) }
     val visible = if (sent) sentRows else filtered
     Surface(modifier, shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {
@@ -270,10 +279,17 @@ private fun ActivityLog(rows: List<ActivityMessage>, sent: Boolean, onSent: (Boo
                 }
                 LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
                     itemsIndexed(visible) { _, row ->
-                        Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Open message details") { onOpen(row) }
+                        val onRx = !sent && source == OperatingSource.LOCAL && isOnRxFrequency(row.offset, view.rxHz)
+                        val answer = row.localDecode?.takeIf { !sent && source == OperatingSource.LOCAL && canAnswer && row.peer != null }
+                        Row(Modifier.fillMaxWidth()
+                            .background(if (onRx) RadioColors.olive.copy(alpha = .18f) else androidx.compose.ui.graphics.Color.Transparent)
+                            .combinedClickable(onClickLabel = "Open message details", onClick = { onOpen(row) },
+                                onLongClickLabel = answer?.let { "Answer ${row.peer?.callsign} with AutoSeq" },
+                                onLongClick = answer?.let { { onAnswer(it) } })
                             .semantics(mergeDescendants = true) {
+                                selected = onRx
                                 contentDescription = listOf("Message: ${row.message}; UTC ${row.time}, ${row.signal} dB, ${row.offset} Hz",
-                                    countryLabel(row.context), row.detail).filter { it.isNotEmpty() }.joinToString("; ")
+                                    countryLabel(row.context), row.detail, if (onRx) "On RX frequency" else "").filter { it.isNotEmpty() }.joinToString("; ")
                                 if (!sent && source == OperatingSource.LOCAL) customActions = buildList {
                                     add(CustomAccessibilityAction("→ RX") { onView(view.copy(cursor = OffsetCursor.RX).select(row.offset.toFloat())); true })
                                     row.peer?.let { peer -> add(CustomAccessibilityAction("Use peer") { onPeer(peer); true }) }

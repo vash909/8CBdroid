@@ -26,6 +26,17 @@ def trace():
 
 
 class AutomaticPhysicalTraceTest(unittest.TestCase):
+    def test_focused_held_answer_requires_real_responses_and_explicit_scope(self):
+        report, plays = trace()
+        report = dict(scope='hold-answer', physical_hold_on_actual_cq=True, roles=[report['roles'][1]])
+        checks.validate_roles(report, plays)
+        full = copy.deepcopy(report); full.pop('scope')
+        with self.assertRaises(AssertionError): checks.validate_roles(full, plays)
+        no_hold = copy.deepcopy(report); no_hold['physical_hold_on_actual_cq'] = False
+        with self.assertRaises(AssertionError): checks.validate_roles(no_hold, plays)
+        report['roles'][0]['received'].pop()
+        with self.assertRaises(AssertionError): checks.validate_roles(report, plays)
+
     def test_complete_immediate_loss_repeat_and_no_response_trace(self):
         report, plays = trace()
         checks.validate_roles(report, plays)

@@ -244,6 +244,63 @@ class ManualOperatingViewModelTest {
     }
     private fun automaticInput() = liveInput().copy(earlyWindows = true)
     private suspend fun TestScope.at(ms: Long) { advanceTimeBy(ms - scheduler.currentTime); runCurrent() }
+    @Test fun heldFreshDecodeSelectsSenderAndStartsTheNextOppositePeriodWithoutAnotherEnable() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); at(13_550)
+        val row = decoded("CQ 26AT101", 1_800_000_000_000L).copy(capturedSamples = 162000)
+        rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(row), lastSlotUtcMillis = 1_800_000_000_000L)); runCurrent()
+        assertTrue(vm.answerDecode(row)); runCurrent()
+        assertEquals("26AT101", vm.uiState.value.peer)
+        assertEquals("1500", vm.uiState.value.frequency); assertEquals(SlotPeriod.ODD, vm.uiState.value.period)
+        assertTrue(vm.uiState.value.autoSequence.active)
+        assertFalse(vm.answerDecode(row)) // Holding twice must not interrupt or duplicate an active exchange.
+        at(29_000)
+        assertEquals(1_800_000_015_000L, vm.uiState.value.sent.single().utcMillis)
+        assertEquals("<26AT101> 1AT106", vm.uiState.value.sent.single().text)
+        assertEquals(1, player.slots)
+        vm.stop(); at(70_000)
+        assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed); assertEquals(1, player.slots)
+    }
+    @Test fun heldDecodeCannotUseHistoryAnotherRunUnresolvedIdentityOrUnsupportedMetadata() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); at(30_100)
+        val fresh = decoded("CQ 26AT101", 1_800_000_015_000L)
+        val old = decoded("CQ 26AT101", 1_799_999_970_000L)
+        val bad = fresh.copy(decode = fresh.decode.copy(flags = emptySet()))
+        for ((input, row) in listOf(
+            rx.value.copy(live = LiveReceiveState(rows = listOf(old))) to old,
+            rx.value.copy(live = LiveReceiveState(rows = emptyList())) to fresh,
+            rx.value.copy(receiveStartedUtcMillis = 1_800_000_030_000L, live = LiveReceiveState(rows = listOf(fresh))) to fresh,
+            rx.value.copy(live = LiveReceiveState(rows = listOf(bad))) to bad,
+            rx.value.copy(phase = CapturePhase.IDLE, live = LiveReceiveState(rows = listOf(fresh))) to fresh,
+            rx.value.copy(receiveTimeRevision = clock.revision - 1, live = LiveReceiveState(rows = listOf(fresh))) to fresh)) {
+            rx.value = input; runCurrent(); assertFalse(vm.answerDecode(row)); runCurrent()
+            assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed)
+            assertNotNull(vm.uiState.value.error)
+        }
+        assertEquals(0, player.slots)
+    }
+    @Test fun heldDecodeStillRequiresTheSpeakerTimeAndServiceInterlocks() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player()
+        val vm = model(player = player, rx = rx, authorize = { phase -> check(phase == ManualPhase.CALIBRATING) { "Service unavailable" } })
+        ready(vm); at(15_100)
+        val row = decoded("CQ 26AT101", 1_800_000_000_000L)
+        rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(row))); runCurrent()
+        assertFalse(vm.answerDecode(row)); assertEquals("Service unavailable", vm.uiState.value.error)
+        vm.output(null); assertFalse(vm.answerDecode(row)); assertNotNull(vm.uiState.value.validation)
+        clock.reset(); assertFalse(vm.answerDecode(row))
+        assertEquals(0, player.slots); assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed)
+    }
+    @Test fun heldDecodeWithLatePreparationStopsInsteadOfMovingOrStartingTheResponseLate() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player()
+        val vm = model(player = player, rx = rx, automaticPreparation = { delay(2000) })
+        ready(vm); at(13_550)
+        val row = decoded("CQ 26AT101", 1_800_000_000_000L).copy(capturedSamples = 162000)
+        rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(row))); runCurrent()
+        assertTrue(vm.answerDecode(row)); at(20_000)
+        assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed)
+        assertTrue(vm.uiState.value.notice.orEmpty().contains("deadline")); assertEquals(0, player.slots)
+    }
     @Test fun automaticOutputWaitsForRealRecoveryAndStopCancelsThatWaitWithoutRearming() = runTest(dispatcher) {
         val rx = MutableStateFlow(automaticInput()); val player = Player()
         val vm = model(player = player, rx = rx, recovery = { rx.first { it.phase == CapturePhase.CAPTURING } })
@@ -325,7 +382,10 @@ class ManualOperatingViewModelTest {
     @Test fun automaticAnswerCompletesAfterTheConfirmed73AndNeverRestartsCalling() = runTest(dispatcher) {
         val logged = mutableListOf<net.vash.ft8cbdroid.core.logbook.QsoCompletion>()
         val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx, completion = logged::add)
-        ready(vm); vm.selectPeer(ManualPeer("26AT101", 1500, -12, SlotPeriod.ODD)); vm.startAutomatic(false); runCurrent()
+        ready(vm); at(13_550)
+        val cq = decoded("CQ 26AT101", 1_800_000_000_000L).copy(capturedSamples = 162000)
+        rx.value = rx.value.copy(live = LiveReceiveState(rows = listOf(cq))); runCurrent()
+        assertTrue(vm.answerDecode(cq)); runCurrent()
         at(29_000); assertEquals("<26AT101> 1AT106", vm.uiState.value.sent.single().text)
         at(44_200)
         rx.value = rx.value.copy(receiveRun = 2, receiveStartedUtcMillis = 1_800_000_029_000,
