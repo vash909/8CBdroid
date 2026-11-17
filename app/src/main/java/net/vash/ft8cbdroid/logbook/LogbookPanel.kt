@@ -11,15 +11,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import net.vash.ft8cbdroid.core.StationIdentity
+import net.vash.ft8cbdroid.core.logbook.*
 
 @Composable
 fun LogbookPanel(state: LogbookState, model: LogbookViewModel, station: StationIdentity?, referenceHz: Long) {
     // This page owns layout only. Persistence, validation and completion handling live outside Compose.
     val draft = state.draft
     if (draft != null) {
-        Text(if (draft.expectedVersion != null) "Edit QSO" else if (draft.completionId != null) "Review completed exchange" else "Manual QSO",
+        Text(if (draft.expectedVersion != null) "Edit QSO" else if (draft.origin == QsoOrigin.LOCAL_AUDIO) "Review completed exchange" else "Manual QSO",
             style = MaterialTheme.typography.titleLarge)
-        Text(if (draft.completionId != null) "Source: local phone audio. Review the contact and confirm the radio dial; audio completion alone is not RF proof."
+        Text(if (draft.origin == QsoOrigin.LOCAL_AUDIO) "Source: local phone audio. Review the contact and confirm the radio dial; audio completion alone is not RF proof."
+            else if (draft.origin == QsoOrigin.ADIF_IMPORT) "Source: imported ADIF. Route and original time source are unverified."
             else "Source: manual operator entry. Confirm the contact details and radio dial frequency.")
         LogField("Station CB callsign", draft.ownCall, state.busy) { model.edit { d -> d.copy(ownCall = it) } }
         LogField("Peer CB callsign", draft.peerCall, state.busy) { model.edit { d -> d.copy(peerCall = it) } }
@@ -72,10 +74,10 @@ fun LogbookPanel(state: LogbookState, model: LogbookViewModel, station: StationI
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("${entry.details.ownCall} → ${entry.details.peerCall}", style = MaterialTheme.typography.titleMedium)
                         Text("${Instant.ofEpochMilli(entry.details.startedUtcMillis)} → ${Instant.ofEpochMilli(entry.details.endedUtcMillis)}")
-                        Text("FT8 · confirmed dial ${mhz(entry.details.dialHz)} MHz")
-                        Text(if (entry.completionId == null) "Manual entry" else "Local audio · operator reviewed")
+                        Text("FT8 · ${if (entry.origin == QsoOrigin.ADIF_IMPORT) "imported" else "confirmed"} dial ${mhz(entry.details.dialHz)} MHz")
+                        Text(when (entry.origin) { QsoOrigin.MANUAL -> "Manual entry"; QsoOrigin.LOCAL_AUDIO -> "Local audio · operator reviewed"; QsoOrigin.ADIF_IMPORT -> "Imported ADIF" })
                         Text(entry.routeDescription, style = MaterialTheme.typography.bodySmall)
-                        Text("Time: ${if (entry.timeBasis == net.vash.ft8cbdroid.core.logbook.QsoTimeBasis.CORRECTED_APP_UTC) "corrected app UTC" else "operator entered UTC"}")
+                        Text("Time: ${when (entry.timeBasis) { QsoTimeBasis.CORRECTED_APP_UTC -> "corrected app UTC"; QsoTimeBasis.OPERATOR_UTC -> "operator entered UTC"; QsoTimeBasis.IMPORTED_UTC -> "imported UTC" }}")
                         Text("Reports: sent ${entry.details.sentReport ?: "—"} / received ${entry.details.receivedReport ?: "—"}")
                         entry.txAudioHz?.let { Text("TX audio offset: $it Hz") }
                         if (entry.details.notes.isNotBlank()) Text(entry.details.notes)

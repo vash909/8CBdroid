@@ -1,0 +1,6 @@
+ADIF Export
+<adif_ver:5>3.1.1<programid:7>WSJT-CB<EOH>
+<call:7>26AT101 <gridsquare:4>IO91 <mode:3>FT8 <rst_sent:3>-07 <rst_rcvd:3>+03 <qso_date:8>20261116 <time_on:6>235945 <qso_date_off:8>20261117 <time_off:6>000030 <band:3>11m <freq:9>27.265125 <station_callsign:6>1AT106 <my_gridsquare:4>JN44 <comment:11>Portable CB <EOR>
+
+<call:8>161AT001 <gridsquare:0> <mode:3>FT8 <rst_sent:3>-15 <rst_rcvd:3>-12 <qso_date:8>20261117 <time_on:6>120000 <qso_date_off:8>20261117 <time_off:6>120100 <band:3>11m <freq:9>26.965000 <station_callsign:6>1AT106 <EOR>
+

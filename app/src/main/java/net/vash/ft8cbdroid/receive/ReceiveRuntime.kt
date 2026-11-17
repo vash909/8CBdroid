@@ -52,6 +52,10 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     val station by lazy { ViewModelProvider(this, StationSettingsViewModel.factory(
         DataStoreStationPreferencesRepository(app.stationPreferences)))[StationSettingsViewModel::class.java] }
     val logbook by lazy { ViewModelProvider(this, LogbookViewModel.factory(SqliteQsoLogRepository.get(app)))[LogbookViewModel::class.java] }
+    val logTransfer by lazy { ViewModelProvider(this, viewModelFactory { initializer {
+        LogTransferViewModel(SqliteQsoLogRepository.get(app), AndroidLogDocuments(app),
+            { station.uiState.value.saved?.callsign }, logbook::reload)
+    } })[LogTransferViewModel::class.java] }
     val manual: ManualOperatingViewModel by lazy { ViewModelProvider(this, viewModelFactory { initializer {
         ManualOperatingViewModel(NativeFt8Engine(), AndroidAudioPreview(app), audioCoordinator, time.clock,
             receiveReady = {

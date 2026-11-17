@@ -11,11 +11,11 @@ Original desktop sources are used separately for host reference tests.
   grammar serve as references at the commit pinned in the documentation.
   Upstream is distributed under GPLv3. 8CBdroid uses GPL-3.0-only.
   Unmodified CB predicates, FT8 message packing/unpacking and hash routines,
-  desktop Radio/DecodedText code and main-window QSO methods, together with
+  desktop Radio/DecodedText code, ADIF logbook/loader/band code and main-window QSO methods, together with
   required legacy packing/include and module dependencies, are
   vendored under `reference/wsjtcb/source/` for host-side tests only. Upstream
   paths, revision and SHA-256 values are recorded in `sources.json` and
-  `packing-sources.json` / `qso-sources.json` / `channel-sources.json` / `pcm-sources.json` / `context-sources.json` in the reference directory. These sources and generated
+  `packing-sources.json` / `qso-sources.json` / `adif-sources.json` / `channel-sources.json` / `pcm-sources.json` / `context-sources.json` in the reference directory. These sources and generated
   test fixtures are not in the main APK. The offline native backend is described below.
 - The 350-entry runtime CB division/country table in
   `core/src/main/resources/wsjtcb/countries.tsv` is derived from WSJT-CB's

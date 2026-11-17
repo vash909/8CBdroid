@@ -22,7 +22,7 @@ class SqliteQsoLogRepository(context: Context, name: String = DATABASE_NAME) : Q
             instance ?: SqliteQsoLogRepository(context.applicationContext).also { instance = it }
         }
     }
-    private val helper = object : SQLiteOpenHelper(context.applicationContext, name, null, 1,
+    private val helper = object : SQLiteOpenHelper(context.applicationContext, name, null, 2,
         DatabaseErrorHandler { /* Preserve damaged data for recovery instead of Android's default deletion. */ }) {
         override fun onConfigure(db: SQLiteDatabase) { db.execSQL("PRAGMA synchronous=FULL") }
         override fun onCreate(db: SQLiteDatabase) {
@@ -35,7 +35,8 @@ class SqliteQsoLogRepository(context: Context, name: String = DATABASE_NAME) : Q
             db.execSQL("CREATE INDEX qsos_worked ON qsos(own_call,peer_call)")
         }
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            throw SQLiteException("Unsupported log schema upgrade. Existing data was kept.")
+            // The layout is unchanged; version 2 protects imported-origin values from older apps.
+            if (oldVersion != 1 || newVersion != 2) throw SQLiteException("Unsupported log schema upgrade. Existing data was kept.")
         }
         override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             throw SQLiteException("This log needs a newer app. Existing data was kept.")
@@ -49,14 +50,15 @@ class SqliteQsoLogRepository(context: Context, name: String = DATABASE_NAME) : Q
             try { block(db).also { db.setTransactionSuccessful() } } finally { db.endTransaction() }
         }
     }
-    override suspend fun read(): QsoLogSnapshot = transaction { db ->
+    override suspend fun read(): QsoLogSnapshot = transaction(::read)
+    private fun read(db: SQLiteDatabase): QsoLogSnapshot {
         val entries = db.query("qsos", null, null, null, null, null, "end_utc DESC,id").use { c ->
             buildList { while (c.moveToNext()) add(c.record()) }
         }
         val pending = db.query("pending_qsos", null, null, null, null, null, "end_utc DESC,id").use { c ->
             buildList { while (c.moveToNext()) add(c.completion()) }
         }
-        QsoLogSnapshot(entries, pending)
+        return QsoLogSnapshot(entries, pending)
     }
     override suspend fun stage(completion: QsoCompletion) {
         completion.validate()
@@ -109,6 +111,16 @@ class SqliteQsoLogRepository(context: Context, name: String = DATABASE_NAME) : Q
                 record
             }
         }
+    }
+    override suspend fun merge(command: LogMergeCommand): QsoLogSnapshot = transaction { db ->
+        val current = read(db)
+        val merged = mergeLog(command, current)
+        val oldRecords = current.records.map { it.id }.toSet(); val oldPending = current.pending.map { it.id }.toSet()
+        merged.records.filter { it.id !in oldRecords }.forEach { db.insertOrThrow("qsos", null, it.values()) }
+        merged.pending.filter { it.id !in oldPending }.forEach { p ->
+            db.insertOrThrow("pending_qsos", null, p.details.values().apply { put("id", p.id); put("tx_audio_hz", p.txAudioHz) })
+        }
+        read(db)
     }
     private fun find(db: SQLiteDatabase, column: String, value: String): QsoRecord? =
         db.query("qsos", null, "$column=?", arrayOf(value), null, null, null).use { if (it.moveToFirst()) it.record() else null }

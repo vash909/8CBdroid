@@ -21,7 +21,7 @@ data class LogDraft(
     val id: String, val completionId: String? = null, val expectedVersion: Int? = null,
     val ownCall: String = "", val peerCall: String = "", val ownGrid: String = "", val peerGrid: String = "",
     val startUtc: String, val endUtc: String, val dialMhz: String = "", val sent: String = "", val received: String = "",
-    val notes: String = "", val dialConfirmed: Boolean = false,
+    val notes: String = "", val dialConfirmed: Boolean = false, val origin: QsoOrigin = QsoOrigin.MANUAL,
 ) {
     fun command(): SaveQso {
         require(dialConfirmed) { "Confirm the actual radio dial frequency before saving." }
@@ -35,10 +35,10 @@ data class LogDraft(
             .normalized().also { it.validate() }, completionId, expectedVersion, dialConfirmed)
     }
     companion object {
-        fun from(id: String, d: QsoDetails, completionId: String? = null, version: Int? = null) = LogDraft(id, completionId, version,
+        fun from(id: String, d: QsoDetails, completionId: String? = null, version: Int? = null, origin: QsoOrigin = if (completionId == null) QsoOrigin.MANUAL else QsoOrigin.LOCAL_AUDIO) = LogDraft(id, completionId, version,
             d.ownCall, d.peerCall, d.ownGrid, d.peerGrid, Instant.ofEpochMilli(d.startedUtcMillis).toString(),
             Instant.ofEpochMilli(d.endedUtcMillis).toString(), mhz(d.dialHz), d.sentReport?.toString().orEmpty(),
-            d.receivedReport?.toString().orEmpty(), d.notes)
+            d.receivedReport?.toString().orEmpty(), d.notes, origin = origin)
     }
 }
 data class LogbookState(
@@ -100,7 +100,7 @@ class LogbookViewModel(private val repository: QsoLogRepository) : ViewModel() {
     fun editRecord(id: String) {
         if (state.value.busy || state.value.draft != null) return
         val p = state.value.snapshot.records.find { it.id == id } ?: return
-        state.value = state.value.copy(draft = LogDraft.from(p.id, p.details, p.completionId, p.version), error = null, notice = null)
+        state.value = state.value.copy(draft = LogDraft.from(p.id, p.details, p.completionId, p.version, p.origin), error = null, notice = null)
     }
     fun edit(change: (LogDraft) -> LogDraft) {
         if (state.value.busy) return

@@ -16,13 +16,15 @@ the next CB exchange message; applying advice still requires an explicit action.
 exchanges. [CB country labels and receive filters](docs/CB_OPERATING_CONTEXT.md)
 provide offline division context and receive filters. The [local logbook](docs/LOGBOOK.md)
 retains completed exchanges for review, operator-confirmed contacts and manual
-entries. [Continuous reception](docs/CONTINUOUS_RECEPTION.md) keeps explicitly
+entries. ADIF import/export/share and complete log backups are available through
+Android file pickers; [log exchange](docs/ADIF.md) explains duplicate review and
+11m compatibility. [Continuous reception](docs/CONTINUOUS_RECEPTION.md) keeps explicitly
 started microphone/LAN RX alive across screens, background and screen-off, with
 notification Stop controls. Explicitly armed manual TX and started AutoSeq also
 continue across screens, background and screen-off in that session. NTP requests
 briefly prepare CPU/Wi-Fi resources within an eight-second budget; the five-minute
 refresh cadence, quality checks and expiry remain unchanged.
-CAT/PTT, ADIF exchange and qualified USB audio remain unimplemented.
+CAT/PTT, desktop LAN log events and qualified USB audio remain unimplemented.
 Radio frequency/mode and VOX are configured by the operator; completed audio does
 not independently confirm radio TX or a QSO.
 

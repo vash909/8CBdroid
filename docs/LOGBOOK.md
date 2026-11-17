@@ -2,8 +2,9 @@
 
 **Logbook**, available on Operate and in Settings, stores contacts locally on the
 phone. No account or cloud service is required. Review pending exchanges, add a
-manual contact, search callsigns/notes and edit saved entries. ADIF import/export
-and desktop LAN log events are separate, unimplemented features.
+manual contact, search callsigns/notes and edit saved entries. ADIF import/export/
+share and full log backups are available; see [log exchange](ADIF.md). Desktop LAN
+log events remain unimplemented.
 
 ## Completed local exchanges
 
@@ -71,8 +72,8 @@ and shows that it still needs a successful write. Press **Retry log** before
 closing the app; no software can claim durability for a failed write. An accepted
 database transaction continues across Activity teardown. A save error keeps the
 draft and stable record identity available for retry. Never clear app data to
-recover a log error. Until export/backup support is implemented, app removal or
-Android's clear-data operation can remove the local database.
+recover a log error. Export a full backup to a destination outside app-private storage before app removal
+or Android's clear-data operation; both can remove the local database.
 
 ## Reproduce checks
 

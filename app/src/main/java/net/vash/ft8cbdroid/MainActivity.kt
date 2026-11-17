@@ -8,6 +8,9 @@ import net.vash.ft8cbdroid.radio.*
 import net.vash.ft8cbdroid.receive.*
 import net.vash.ft8cbdroid.diagnostics.*
 import android.app.NotificationManager
+import android.content.Intent
+import android.content.ClipData
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.Manifest
@@ -105,6 +108,10 @@ class MainActivity : ComponentActivity() {
     private val diagnosticDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) {
         receiveRuntime.diagnostics.export(it?.toString())
     }
+    private val adifSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) { receiveRuntime.logTransfer.document(it?.toString()) }
+    private val backupSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) { receiveRuntime.logTransfer.document(it?.toString()) }
+    private val adifDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("application/x-adif")) { receiveRuntime.logTransfer.document(it?.toString()) }
+    private val backupDestination = registerForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { receiveRuntime.logTransfer.document(it?.toString()) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -138,6 +145,31 @@ class MainActivity : ComponentActivity() {
             if (view.txHz != previous.txHz) manualViewModel.frequency(view.txHz.toString())
         }
         setContent {
+            val transfer by receiveRuntime.logTransfer.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(transfer.request?.id) {
+                transfer.request?.let { request ->
+                    try {
+                        when {
+                            request.read && request.kind == LogFileKind.ADIF -> adifSource.launch(arrayOf("*/*"))
+                            request.read -> backupSource.launch(arrayOf("*/*"))
+                            request.kind == LogFileKind.ADIF -> adifDestination.launch("8CBdroid-log.adi")
+                            else -> backupDestination.launch("8CBdroid-log.8cblog")
+                        }
+                        receiveRuntime.logTransfer.requestLaunched(request.id)
+                    } catch (_: RuntimeException) { receiveRuntime.logTransfer.cancel() }
+                }
+            }
+            LaunchedEffect(transfer.shareUri) {
+                transfer.shareUri?.let { value ->
+                    try {
+                        val uri = Uri.parse(value)
+                        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("application/x-adif")
+                            .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            .apply { clipData = ClipData.newRawUri("ADIF log", uri) }, "Share ADIF log"))
+                        receiveRuntime.logTransfer.shared()
+                    } catch (_: RuntimeException) { receiveRuntime.logTransfer.shared("No app could open the shared ADIF file. Export it to a document instead.") }
+                }
+            }
             val receiveSession by receiveRuntime.session.uiState.collectAsStateWithLifecycle()
             val profiles by profilesViewModel.uiState.collectAsStateWithLifecycle()
             val usb by usbViewModel.uiState.collectAsStateWithLifecycle()
@@ -169,7 +201,10 @@ class MainActivity : ComponentActivity() {
                 onStopSession = { receiveRuntime.stop() },
                 onStopTx = { manualViewModel.stop("TX stopped by operator. Restart explicitly.") },
                 logbook = logbook,
-                logbookContent = { LogbookPanel(logbook, logbookViewModel, station.saved, profiles.applied?.referenceFrequencyHz ?: 27_265_000L) },
+                logbookContent = {
+                    if (logbook.draft == null) LogTransferPanel(transfer, receiveRuntime.logTransfer, logbook)
+                    LogbookPanel(logbook, logbookViewModel, station.saved, profiles.applied?.referenceFrequencyHz ?: 27_265_000L)
+                },
                 manual = manual,
                 manualActions = ManualActions(manualViewModel::peer, manualViewModel::report,
                     manualViewModel::choose, manualViewModel::custom, manualViewModel::freeText,
