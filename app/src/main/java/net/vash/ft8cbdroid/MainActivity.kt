@@ -218,7 +218,13 @@ class MainActivity : ComponentActivity() {
                         audioOffset(manualViewModel.uiState.value.frequency)?.let { hz ->
                             captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(txHz = hz)) }
                     }, resetQso = manualViewModel::resetQso, startAutomatic = manualViewModel::startAutomatic,
-                    stopAutomatic = { manualViewModel.stop("AutoSeq stopped by operator.") }),
+                    stopAutomatic = { manualViewModel.stop("AutoSeq stopped by operator.") }, answerDecode = { row ->
+                        if (manualViewModel.answerDecode(row)) {
+                            audioOffset(manualViewModel.uiState.value.frequency)?.let { hz ->
+                                captureViewModel.spectrumView(captureViewModel.uiState.value.spectrumView.copy(rxHz = hz, txHz = hz))
+                            }
+                        }
+                    }),
                 profiles = profiles,
                 onSourceChange = { manualViewModel.stop("Source changed. TX disabled."); profilesViewModel.temporarySource(it == OperatingSource.LAN) },
                 profilesContent = { ProfilesPanel(profiles, profilesViewModel::edit, profilesViewModel::select,

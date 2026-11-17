@@ -13,7 +13,7 @@ system language. No connection or microphone session starts on launch.
   96-row history. **Expand ↗** opens the full monitor. LAN supplies no waterfall
   audio, so that source shows an explanation rather than invented samples.
 - **Received** shows the selected source, with estimated local SNR and desktop
-  confidence/replay flags. the message details' **→ RX** changes the RX cursor; **Use peer** selects a
+  confidence/replay flags. The message details' **→ RX** changes the RX cursor; **Use peer** selects a
   complete local CB sender and suggests a reply, report, opposite period and TX
   frequency without arming. **Sent** records only completed speaker audio.
 - Message rows use compact UTC/dB/Hz/text columns. Tap a row for its full text,
@@ -21,6 +21,12 @@ system language. No connection or microphone session starts on launch.
   **→ RX** and **Use peer**; both are also accessibility actions. Long text is
   available in details even when the narrow row is ellipsized. Local history
   retains the latest 300 rows; LAN retains 200 distinct decodes.
+- Hold a local received station row to select its decoded sender, report,
+  frequency and opposite period and explicitly start **Auto answer**, including
+  automatic TX. A short tap still only opens details. The gesture requires a
+  fresh, integrity-checked decode from the active local receiver and all normal
+  time/speaker/RX interlocks. LAN, Sent, unknown identities and old history cannot
+  start an answer; a running exchange is not replaced by another hold.
 - A small bottom-right bar follows each UTC-aligned 15-second FT8 period, showing
   Even/Odd and elapsed seconds. It stays visible while Operate scrolls. Applied
   NTP/GPS correction drives it when valid; otherwise it explicitly shows
@@ -34,7 +40,8 @@ system language. No connection or microphone session starts on launch.
   available, along with [ADIF exchange and backups](ADIF.md). Opening the logbook
   retains an already started operating session; use its explicit Stop controls.
   See [the logbook guide](LOGBOOK.md).
-- **RX Hz** controls the 200–2950 Hz display cursor. **TX Hz** also selects actual
+- **RX Hz** controls the 200–2950 Hz display cursor and highlights local received
+  rows within ±25 Hz; it does not hide other stations. **TX Hz** also selects actual
   manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
   LAN offsets are unavailable; the separate offline waveform editor is unchanged.
 - **Start RX** starts local synchronized FT8 reception or the desktop listener.
@@ -95,8 +102,9 @@ timeout 180 adb shell am instrument -w -e scenario operate-layout -e preview_run
 This checks real UTC ticks and rollover, 15 simultaneous on-device UDP decodes,
 compact-row visibility, details/flags, filters, navigation, recreation and actual
 rotation. A labeled clock fixture checks corrected display; it does not qualify
-NTP/GPS acquisition. Local presentation fixtures check peer/RX actions and large
-text without starting a microphone or output. Saved settings are preserved;
+NTP/GPS acquisition. Local presentation fixtures check peer/RX actions, RX highlights,
+the explicit hold callback, busy-state blocking and large text without starting
+a microphone or output. They do not qualify actual AutoSeq audio. Saved settings are preserved;
 reports/screenshots stay in private app cache. A UI test is not radio evidence.
 
 ## Chat

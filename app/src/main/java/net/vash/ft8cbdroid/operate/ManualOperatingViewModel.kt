@@ -95,7 +95,8 @@ class ManualOperatingViewModel(
         state.value = state.value.copy(autoSequence = (autoPolicy?.state ?: state.value.autoSequence.copy(active = false, reason = reason)))
         cancelOutput(reason)
     }
-    fun startAutomatic(calling: Boolean) {
+    fun startAutomatic(calling: Boolean) = startAutomatic(calling, null)
+    private fun startAutomatic(calling: Boolean, responseUtcMillis: Long?) {
         if (state.value.busy || state.value.autoSequence.active) return
         try {
             require(state.value.canArm) { state.value.validation.orEmpty() }
@@ -116,7 +117,9 @@ class ManualOperatingViewModel(
                         freeText = false, acceptChanges = false, qsoNotice = null, notice = "AutoSeq started explicitly.")
                     if (!calling) selectQsoPeer() else { lastInput?.let(::receive); refreshTemplate(); publishQso() }
                     val value = state.value
-                    val initial = planSlot(clock, requireNotNull(value.latency), requireNotNull(value.outputId), value.period)
+                    val initial = if (responseUtcMillis == null)
+                        planSlot(clock, requireNotNull(value.latency), requireNotNull(value.outputId), value.period)
+                    else planResponseSlot(clock, requireNotNull(value.latency), requireNotNull(value.outputId), responseUtcMillis)
                     val now = clock.snapshot().at(clock.source.read().monotonicNanos) / 1_000_000
                     val policy = CbAutoSequence(now, initial.utcMillis, calling, value.period); autoPolicy = policy
                     var recoveringSince: Long? = null
@@ -276,6 +279,41 @@ class ManualOperatingViewModel(
         selectQsoPeer()
         state.value.report.toIntOrNull()?.takeIf { it in -50..99 }?.let { advisor?.report(it) }
         refreshTemplate(); publishQso()
+    }
+    /** A long press is an explicit Auto answer start, not a passive selection or restored intent. */
+    fun answerDecode(row: LiveDecodeRow): Boolean {
+        if (state.value.busy || state.value.autoSequence.active) return false
+        try {
+            val input = requireNotNull(lastInput) { "Start live local RX before answering." }
+            val mapping = clock.snapshot()
+            require(state.value.available && receiveReady() && input.phase == CapturePhase.CAPTURING &&
+                input.decodeLive && !input.outputBusy && input.receiveRun > 0 && input.receiveTimeRevision == mapping.revision &&
+                input.inputs.any { it.id == input.selectedId && it.kind == AudioInputKind.PHONE }) {
+                "Start live FT8 RX on the built-in microphone before answering."
+            }
+            require(row in input.live.rows) { "This message is no longer in the active receiver. Select a fresh decode." }
+            val slot = row.decode.slotStartUtc.toEpochMilli()
+            val first = requireNotNull(input.receiveStartedUtcMillis)
+            val now = mapping.at(clock.source.read().monotonicNanos) / 1_000_000
+            val duration = row.capturedSamples / 12L
+            require(row.capturedSamples in setOf(162_000, 180_000) && row.decode.slotStartUtc.nano == 0 &&
+                slot % 15_000 == 0L && slot >= Math.floorDiv(first + 14_999, 15_000) * 15_000 &&
+                now >= slot + duration && now - slot - duration <= 15_000) {
+                "This message is outside the current receive window. Select a fresh decode."
+            }
+            val peer = requireNotNull(manualPeer(row, state.value.station?.callsign.orEmpty())) {
+                "Select a CRC-valid message with a complete, unambiguous sender."
+            }
+            require(peer.frequencyHz in 200..2900) { "The decoded audio frequency is outside the QSO range." }
+            var nextPeriod = Math.floorDiv(now, 15_000) + 1
+            if (Math.floorMod(nextPeriod, 2L) != if (peer.period == SlotPeriod.EVEN) 0L else 1L) nextPeriod++
+            selectPeer(peer)
+            startAutomatic(false, nextPeriod * 15_000)
+            return state.value.autoSequence.active
+        } catch (error: Exception) {
+            state.value = state.value.copy(error = error.message ?: "Cannot answer this decode.")
+            return false
+        }
     }
     fun report(value: String) {
         edit { it.copy(report = value.take(4)) }

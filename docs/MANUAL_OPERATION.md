@@ -29,8 +29,14 @@ reviewed contacts; this guide covers manual output;
 Tap a received row to open **Message details**. **Use peer** appears there only for an integrity-checked local message with a complete,
 unambiguous CB sender different from your own station. It suggests a reply,
 opposite UTC period, TX audio frequency and editable estimated SNR report.
-Selection never enables TX. **→ RX** in the same dialog changes only the RX cursor. You can instead
+**Use peer** never enables TX. **→ RX** in the same dialog changes only the RX cursor
+and its ±25 Hz received-row highlight. You can instead
 enter a complete **CB peer** manually; unknown hashes cannot supply an identity.
+
+Holding a fresh local station row is a separate explicit command: it selects the
+sender and starts [Auto answer](AUTOSEQ.md), including automatic TX on the next
+matching period when all interlocks pass. Use a short tap for details without
+starting output. RX highlighting never filters or narrows decoding.
 
 Choose CQ, Reply, Report, R-report, RR73 or 73. Templates follow the pinned
 WSJT-CB FT8/NONE rules, including its one-callsign reports and hash orientations

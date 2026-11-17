@@ -23,6 +23,7 @@ data class ManualActions(
     val selectPeer: (ManualPeer) -> Unit = {},
     val useSuggestion: () -> Unit = {}, val resetQso: () -> Unit = {},
     val startAutomatic: (Boolean) -> Unit = {}, val stopAutomatic: () -> Unit = {},
+    val answerDecode: (net.vash.ft8cbdroid.core.audio.LiveDecodeRow) -> Unit = {},
 )
 
 @Composable
@@ -31,6 +32,7 @@ fun ManualOperatingPanel(state: ManualOperatingState, actions: ManualActions) {
         Text("Phone audio operation", style = MaterialTheme.typography.titleMedium)
         Text("Phone speaker → radio microphone / VOX. Set the radio dial and mode manually. Audio output does not confirm radio TX or a completed QSO. Keep this page visible.", style = MaterialTheme.typography.bodySmall)
         Text("AutoSeq: ${state.autoSequence.reason} · sent ${state.autoSequence.transmissions}")
+        Text("Hold a received local station row to select its sender and start Auto answer. A short tap only opens details.", style = MaterialTheme.typography.bodySmall)
         if (state.autoSequence.active) OutlinedButton(onClick = actions.stopAutomatic) { Text("Stop AutoSeq") }
         else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { actions.startAutomatic(true) }, enabled = state.canArm) { Text("Auto CQ") }

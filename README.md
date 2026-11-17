@@ -26,7 +26,7 @@ Completed audio or a saved log entry does not independently confirm RF transmiss
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Local or LAN activity, CB country labels, All/CQ/To-me/Worked filters, compact waterfall, local RX/TX offsets, peer/messages, manual one-slot sends and acoustic AutoSeq. | Sending requires measured time, speaker calibration and active built-in FT8 RX. LAN remains read-only and carries no audio. |
+| **Operate** | Local or LAN activity, CB country labels, All/CQ/To-me/Worked filters, compact waterfall, RX-frequency highlights, peer/messages, hold-to-answer, manual one-slot sends and acoustic AutoSeq. | Holding a fresh local station starts Auto answer. Sending requires measured time, speaker calibration and active built-in FT8 RX. LAN remains read-only and carries no audio. |
 | **Logbook** | Durable pending reviews, saved/manual/imported FT8 contacts, edit/search, ADIF exchange and full saved/pending backup/restore. Accessible from Operate and Settings. | A completed local exchange needs operator review. Imports never overwrite existing entries; possible duplicates need explicit selection. |
 | **Settings** | Station, operating profiles, source/decoder selection, NTP/GPS, LAN, USB inventory/Hamlib diagnostics, microphone/message/WAV tools and session diagnostics. | Radio and USB hardware backends remain unavailable. Recorded WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
 | **Chat** | Placeholder for future operator chat. | No chat backend, account or message sending. |
