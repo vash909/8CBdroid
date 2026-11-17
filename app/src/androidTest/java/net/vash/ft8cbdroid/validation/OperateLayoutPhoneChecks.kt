@@ -112,6 +112,12 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
                     File(context.cacheDir, "operate-layout-dense.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                     bitmap.recycle()
                 }
+                val scrolls = all().filter { it.isScrollable }
+                scrolls.first().performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD); SystemClock.sleep(200)
+                all().last { it.isScrollable }.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD); SystemClock.sleep(200)
+                await("oldest station reachable") { visible("CQ 26AT100") }
+                all().last { it.isScrollable }.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD); SystemClock.sleep(200)
+                report.put("all_station_rows_reachable", true)
                 click("CQ 26AT114")
                 await("details") { visible("Message details") && all().any { it.text?.toString()?.contains("Low confidence") == true } }
                 check(visible("From 26AT114 · CB 026 · England")); check(!visible("Use peer"))
@@ -125,7 +131,7 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
                 check(instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_90))
                 await("landscape") { val b = Rect(); PhoneNavigation.root(instrumentation)?.getBoundsInScreen(b); b.width() > b.height() }
                 check(timer() != null && main { runtime.lan.uiState.value.connection.decodes.size == 15 })
-                check(instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_UNFREEZE))
+                check(instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0))
                 await("portrait") { val b = Rect(); PhoneNavigation.root(instrumentation)?.getBoundsInScreen(b); b.height() > b.width() }
                 report.put("actual_rotation_retains_messages_and_period_footer", true)
                 // Scroll the page while leaving the compact clock footer visible.

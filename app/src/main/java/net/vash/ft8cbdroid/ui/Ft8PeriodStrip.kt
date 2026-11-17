@@ -19,7 +19,7 @@ fun Ft8PeriodStrip(time: TimeUiState) {
     val seconds = (period?.elapsedMillis ?: 0) / 1000
     val basis = if (time.periodCorrected) "Corrected UTC" else "Device UTC (not synchronized)"
     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.End) {
-        Column(Modifier.fillMaxWidth(.65f).widthIn(max = 240.dp).semantics(mergeDescendants = true) {
+        Column(Modifier.width(176.dp).semantics(mergeDescendants = true) {
             contentDescription = if (period == null) "FT8 period timer loading" else "FT8 period: $parity, $seconds of 15 seconds; $basis"
         }, horizontalAlignment = Alignment.End) {
             Text(if (period == null) "Period timer loading" else "$parity $seconds / 15 s · ${if (time.periodCorrected) "UTC" else "Unsynced"}",
