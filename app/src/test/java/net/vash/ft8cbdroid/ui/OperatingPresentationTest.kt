@@ -2,6 +2,11 @@ package net.vash.ft8cbdroid.ui
 
 import net.vash.ft8cbdroid.core.context.*
 import net.vash.ft8cbdroid.audio.CaptureUiState
+import net.vash.ft8cbdroid.core.*
+import net.vash.ft8cbdroid.core.audio.*
+import net.vash.ft8cbdroid.core.message.*
+import net.vash.ft8cbdroid.core.recording.*
+import java.time.Instant
 import net.vash.ft8cbdroid.lan.LanUiState
 import net.vash.ft8cbdroid.protocol.*
 import org.junit.Assert.*
@@ -28,6 +33,17 @@ class OperatingPresentationTest {
         assertTrue(rows.first().detail.contains("replay")); assertTrue(rows.first().detail.contains("Off air"))
         assertTrue(rows.first().detail.contains("Low confidence")); assertTrue(rows.first().detail.contains("FT4"))
         assertTrue(activityMessages(OperatingSource.LOCAL, CaptureUiState(), state).isEmpty())
+    }
+    @Test fun localRowActionsStillRequireIntegrityAndAnUnambiguousSender() {
+        val payload = (CbMessageCodec.pack("CQ 26AT101") as PackResult.Encoded).payload
+        val utc = Instant.parse("2026-11-17T12:00:00Z")
+        val decoded = RecordedDecode(Ft8DecodedFrame(payload, .8f, 1200f, 30, -7f), CbMessageCodec.unpack(payload), utc, utc, .3f, emptySet())
+        fun row(flags: Set<RecordedDecodeFlag>) = activityMessages(OperatingSource.LOCAL,
+            CaptureUiState(live = LiveReceiveState(rows = listOf(LiveDecodeRow(decoded.copy(flags = flags), "UI fixture", null)))), LanUiState(), "1AT106").single()
+        assertNull(row(emptySet()).peer)
+        assertEquals("26AT101", row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID)).peer?.callsign)
+        assertNull(row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.UNKNOWN_HASH)).peer)
+        assertNull(row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.AMBIGUOUS_HASH)).peer)
     }
     @Test fun countryLabelsNeverMisrepresentDestinationOnlyMessagesAsSenders() {
         assertEquals("", countryLabel(CbOperatingContext.fromDesktopText("1AT106 RR73")))

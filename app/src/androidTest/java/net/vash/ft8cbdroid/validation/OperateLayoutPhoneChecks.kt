@@ -148,7 +148,7 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             activity = current
             val payload = (CbMessageCodec.pack("CQ 26AT101") as PackResult.Encoded).payload
             val utc = Instant.parse("2026-11-17T12:00:00Z")
-            val decoded = RecordedDecode(Ft8DecodedFrame(payload, .8f, 1200f, 30, -7f), CbMessageCodec.unpack(payload), utc, utc, .3f, emptySet())
+            val decoded = RecordedDecode(Ft8DecodedFrame(payload, .8f, 1200f, 30, -7f), CbMessageCodec.unpack(payload), utc, utc, .3f, setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.SNR_ESTIMATED))
             var selected: ManualPeer? = null; var rx = 0; var fontScale by mutableStateOf(1f)
             val longText = "Unsupported: Long message text remains available in full in the scrollable details dialog"
             val longDecoded = decoded.copy(message = UnpackResult.Unsupported(longText.removePrefix("Unsupported: ")))
