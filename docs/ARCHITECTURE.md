@@ -27,7 +27,7 @@ bounded retries, qualified early RX windows and actual output confirmations;
 ```text
 app (Compose, ViewModels, DataStore, Android USB/document access)
  ├── core (station models, CB codec/hash sessions/QSO model, WAV/recorded-slot logic,
- │        radio/audio/DSP contracts)
+ │        log/ADIF codecs, radio/audio/DSP contracts)
  ├── audio (AndroidMicrophoneCapture; device access and recording worker)
  │    └── core
  ├── radio:hamlib (pinned native catalog + fixed Dummy JNI; no hardware transport)
@@ -44,8 +44,8 @@ engineprobe (separate development APK; offline and explicit acoustic entry point
 reference/wsjtcb (host-only original sources, adapters and expected fixtures)
 ```
 
-`core` and `protocol:wsjtcb` are Kotlin/JVM modules. They can be tested without
-Android. The Android native library is built from source through `dsp:ft8`;
+`core`, `protocol:ntp` and `protocol:wsjtcb` are Kotlin/JVM modules, testable
+without Android. The Android native library is built from source through `dsp:ft8`;
 Fortran, Qt and Boost are host reference-test dependencies, not APK runtimes.
 Main-app packages exclude the reference corpus. The separate probe packages test
 fixtures; the offline entry point opens no devices. The separate audio probe
@@ -64,6 +64,10 @@ uses microphone permission only when explicitly invoked. Neither uses USB/networ
 | Simulated receive hash session | `HashSessionViewModel` | Explicit pending/commit/reset; rotation retained, process restart resets. Saved callsign changes reset it. |
 | Generated waveform/export snapshot | `WaveformViewModel` | Edits invalidate old PCM; rotation retained, process restart discards it. Exported documents remain outside the session. |
 | Capture selection/metrics/recent PCM | `CaptureViewModel` / `MicrophoneCapture` | Explicit service-owned RX survives navigation/rotation/background. Stop joins cleanup; no restart after process death or automatic saved PCM. |
+| Operating messages/QSO/AutoSeq | Process-owned `ManualOperatingViewModel` | Explicit service-authorized audio across navigation/background; Stop/failure invalidates work. No restart after process death. |
+| Saved contacts and pending reviews | `SqliteQsoLogRepository` / `LogbookViewModel` | Durable SQLite data; accepted transactions survive Activity teardown. Unsaved drafts are process-local. |
+| Log file transfer | Process-owned `LogTransferViewModel` / `AndroidLogDocuments` | Frozen export and read-only review survive recreation. Explicit atomic merge; no destructive restore. |
+| Optional diagnostic report | `DiagnosticsViewModel` / private checkpoint | Bounded collection and durable report; interrupted collection never restarts automatically. |
 | Imported recording/results/UTC | `RecordedSlotViewModel` | One request, isolated hash interpretation; rotation retained, process restart discards it. UTC or saved-call changes invalidate results. |
 
 Operating profiles, station identity and NTP preset/custom-server preferences are stored as app configuration.
@@ -153,7 +157,7 @@ LAN SNR/timing are supplied by the desktop, separately from local recorded estim
    callsign hashes. It is stateless; TX previews can render only explicitly
    supplied identities and never warm a receiver cache.
 2. `CbMessageSession` stages/commits bounded full-call learning and preserves
-   unknown/ambiguous hashes. Its Messages simulator is independent of LAN and
+   unknown/ambiguous hashes. Its Message tools simulator is independent of LAN and
    imported recordings. See [codec](CB_MESSAGE_CODEC.md) and [sessions](CB_HASH_SESSIONS.md).
 3. `OfflineFt8Generator` packs a message, requires consent for content changes,
    calls `Ft8Engine.encode` and produces PCM16 WAV bytes. Android's
@@ -179,8 +183,9 @@ Cancellation signals a per-call native flag and is checked between FFT blocks,
 candidate operations and SNR symbols. Fast/Standard profiles bound candidates,
 iterations and cooperative native deadlines. The unchanged vendor operations
 finish before their next check. A blocking document read must still return
-before its work ends. Wider/sustained cost and memory-pressure recovery need
-further qualification. See [decoder work bounds](DECODER_PROFILES.md). See [engine bounds](FT8_ENGINE.md).
+before its work ends. Finite device cost and 15-minute RX observations are
+recorded in [validation](VALIDATION.md); broader workloads and memory-pressure
+recovery remain outside those measurements. See [decoder work bounds](DECODER_PROFILES.md). See [engine bounds](FT8_ENGINE.md).
 
 ## USB discovery and future radio control
 

@@ -55,8 +55,9 @@ sensitivity and false-positive parity are not established. Do not use this
 output as permission to advance a QSO. The shared gate admits one active native
 call and one waiter; cancellation/deadlines are checked between native work
 units. Individual vendor calls and blocking document reads must still return
-before their work ends. The R09 benchmark adds finite cost/reception observations;
-wider live-capture qualification remains future work.
+before their work ends. The decoder-profile benchmark adds finite cost/reception observations.
+[Live reception](LIVE_RECEIVE.md) and [sustained-session diagnostics](SESSION_DIAGNOSTICS.md)
+have separate device evidence; broader sensitivity/false-positive parity is unqualified.
 
 ## Independent evidence
 

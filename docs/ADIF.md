@@ -90,6 +90,10 @@ unimplemented.
 
 ## Reproduce the compatibility check
 
+[PR #46](https://github.com/vash909/8CBdroid/pull/46) qualified file/UI/SQLite
+behavior on A51 / Android 13. [Validation](VALIDATION.md#adif-and-log-restoration)
+records the exact tested commit, CI and scope.
+
 With Python 3, a C++17 compiler, pkg-config and Qt5Core development packages:
 
 ```bash

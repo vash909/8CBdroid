@@ -29,6 +29,10 @@ the fixed guard is not characterized; this is not acoustic echo cancellation.
 
 ## Stop, failures and lifetime
 
+The following cancellation rules describe Message tools bench output. Operate
+uses the same audio coordinator with its [continuous session](CONTINUOUS_RECEPTION.md)
+owner, so navigation alone does not cancel an explicitly started operating send.
+
 - **Stop preview**, waveform/output/period edits, errors, audio-focus loss,
   navigation, background and rotation cancel output without resuming input.
 - **Stop microphone** during output revokes receive recovery while allowing the

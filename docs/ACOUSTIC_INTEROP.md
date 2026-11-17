@@ -9,8 +9,9 @@ a radio, enable AutoSeq or confirm an RF contact.
 This is a manually paced exchange. The host waits for a complete new RX window
 after output recovery; it does not qualify reception of a reply in the immediately
 following 15-second slot. The receiver currently discards its first partial UTC
-window after reopening. That boundary needs separate qualification before
-automatic alternating-slot operation can be advertised.
+window after reopening. The separate [AutoSeq timing path](AUTOSEQ.md#immediate-response-timing)
+has its own early-RX/recovery qualification; this manually paced suite does not
+establish that timing result.
 
 ## Scenarios
 

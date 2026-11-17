@@ -84,6 +84,9 @@ Background playback retains the existing [audio-focus checks](https://developer.
 
 ## Reproduce phone checks
 
+[Recorded qualification](VALIDATION.md#current-device-qualification) links the
+accepted commits, CI runs and actual A51 RX/TX/AutoSeq checks.
+
 Use matching app/device-check APKs, an authorized unlocked phone with saved Phone
 profile, station `1AT106`, working NTP, notification/microphone permission and the
 same LAN as the PC. Keep physical PC speakers audible near the phone. With the

@@ -5,7 +5,8 @@ microphone PCM and retain complete 15-second UTC windows. Android's system clock
 is never changed. There is no manual offset or unsynchronized fallback.
 [Live reception](LIVE_RECEIVE.md) optionally decodes these slots. Generated audio
 has separate [bench preview](AUDIO_PREVIEW.md) and [one-shot UTC scheduling](UTC_AUDIO_SCHEDULING.md).
-Radio operation remains later work.
+Operate uses this clock for [manual acoustic output](MANUAL_OPERATION.md) and
+[AutoSeq](AUTOSEQ.md). Radio/VOX setup is manual; CAT/PTT feedback is unavailable.
 
 ## Synchronize time
 

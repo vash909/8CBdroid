@@ -3,21 +3,23 @@
 Operate can decode complete microphone UTC slots automatically. Local
 results are labeled **Local microphone** and kept apart from LAN messages and
 recorded-file results. An explicit receive foreground service owns this session; [AutoSeq](AUTOSEQ.md) has a separate explicit
-execution owner. Radio PTT and
-radio QSOs remain later work. The separate [speaker preview](AUDIO_PREVIEW.md) and [UTC scheduling](UTC_AUDIO_SCHEDULING.md) stop reception before playing. Current device evidence is in [validation](VALIDATION.md).
+execution owner. Radio dial/mode/VOX are operator-configured; CAT/PTT feedback
+is unavailable. The separate [speaker preview](AUDIO_PREVIEW.md) and [UTC scheduling](UTC_AUDIO_SCHEDULING.md) stop reception before playing. Current device evidence is in [validation](VALIDATION.md).
 
 ## Use
 
-1. In Station, save your station identity when known and apply a valid NTP/GPS
+1. In **Settings → Station**, save your station identity when known and apply a valid NTP/GPS
    measurement. An unknown station is allowed for reception, but cannot resolve
    hashes referring to your identity. No manual or system-clock fallback exists.
-2. In Audio, select the input and enable **Decode live local FT8**. This enables
-   UTC assembly too. Select **Local Standard** (default) or **Local Fast**.
-3. Press **Start microphone** and grant permission. Confirm the actual route.
+2. In **Settings → Audio & source**, select local audio, the input and the
+   **Standard** (default) or **Fast** decoder profile. The detailed
+   **Microphone tools** page also exposes **Decode live local FT8** and UTC assembly.
+3. On **Operate**, press **Start RX** and grant permission. Confirm the actual route.
    Initial partial audio is discarded; a full UTC period must finish before
    its results appear. This normally takes 15–30 seconds plus decode time.
-4. Scroll to **Live local decodes** for UTC, text/hash status, offset, DT,
-   experimental SNR and the time source/estimated uncertainty. GPS uncertainty
+4. Read local results in **Received**. The detailed **Microphone tools → Live local
+   decodes** view includes UTC, text/hash status, offset, DT, experimental SNR and
+   the time source/estimated uncertainty. GPS uncertainty
    remains explicitly unavailable when the receiver does not report it.
 5. Use the in-app or notification Stop to clear local results and learned calls. The latest complete PCM slot
    can still be exported through the existing UTC WAV action after cleanup.
@@ -99,5 +101,5 @@ Message tools can explicitly start the same built-in microphone receiver and
 pause it for silent calibration or speaker output. Optional recovery after
 successful output starts a fresh local/hash/slot session; partial and self-TX
 slots are not retained. Stop, errors and leaving the page never recover it.
-See [phone audio](PHONE_AUDIO.md); this does not add background reception or
-radio VOX qualification.
+See [phone audio](PHONE_AUDIO.md) for bench-output cancellation and recovery, and
+[continuous sessions](CONTINUOUS_RECEPTION.md) for operating RX/TX lifetime.

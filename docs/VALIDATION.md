@@ -1,18 +1,18 @@
 # Implementation and validation record
 
-This record includes **PR #29 (spectrum/waterfall)** on **2026-11-07**.
-It records observations at specific commits; it is not a release
-qualification or a statement that all possible checks passed.
+Current feature qualification covers **PR #46 (ADIF/log backups)** on
+**2026-11-17**. This record separates implemented behavior, finite device checks
+and historical observations. It is not release qualification.
 
 ## Implemented capabilities
 
 | Area | Implementation | Evidence / remaining boundary |
 | --- | --- | --- |
-| Station settings | Persistent callsign and locator, explicit save/read errors. | JVM persistence tests and phone reopening. Other operating settings remain placeholders. |
+| Station settings | Persistent callsign and locator, explicit save/read errors. | JVM persistence tests and phone reopening. Operating profiles and NTP/GPS preferences have separate persistence coverage. |
 | LAN | Heartbeat/status, live/replayed decodes, bounded history and explicit Replay/Clear. | Wire/loopback/ViewModel tests and accepted LAN changes. Full desktop log/command integration is absent. |
 | USB discovery | Device descriptors, recognized serial drivers and explicit Android permission requests. | Permission-state JVM coverage; actual OTG/CAT/radio interoperability remains unverified. |
 | CB codec and hash sessions | Stateless packing/unpacking plus isolated, bounded RX hash learning with explicit ambiguity. | Desktop-derived JVM/phone fixtures. Full decoder plausibility and QSO admission are separate concerns. |
-| Generated audio file | Message-to-PCM and Android WAV export. | R07 independent channel qualification and A51 generation/export. No playback or TX scheduling. |
+| Generated audio file | Message-to-PCM and Android WAV export. | Independent channel fixtures and A51 generation/export; speaker playback and scheduling are qualified separately below. |
 | Speaker preview | Explicit phone-speaker playback, gain/ramps, focus and cancellation. | R14 A51/Android 13 checks: two complete slots, physical PC-microphone recordings decoded by the pinned desktop known-time/frequency adapter, plus UI/lifecycle checks. Bench only. |
 | One-shot UTC output | Frozen message/clock/output, measured latency and even/odd bench slots. | Virtual-clock/ViewModel tests and real speaker/onset checks described in [the scheduling guide](UTC_AUDIO_SCHEDULING.md). No radio PTT/VOX qualification. |
 | Recorded reception | WAV import, supplied UTC, CB interpretation, onset/DT/offset and estimated SNR. | R08 host reference comparisons, A51 probe and real document-picker/UI checks. Complete desktop decoder parity remains unverified. |
@@ -22,7 +22,8 @@ qualification or a statement that all possible checks passed.
 | Spectrum and waterfall | 2 Hz microphone display, 96-row history, zoom/pan, independent RX/TX selection and decoded-frequency markers. | A51 physical-tone, acoustic FT8 and UI checks below. Cursors do not filter, tune or transmit. |
 | CB operating context | Offline division/country labels and receive filters for local/LAN activity. | 350 pinned divisions and 1,249 original C++ lookup comparisons; message/filter tests and a short physical acoustic/UDP UI regression described in [the guide](CB_OPERATING_CONTEXT.md). Worked uses saved local contacts. |
 | ADIF files and complete log backup | Reviewed ADI import/export/share, non-destructive merge and full pending/saved backup. | [Pinned desktop ADIF methods and real-device checks](ADIF.md#reproduce-the-compatibility-check); no desktop LAN log events. |
-| Local QSO log | Durable completion candidates, operator-confirmed dial, saved/manual contacts, edit/search and Worked history. | Domain/ViewModel tests and [real SQLite/acoustic/UI reproduction](LOGBOOK.md#reproduce-checks); feature PR records the exact tested CI/device. No CAT readback or RF confirmation is inferred. |
+| Session diagnostics | Explicit bounded private reports, atomic checkpoints, export and deletion. | UI/file/recovery checks and 15-minute actual RX on A51/S25 FE; see current qualification below. |
+| Local QSO log | Durable completion candidates, reviewed/manual/imported contacts, edit/search and Worked history. | Domain/ViewModel tests and [real SQLite/acoustic/UI reproduction](LOGBOOK.md#reproduce-checks); feature PR records the exact tested CI/device. No CAT readback or RF confirmation is inferred. |
 
 CAT/PTT and qualified USB audio remain unimplemented. The operating service owns
 explicitly started acoustic TX and AutoSeq across screens and background; see
@@ -52,6 +53,74 @@ These are revision-specific counts; use current CI reports for later changes.
 Reproduction commands and host dependencies are centralized in
 [development](DEVELOPMENT.md#desktop-reference-and-native-checks). Fixture
 provenance is in [the reference directory](../reference/wsjtcb/README.md).
+
+## Current device qualification
+
+The latest feature validation is [PR #46](https://github.com/vash909/8CBdroid/pull/46),
+merged as `40a8f4f8dda7ae435967d4ee981317d7207c9f8d`. Its code passed 1,091 JVM tests,
+46 Python tests, lint and app/probe/device-check builds. Documentation maintenance
+can follow this revision without changing the tested application behavior.
+
+| Feature | Accepted PR head | Successful CI | Phone evidence |
+| --- | --- | --- | --- |
+| Continuous microphone/LAN RX | [`1e5ecdf`](https://github.com/vash909/8CBdroid/commit/1e5ecdfcb162ac622eaa7b5cc2a2d673fd1e9807) | [43475161685](https://github.com/vash909/8CBdroid/actions/runs/43475161685) | A51 / Android 13; [PR #43](https://github.com/vash909/8CBdroid/pull/43). |
+| Continuous manual TX/AutoSeq | [`1625283`](https://github.com/vash909/8CBdroid/commit/162528353a714fcf36aa352c66d48fc100d23361) | [43530752589](https://github.com/vash909/8CBdroid/actions/runs/43530752589) | A51 / Android 13; [PR #44](https://github.com/vash909/8CBdroid/pull/44). |
+| Diagnostic reports and sustained RX | [`01a7233`](https://github.com/vash909/8CBdroid/commit/01a7233bcac15a03fcca94156a1c355fdf0a5b95) | [44073029972](https://github.com/vash909/8CBdroid/actions/runs/44073029972) | A51 / Android 13 and S25 FE / Android 17; [PR #45](https://github.com/vash909/8CBdroid/pull/45). |
+| ADIF and full log backups | [`3581c73`](https://github.com/vash909/8CBdroid/commit/3581c73047d288d07dfa1e3781451e5fbc288feb) | [44109098372](https://github.com/vash909/8CBdroid/actions/runs/44109098372) | A51 / Android 13; [PR #46](https://github.com/vash909/8CBdroid/pull/46). |
+
+These PRs record installed artifact identity, actual checks and recovery results.
+PRs #43/#44 also distinguish the full physical test commits from final UI/document
+changes and verify equivalence of the affected production code. Each result
+qualifies its tested behavior and device, rather than every later hardware route.
+
+### Continuous sessions and diagnostics
+
+Actual acoustic inputs/outputs and UDP reception were tested through navigation,
+Activity recreation/destruction, background, screen-off and explicit notification
+Stop. Manual sends and calling/answering AutoSeq included physical phone output
+recorded and independently decoded on the desktop. Permission/focus/route/profile
+guards, bounded retries, periodic NTP renewal and cold startup without rearming
+were covered in the corresponding PRs.
+
+Diagnostic checks passed explicit opt-in, export cancellation, provider error/retry,
+interrupted checkpoint reopening and confirmed deletion on both phones. Sustained
+RX used physical desktop-speaker signals near each phone's microphone, while
+charging, over approximately 901 seconds per phone. Each produced 57 complete
+processed windows, two NTP renewals and 31 resource samples, with zero recorded
+input/decode errors. Initial/time-refresh partial windows were discarded.
+
+| Phone | Reference plays decoded | Mean / maximum successful decode | Sampled PSS range |
+| --- | --- | --- | --- |
+| A51 / Android 13 | 27/30 | 216.1 / 277 ms | 119.9–135.3 MiB |
+| S25 FE / Android 17 | 30/30 | 103.4 / 191 ms | 126.9–159.0 MiB |
+
+These are finite acoustic observations with different physical inputs. They do
+not establish relative decoder sensitivity, process-memory peaks, battery drain,
+operating life or unlimited runtime. See [session diagnostics](SESSION_DIAGNOSTICS.md)
+for collection limits and reproduction.
+
+### ADIF and log restoration
+
+Real Android document-picker import/export/cancel, duplicate selection and review,
+Unicode notes, exact CB dial Hz, imported provenance/editing, malformed/rejected
+records, denied-write retry and stalled-pipe cancellation passed on the A51.
+Full saved/pending restoration, repeat-restore skips, Activity recreation and
+cold-process persistence also passed. A separate-UID receiver could read only
+with a grant and received byte-exact shared content.
+
+Actual SQLite checks covered schema 1→2 preservation, atomic rollback/retry,
+idempotence, stale-preview refusal and future-schema/corruption preservation.
+Original contacts, settings and runtime permissions were preserved; test records
+were removed by identity. Pinned WSJT-CB writer/loader/field methods accepted actual
+provider and SAF exports with CB calls, UTC and exact frequency retained. DXCC is
+stubbed in that host harness. See [ADIF reproduction](ADIF.md#reproduce-the-compatibility-check).
+
+## Historical feature evidence
+
+The following sections retain observations at their original commits, including
+older foreground-only behavior and test counts. Their scope limits describe those
+checks; current session lifetime and supported features are summarized above.
+Existing links and fixture provenance remain available for reproducing regressions.
 
 ## Samsung A51 result: R08
 
@@ -441,12 +510,14 @@ PR; synthetic callback traces alone do not qualify physical integration.
 - Wider/noisier and multiple-signal reception, calibrated SNR, false-positive
   rates and large overlapping-signal workloads beyond the finite reference and
   acoustic corpora.
-- Sustained performance, memory peaks, thermal/battery behavior and other phones.
+- Longer sessions and broader device/workload coverage beyond the A51/S25 FE
+  15-minute checks; memory peaks, battery drain/life and wider thermal behavior.
 - Physical OTG permission/detach, a documented radio/CAT connection, USB audio,
   CAT/PTT and actual radio/RF observations. Radio VOX is operator-configured. Bench speaker scheduling
   and phone audio recovery are covered separately above.
-- Durable QSO logging and automation through the deferred CAT/USB backends.
-  Acoustic AutoSeq has the separate finite qualification described below.
+- Desktop LAN TX and QSO/LoggedADIF event integration; physical logging/automation
+  through future CAT/USB backends. Local acoustic AutoSeq/logging and file-based
+  ADIF exchange have separate completed qualification.
 
 A JVM test, a successful APK build, an engine probe and a radio bench test are
 separate evidence. Report each with its actual scope when updating this record.

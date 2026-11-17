@@ -22,7 +22,9 @@ system language. No connection or microphone session starts on launch.
   See [CB countries and filters](CB_OPERATING_CONTEXT.md) for provenance and limits.
 - **Logbook** opens durable completion reviews and saved contacts. Review and
   confirm the radio dial before logging; manual entries, editing and search are
-  available. Leaving Operate still stops/disarms audio. See [the logbook guide](LOGBOOK.md).
+  available, along with [ADIF exchange and backups](ADIF.md). Opening the logbook
+  retains an already started operating session; use its explicit Stop controls.
+  See [the logbook guide](LOGBOOK.md).
 - **RX Hz** controls the 200–2950 Hz display cursor. **TX Hz** also selects actual
   manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
   LAN offsets are unavailable; the separate offline waveform editor is unchanged.
@@ -31,7 +33,7 @@ system language. No connection or microphone session starts on launch.
   cancels/disarms manual output.
 - **Enable TX** followed by **Send one slot** sends one manually selected message
   with measured time/calibration and active built-in FT8 RX. **Auto CQ** and
-  **Auto answer** explicitly start bounded foreground exchanges; see [AutoSeq](AUTOSEQ.md).
+  **Auto answer** explicitly start bounded operating sessions; see [AutoSeq](AUTOSEQ.md).
   CQ/reply/report/final templates, custom/free text, encoding consent,
   Even/Odd, speaker selection, level, silent calibration and a two-second test
   tone are below the main controls. See [manual operation](MANUAL_OPERATION.md).
@@ -45,7 +47,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Page | Contents |
 | --- | --- |
 | Operating profiles | Named radio/audio/LAN setups, save/apply, validation, discard/delete and disconnected startup. See [profiles](OPERATING_PROFILES.md). |
-| Logbook | Persistent pending exchanges, reviewed contacts, manual entry, edit/search and recovery. |
+| Logbook | Persistent pending reviews, saved/manual/imported contacts, edit/search, ADIF exchange and full-log backup/restore. |
 | Station | Persistent callsign and Maidenhead locator. |
 | Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; manual output selects the phone speaker on Operate. |
 | Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |
@@ -54,6 +56,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Microphone tools | Full spectrum controls, input diagnostics, UTC options and recent/complete-slot WAV export. |
 | Message tools | Codec previews, hash simulation, WAV generation/export and explicit bench speaker preview and one-shot UTC scheduling, plus built-in microphone reception with opt-in recovery after successful output. See [phone audio](PHONE_AUDIO.md). |
 | Recorded audio | Existing WAV import and recorded-slot decoder. |
+| Session diagnostics | Explicit bounded technical collection, private checkpoints, report export and confirmed deletion. |
 
 Explicit microphone/LAN reception and explicitly started manual TX/AutoSeq
 continue through Settings, Chat, rotation, Activity destruction, background and

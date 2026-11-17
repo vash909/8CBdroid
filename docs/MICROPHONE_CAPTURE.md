@@ -106,8 +106,9 @@ Also test the main UI: deny/allow permission, select/start, observe levels, stop
 and save, repeat start/stop, navigate away, rotate and background/reopen. Confirm
 continuous RX across those transitions, explicit Stop and no restart after process
 death, with persistent station settings. Test actual
-wired/USB removal when that hardware is available. The built-in A51 path does not
-qualify external inputs, radio coupling, drift, sustained operation or live FT8.
+wired/USB removal when that hardware is available. This short capture/tone probe
+does not qualify external inputs, radio coupling, drift or live decoding.
+Separate live/sustained RX evidence is recorded in [validation](VALIDATION.md).
 Record the tested revision, device, CI run and actual observations with test results.
 
 ## Android references

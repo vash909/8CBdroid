@@ -151,6 +151,7 @@ the entire desktop candidate search and plausibility filters.
 
 An accepted `<...>` rendering is not an identified peer or permission for
 AutoSeq. Small fixed noise/corruption cases do not establish sensitivity or a
-false-positive rate. The full TX lifecycle, sustained operation and radio/audio
-interoperability remain separate implementation and verification work. Refer to
+false-positive rate. Physical acoustic TX, continuous sessions and finite
+sustained-operation checks have separate Android evidence; the reference
+harnesses do not establish those results or qualify radio hardware. Refer to
 [validation](../../docs/VALIDATION.md) for actual Android outcomes.

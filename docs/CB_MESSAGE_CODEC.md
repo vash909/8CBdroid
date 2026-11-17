@@ -106,5 +106,5 @@ Install the verified CI APK and unlock the test phone:
 5. Select **Free text**, enter `ABC123`; verify free-text output. Automatic mode
    should report unsupported telemetry instead.
 6. Rotate the phone; input and selected mode should survive. Reopening after
-   process termination is not promised. Check Station/LAN/Radio still work and
-   all text remains English on a non-English phone.
+   process termination is not promised. Check Station, LAN and USB/CAT page
+   navigation and that all app text remains English on a non-English phone.

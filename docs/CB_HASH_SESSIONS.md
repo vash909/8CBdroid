@@ -1,8 +1,9 @@
 # CB callsign hash sessions
 
 `core.message.CbMessageSession` adds learned-call resolution to the stateless
-R05 codec. The **Settings → Message tools** page exposes an offline receiver simulation. It does
-not receive audio, read LAN decodes, authorize a QSO peer or enable transmission.
+codec. **Settings → Message tools** exposes an offline receiver simulation with
+its own hash session. The simulation does not read audio/LAN, authorize a QSO peer
+or enable TX. The same page's [audio bench](PHONE_AUDIO.md) is a separate explicit path.
 
 ## Session contract
 

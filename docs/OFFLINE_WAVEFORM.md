@@ -68,7 +68,8 @@ full desktop candidate search, weak-signal demodulator, acceptance filters or
 RF interoperability. Actual phone exports have also passed the separate full
 WSJT-CB GUI file-import check described in [validation](VALIDATION.md#r07-closure-checks-pr-26).
 No noisy sensitivity or desktop decoder parity is claimed. [Recorded reception](RECORDED_SLOTS.md) now covers a small fixed noisy corpus;
-broader decoder cost/quality qualification is still pending.
+finite decoder cost and sustained-session measurements are recorded separately
+in [validation](VALIDATION.md); broader decoder quality parity is unqualified.
 
 ```bash
 source scripts/env.sh

@@ -2,8 +2,7 @@
 
 **Logbook**, available on Operate and in Settings, stores contacts locally on the
 phone. No account or cloud service is required. Review pending exchanges, add a
-manual contact, search callsigns/notes and edit saved entries. ADIF import/export/
-share and full log backups are available; see [log exchange](ADIF.md). Desktop LAN
+manual contact, search callsigns/notes and edit saved entries. ADIF import/export/share and full log backups are available; see [log exchange](ADIF.md). Desktop LAN
 log events remain unimplemented.
 
 ## Completed local exchanges
@@ -58,10 +57,11 @@ peer selection, QSO admission or AutoSeq input.
 
 ## Storage and recovery
 
-The app-private SQLite database `qso-log.db` starts at schema version 1. Earlier
-app installations had no log database to convert; station/profile/time stores
-remain separate. Transactions protect candidate/record changes and edits use
-explicit versions. There is no destructive migration or corruption fallback:
+The app-private SQLite database `qso-log.db` uses schema version 2. The upgrade
+from version 1 preserves the existing layout and rows while protecting imported
+origin/time-basis values from older apps. Station/profile/time stores remain
+separate. Transactions protect candidate/record changes and edits use explicit
+versions. There is no destructive migration or corruption fallback:
 unsupported future schemas and damaged data cause a visible error, retaining the
 existing database. Android's default corruption deletion is explicitly replaced.
 Future schema migrations must be implemented and tested before increasing the
@@ -72,8 +72,9 @@ and shows that it still needs a successful write. Press **Retry log** before
 closing the app; no software can claim durability for a failed write. An accepted
 database transaction continues across Activity teardown. A save error keeps the
 draft and stable record identity available for retry. Never clear app data to
-recover a log error. Export a full backup to a destination outside app-private storage before app removal
-or Android's clear-data operation; both can remove the local database.
+recover a log error. Export a [full log backup](ADIF.md#duplicates-and-safe-restoration)
+to a destination outside app-private storage before uninstalling or clearing app
+data; both can remove the local database.
 
 ## Reproduce checks
 
@@ -81,7 +82,9 @@ or Android's clear-data operation; both can remove the local database.
 filter tests with the existing compatibility corpus. The device checks additionally
 exercise actual SQLite reopening, duplicate/concurrent saves, injected transaction
 rollback/retry, stale edits, future-schema refusal and corrupt-byte preservation.
-Temporary store fixtures use separate run-owned databases.
+Temporary store fixtures use separate run-owned databases. [ADIF/file checks](ADIF.md#reproduce-the-compatibility-check)
+add schema upgrades, reviewed merges, complete backups and cross-UID sharing;
+those file-only checks do not require an acoustic setup.
 
 Install matching successful-CI app/device-check APKs. For the integrated test use
 station `1AT106`, a Phone profile, working saved NTP and an unlocked phone beside

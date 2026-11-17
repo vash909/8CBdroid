@@ -5,7 +5,9 @@ exchange. It records selected peer, CQ/reply, reports, acknowledgements, signoff
 abort and protocol completion. The [local QSO advisor](QSO_ADVICE.md) now connects
 qualified live decodes to this model and suggests messages on Operate. The domain
 model itself neither chooses messages nor schedules audio. Applying advice and
-each one-slot send remain explicit; there is no automatic execution or log.
+each one-slot send remain explicit in manual mode. Separate [AutoSeq](AUTOSEQ.md)
+and [logbook](LOGBOOK.md) owners execute automatic work and stage durable reviews;
+the domain model itself performs neither audio nor storage I/O.
 
 ## Events and ownership
 

@@ -54,6 +54,12 @@ callback or finishing writer cannot recreate a deleted report.
 
 ## Sustained-operation qualification
 
+[PR #45](https://github.com/vash909/8CBdroid/pull/45) completed the finite A51 /
+Android 13 and S25 FE / Android 17 checks. [Recorded measurements](VALIDATION.md#continuous-sessions-and-diagnostics)
+include actual 15-minute microphone reception and two NTP renewals per phone.
+The procedure below reproduces that scope; it does not claim battery life or
+all-device qualification.
+
 Use successful-CI app/device-check APKs on the baseline and a second phone. Save
 original settings/data and grant only the ordinary receiver permissions. Check the
 actual UI's opt-in, navigation/recreation, Stop, export cancellation, real document

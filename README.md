@@ -4,118 +4,97 @@ An Android FT8 client in development for CB / 11 metres, built around
 [WSJT-CB](https://github.com/vash909/WSJT-CB) message compatibility. The app and
 project documentation use English.
 
-**Current state:** LAN monitoring, offline CB message encoding, WAV generation
-and recorded-slot decoding are implemented, along with microphone capture,
-NTP/GPS time correction, UTC slot assembly, live local decoding and a microphone spectrum/waterfall. A source-built Hamlib model catalog and
-software-only Dummy check, persistent operating profiles and explicit phone-speaker audio preview with one-shot UTC scheduling and coordinated
-microphone pause/recovery are available. Operate offers session-owned manual
-phone-speaker exchanges: explicit peer/message selection, enable and one-slot send.
-[Local QSO advice](docs/QSO_ADVICE.md) now qualifies peer messages and suggests
-the next CB exchange message; applying advice still requires an explicit action.
-[Acoustic AutoSeq](docs/AUTOSEQ.md) explicitly starts bounded CQ/answer
-exchanges. [CB country labels and receive filters](docs/CB_OPERATING_CONTEXT.md)
-provide offline division context and receive filters. The [local logbook](docs/LOGBOOK.md)
-retains completed exchanges for review, operator-confirmed contacts and manual
-entries. ADIF import/export/share and complete log backups are available through
-Android file pickers; [log exchange](docs/ADIF.md) explains duplicate review and
-11m compatibility. [Continuous reception](docs/CONTINUOUS_RECEPTION.md) keeps explicitly
-started microphone/LAN RX alive across screens, background and screen-off, with
-notification Stop controls. Explicitly armed manual TX and started AutoSeq also
-continue across screens, background and screen-off in that session. NTP requests
-briefly prepare CPU/Wi-Fi resources within an eight-second budget; the five-minute
-refresh cadence, quality checks and expiry remain unchanged.
-CAT/PTT, desktop LAN log events and qualified USB audio remain unimplemented.
-Radio frequency/mode and VOX are configured by the operator; completed audio does
-not independently confirm radio TX or a QSO.
+**Current state:** phone-microphone FT8 reception, phone-speaker manual exchanges
+and explicitly started acoustic AutoSeq are implemented. NTP/GPS time correction,
+CB message generation, a compact 2 Hz waterfall and continuous operating sessions
+support the phone-audio path. Started RX/TX/AutoSeq sessions continue across
+navigation, rotation, background and screen-off, with explicit Stop controls.
+
+The durable [logbook](docs/LOGBOOK.md) supports completion reviews, manual and
+imported contacts, editing, search and Worked filtering.
+[ADIF import/export/share and full log backups](docs/ADIF.md) use Android's file
+picker with explicit duplicate review. A separate LAN source monitors desktop
+status and decodes. Named operating profiles and optional private diagnostic
+reports are also available.
+
+Radio dial, mode, levels and VOX are configured by the operator. CAT/PTT,
+qualified USB audio and desktop LAN TX/log events remain unimplemented. USB
+discovery and the Hamlib catalog/Dummy check do not establish hardware support.
+Completed audio or a saved log entry does not independently confirm RF transmission.
 
 ## What works
 
 | Screen | Available behavior | Current boundary |
 | --- | --- | --- |
-| **Operate** | Selected-source activity, CB country labels, All/CQ/To-me/Worked receive filters, Logbook access, compact 2 Hz waterfall, local RX/TX offsets, peer selection, QSO advice, CB templates/custom text, explicitly armed one-slot sends and explicitly started acoustic AutoSeq. | Worked uses saved contacts for the current station. Measured NTP/GPS time, speaker calibration and active built-in FT8 RX are required for sending. Sent records completed audio only. Continuous RX and explicitly started TX/AutoSeq with bounded retries. LAN remains read-only. |
-| **Settings** | Named radio/audio/LAN profiles, station identity, phone/USB input selection, decoder profile, NTP/GPS, WSJT-CB LAN, USB permission inventory and Hamlib catalog/Dummy diagnostics. Tools retain full microphone/spectrum diagnostics, optional bounded session reports, offline CB/WAV generation and recorded-file decoding. | No CAT/PTT or USB hardware qualification; radio/VOX setup is manual. WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
-| **Chat** | A placeholder for future operator chat. | No chat backend, account, connection or message sending. |
-
-The intended connection paths are acoustic phone microphone/speaker with radio
-VOX, documented USB CAT/audio hardware, and a separate WSJT-CB LAN companion
-mode. USB discovery alone establishes neither CAT nor USB audio support. LAN
-packets carry desktop status/messages, not audio.
+| **Operate** | Local or LAN activity, CB country labels, All/CQ/To-me/Worked filters, compact waterfall, local RX/TX offsets, peer/messages, manual one-slot sends and acoustic AutoSeq. | Sending requires measured time, speaker calibration and active built-in FT8 RX. LAN remains read-only and carries no audio. |
+| **Logbook** | Durable pending reviews, saved/manual/imported FT8 contacts, edit/search, ADIF exchange and full saved/pending backup/restore. Accessible from Operate and Settings. | A completed local exchange needs operator review. Imports never overwrite existing entries; possible duplicates need explicit selection. |
+| **Settings** | Station, operating profiles, source/decoder selection, NTP/GPS, LAN, USB inventory/Hamlib diagnostics, microphone/message/WAV tools and session diagnostics. | Radio and USB hardware backends remain unavailable. Recorded WAV import requires 15 seconds, mono PCM16, 12 kHz, at most 1 MiB. |
+| **Chat** | Placeholder for future operator chat. | No chat backend, account or message sending. |
 
 ## Try the current app
 
 Download **8CBdroid-debug** from a successful
-[GitHub Actions run](https://github.com/vash909/8CBdroid/actions/workflows/android.yml).
-These are development APKs, not release builds. Download the APK artifact from
-that run and install it on a compatible Android phone. See
-[deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone) for ADB
-commands and debug-signature limitations.
+[GitHub Actions run](https://github.com/vash909/8CBdroid/actions/workflows/android.yml)
+and install its APK on a compatible Android phone. These are development builds.
+See [deployment instructions](docs/DEVELOPMENT.md#deploy-and-test-on-a-phone) for
+ADB commands and debug-signature limitations.
 
-1. In **Settings → Operating profiles**, optionally save and apply a named setup.
-   Applying stops reception and clears time correction; nothing connects automatically.
-   [Operating profiles](docs/OPERATING_PROFILES.md) explains CAT/audio/LAN fields and limits.
-   In **Settings → Station**, save a complete CB callsign and a 4- or 6-character locator,
-   for example `1AT106` / `JN45AB`. Wait for the save confirmation.
-2. In **Settings → Message tools**, preview `CQ 1AT106`. Generate an offline WAV at 1000 Hz / 40%,
-   then save it through Android's document picker. For bench playback, explicitly
-   select Phone speaker and press Play speaker preview. For an even/odd UTC slot, measure speaker latency and queue explicitly; see [UTC scheduling](docs/UTC_AUDIO_SCHEDULING.md). Content changes require consent. The same page offers built-in microphone RX
-   with optional recovery after successful output; see [phone audio](docs/PHONE_AUDIO.md).
-3. In **Settings → Recorded audio**, enter a known UTC boundary such as `2026-11-06T12:00:00Z` and
-   select that WAV. Expect `CQ 1AT106`, approximately 1000 Hz and DT +0.30 s.
-   This example assigns UTC context to a test file; it does not measure a clock.
-4. In **Settings → Microphone tools**, select an input, press **Start microphone**
-   and grant permission. Confirm the actual route and input levels. Stop before
-   saving the most recent five seconds; this is a capture diagnostic, not live FT8.
-   [Microphone capture](docs/MICROPHONE_CAPTURE.md) describes processing and lifecycle.
-5. In **Settings → Time synchronization**, select a regional or custom NTP server
-   (IP/hostname), or measure GPS with precise location permission. Apply the valid
-   measurement, then enable **Assemble UTC slots** in Microphone tools. Stop before exporting
-   the latest complete 15-second WAV. [UTC slots](docs/UTC_RECEIVE_SLOTS.md) describes
-   expiry, device requirements and timing limits. There is no manual offset.
-   GPS timing was verified on the S25 FE; the A51 did not obtain a fix. See
-   [device evidence and limits](docs/VALIDATION.md#r11-time-synchronization-and-utc-capture).
-6. For live local reception, choose **Fast** or **Standard** under
-   **Settings → Audio & source**, synchronize time, then press **Start RX** on
-   **Operate**. Complete slots appear in **Received**; **→ RX** selects a decoded
-   frequency; **Use peer** selects a complete CB sender without arming TX.
-   **All**, **CQ** and **To me** filter displayed rows without changing reception
-   or AutoSeq input. Known senders show CB division/country; unidentified senders
-   have no extra label. **Worked** shows senders in your station's saved log.
-   For manual audio exchanges, select and calibrate the speaker, choose a message/period,
-   then explicitly Enable TX and Send one slot. Review QSO advice and press
-   **Use suggested message** to apply the next template without arming TX.
-   **Reset QSO** clears tracking. **Auto CQ** or **Auto answer** starts a bounded
-   automatic exchange; edits, Stop or leaving Operate cancel it. See
-   [manual operation](docs/MANUAL_OPERATION.md) and [AutoSeq](docs/AUTOSEQ.md).
-   A completed local exchange becomes a durable pending review in **Logbook**.
-   Confirm its actual radio dial before saving; manual entries, search and editing
-   are available there too. Pending reviews do not count as worked contacts.
-   **Monitor** displays plain audio
-   without time sync. Stop clears local results and hash learning.
-7. For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,
-   configure the phone port in **Settings → WSJT-CB LAN**, then press **Start RX**
-   on Operate. Configure the desktop to send UDP to the **phone's Wi-Fi IPv4
-   address** and the same port, normally 2237.
-   [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test)
-   describe request settings and lifecycle limits.
+1. In **Settings → Operating profiles**, save/apply a Phone input/output setup.
+   Applying stops the current session and clears time correction. In
+   **Settings → Station**, save a complete CB callsign and a 4- or 6-character
+   locator, for example `1AT106` / `JN45AB`. See [profiles](docs/OPERATING_PROFILES.md).
+2. In **Settings → Time synchronization**, measure and apply regional/custom NTP
+   (IP or hostname), or GPS with precise location permission. There is no manual
+   offset. GPS timing was verified on the S25 FE; the A51 did not obtain a fix.
+   See [time setup and limits](docs/UTC_RECEIVE_SLOTS.md).
+3. Select the built-in microphone and **Fast** or **Standard** under
+   **Settings → Audio & source**. On **Operate**, select **Phone speaker**,
+   press **Calibrate speaker**, then **Start RX** and grant microphone permission.
+   Complete receive windows appear in Received. Plain **Monitor** needs no time
+   correction but cannot supply the timed FT8 RX prerequisite for sending.
+4. **Use peer** selects a complete decoded CB sender and suggests a reply,
+   opposite period and TX audio offset without enabling TX. Review the message,
+   offset, level and period. For manual output press **Enable TX**, then
+   **Send one slot**. Advice can suggest the next message without sending it.
+   **Auto CQ** or **Auto answer** explicitly starts a bounded automatic exchange.
+   See [manual operation](docs/MANUAL_OPERATION.md), [QSO advice](docs/QSO_ADVICE.md)
+   and [AutoSeq](docs/AUTOSEQ.md).
+5. Navigation does not cancel an operating session. Use **Stop TX** to cancel
+   output/AutoSeq or **Stop session** to end RX and TX together. Process death
+   never restarts either. Message tools bench previews have their own foreground
+   lifetime; see [continuous sessions](docs/CONTINUOUS_RECEPTION.md).
+6. A completed local exchange becomes a pending review in **Logbook**. Confirm
+   the actual radio dial before saving. Saved contacts support Worked filtering;
+   pending reviews do not. Use **Import/Export/Share ADIF** for saved contacts, or
+   **Back up log / Restore backup** to preserve pending reviews and full metadata.
+   Review imported calls, UTC and frequencies before applying the selected entries.
 
-Android's system document picker can use the phone's own language. App controls
-and messages remain English. Ordinary WAV import/export requires no broad
-storage permission. Saved operating profiles, station identity and server preferences are persistent; measured time, hash sessions, decoded
-recordings and generated PCM are temporary. The local QSO log and pending reviews
-are durable; unsaved manual drafts are temporary. Exported documents remain in the
-chosen location.
+For desktop monitoring, select **WSJT-CB LAN** under **Settings → Audio & source**,
+configure the listening port in **Settings → WSJT-CB LAN**, then start RX. Configure
+the desktop to send UDP to the phone's Wi-Fi IPv4 address and the same port,
+normally 2237. See [LAN setup and Replay](docs/WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test).
 
-See [the interface guide](docs/INTERFACE.md) for navigation and operating controls,
-and [spectrum and waterfall](docs/SPECTRUM.md) for zoom and measurement limits.
+Additional tools are documented separately:
 
-The **Settings → USB / CAT** catalog lists compiled Hamlib models and declared
-read capabilities. Load/search a model or run the software-only Dummy check;
-these actions do not connect to a radio. See [Hamlib scope and checks](docs/HAMLIB.md).
+- [Microphone capture](docs/MICROPHONE_CAPTURE.md), [spectrum/waterfall](docs/SPECTRUM.md)
+  and [live reception](docs/LIVE_RECEIVE.md) for input diagnostics and decoding.
+- [Message/WAV generation](docs/OFFLINE_WAVEFORM.md), [recorded WAV decoding](docs/RECORDED_SLOTS.md)
+  and [speaker/UTC bench tools](docs/PHONE_AUDIO.md) for explicit file/audio tests.
+- [Hamlib catalog/Dummy checks](docs/HAMLIB.md) and [USB inventory](docs/USB_CAT.md)
+  for configuration and software diagnostics.
+- [Session diagnostics](docs/SESSION_DIAGNOSTICS.md) for optional bounded technical
+  reports. Reports contain no audio or message text and never upload telemetry.
+
+Android's document picker may use the phone's system language; app controls remain
+English. File operations need no broad storage permission. Settings, profiles,
+saved contacts and pending reviews are durable; measured time, calibration,
+message/hash sessions and unsaved drafts are temporary. See
+[the interface guide](docs/INTERFACE.md) and [documentation index](docs/README.md).
 
 ## Build from source
 
-Supported automated setup: Linux x86_64, Python 3.12+, Git, GNU Make, `patch`, `curl`, `unzip`,
-Internet access and the standard Linux `timeout` command.
+Supported automated setup: Linux x86_64, Python 3.12+, Git, GNU Make, `patch`, `curl`,
+`unzip`, Internet access and the standard Linux `timeout` command.
 
 ```bash
 python3 scripts/bootstrap.py
@@ -123,19 +102,18 @@ source scripts/env.sh
 timeout 600 bash scripts/check.sh
 ```
 
-Bootstrap installs project-local JDK/Android tooling in ignored `.tooling/`,
-checks download checksums and prompts for SDK licenses. It does not install
-system packages or Android Studio. The check builds the app, probe and device-check APKs and runs JVM
-tests/lint; the separate desktop-reference checks need host compilers.
+Bootstrap installs project-local JDK/Android tooling in ignored `.tooling/`, checks
+download checksums and prompts for SDK licenses. It does not install system
+packages or Android Studio. The check builds app/probe/device-check APKs and runs
+JVM tests and lint; desktop-reference checks need separate host compilers.
 
 - App: `app/build/outputs/apk/debug/app-debug.apk`
-- Development test probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
+- Development probe: `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk`
+- Device checks: `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`
 
 Use `--no-daemon` for additional Gradle commands.
 [Development setup](docs/DEVELOPMENT.md) covers Android Studio, other systems,
-reference compilers, CI artifacts and safe phone deployment.
-[Decoder profiles](docs/DECODER_PROFILES.md) describe bounded admission,
-cooperative cancellation and the finite phone benchmark.
+reference compilers, CI artifacts and phone deployment.
 
 | Tool/platform | Repository setting |
 | --- | --- |
@@ -147,46 +125,33 @@ cooperative cancellation and the finite phone benchmark.
 ## Compatibility and verification
 
 WSJT-CB reference: **`94f776d54946fe43db5e0bb9c966b1595c7b7d97`**. Kotlin implements
-selected CB text/hash algorithms; a source-built ft8_lib channel backend handles
-raw FT8 payloads and PCM. The complete WSJT-CB desktop engine is not bundled.
-The original WSJT-X 3.0.0-rc1 snapshot and later subsystem comparisons have
-separate recorded provenance in the [compatibility inventory](docs/WSJT_CB_COMPATIBILITY.md).
+selected CB text/hash algorithms; source-built ft8_lib handles raw FT8 payloads
+and PCM. The complete WSJT-CB desktop engine is not bundled. Initial WSJT-X
+3.0.0-rc1 provenance and later comparisons are recorded in the
+[compatibility inventory](docs/WSJT_CB_COMPATIBILITY.md).
 
-[Validation evidence](docs/VALIDATION.md) records the merged implementation,
-exact tested commits/CI runs and Samsung A51 results. Coverage includes 154
-message cases, 96 hash scenarios, 131 channel vectors, 21 generated-waveform
-checks and 12 recorded-slot cases. These corpora do not establish full desktop
-decoder parity, weak-signal sensitivity, sustained phone operation or RF
-interoperability. Recorded SNR is experimental; unknown hashes never identify
-an invented peer. Actual phone-exported CQ and both directed hash orientations
-also passed file decoding in the complete WSJT-CB desktop GUI; see the
-[R07 closure evidence](docs/VALIDATION.md#r07-closure-checks-pr-26).
-
-The [acoustic interoperability suite](docs/ACOUSTIC_INTEROP.md) provides repeatable
-phone/desktop exchange checks, including numeric/slash calls, hash-session resets
-and degraded input. It independently decodes recordings of the phone speaker;
-it does not enable automatic QSO progression.
-
-Optional [session diagnostics](docs/SESSION_DIAGNOSTICS.md) collect bounded technical
-statistics in private storage for up to one hour. Reports can be exported or deleted;
-no audio or message text is included, and collection never restarts automatically.
+[Validation](docs/VALIDATION.md) separates current qualification from historical
+results. Coverage includes message/hash/channel fixtures, physical acoustic
+exchanges, continuous sessions, 15-minute reception tests on A51 and S25 FE, and
+ADIF/SQLite/file checks. Finite device tests do not establish all-device support,
+battery life, desktop decoder sensitivity parity or RF interoperability.
+Recorded SNR remains experimental; unknown hashes never identify an invented peer.
+See [decoder profiles](docs/DECODER_PROFILES.md) for bounded work and
+[acoustic interoperability](docs/ACOUSTIC_INTEROP.md) for independent desktop
+checks of recorded phone output.
 
 ## Documentation and contributions
 
 Start with the [documentation index](docs/README.md),
 [architecture](docs/ARCHITECTURE.md) and [development guide](docs/DEVELOPMENT.md).
-Verified capabilities, tested revisions and limitations are recorded in
-[validation](docs/VALIDATION.md).
-
 Contributions should describe one verifiable behavior, include relevant tests
-and update the affected English documentation. Hardware-dependent changes need
-results from an actual Android device and the relevant audio, USB or radio setup;
-CI alone does not establish hardware support.
+and update affected English guides. Hardware-dependent changes need actual
+Android/audio/USB/radio evidence; CI alone does not establish hardware support.
 
 ## License and commercial use
 
 **GPL-3.0-only**: see [LICENSE](LICENSE), [third-party notices](THIRD_PARTY_NOTICES.md)
-and [commercial distribution](docs/COMMERCIAL_DISTRIBUTION.md). Selling copies
-is permitted subject to GPL obligations, including Corresponding Source and
-recipient rights; attribution alone is insufficient. Signing material, local
-tooling, credentials and private recordings do not belong in Git.
+and [commercial distribution](docs/COMMERCIAL_DISTRIBUTION.md). Selling copies is
+permitted subject to GPL obligations, including Corresponding Source and recipient
+rights; attribution alone is insufficient. Signing material, local tooling,
+credentials, private recordings and backups do not belong in Git.

@@ -76,7 +76,7 @@ does need the selected Android NDK/CMake.
 | Main app | `app/build/outputs/apk/debug/app-debug.apk` |
 | Development instrumentation probes | `engineprobe/build/outputs/apk/debug/engineprobe-debug.apk` |
 | App device checks | `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk` |
-| JVM test reports | `core/build/reports/tests/`, `protocol/wsjtcb/build/reports/tests/`, `app/build/reports/tests/` |
+| JVM test reports | `core/build/reports/tests/`, `protocol/wsjtcb/build/reports/tests/`, `protocol/ntp/build/reports/tests/`, `app/build/reports/tests/` |
 | Lint reports | Each Android module's `build/reports/lint-results-debug.*` |
 
 Use `--no-daemon` for additional Gradle commands. The Linux examples use
@@ -103,6 +103,9 @@ timeout 180 python3 scripts/wsjtcb_qso.py --check --optimization O2
 timeout 180 python3 scripts/wsjtcb_context.py --check
 timeout 180 python3 scripts/wsjtcb_context.py --check --optimization O2
 timeout 180 python3 scripts/wsjtcb_acoustic.py --check
+timeout 180 python3 scripts/wsjtcb_admission.py --check
+timeout 180 python3 scripts/wsjtcb_admission.py --check --optimization O2
+timeout 120 python3 scripts/wsjtcb_adif.py --check
 timeout 60 python3 scripts/wsjtcb_codec.py --check
 timeout 180 python3 scripts/wsjtcb_channel.py --check
 timeout 60 "$ANDROID_HOME/cmake/3.22.1/bin/cmake" -S native -B .tooling/native-host -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -183,7 +186,10 @@ restore the original settings after tests.
 | Area | Review steps |
 | --- | --- |
 | Station | Save a valid call/locator, wait for confirmation, rotate and force-stop/reopen; verify restoration. Invalid drafts such as `1AT` or `SS99` must not save. Unsaved edits must not replace the saved identity. |
-| LAN | Follow [desktop setup](WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test); test Replay/Clear, foreground stop, peer loss and port reuse. |
+| LAN | Follow [desktop setup](WSJT_CB_INTEGRATION.md#desktop-setup-and-phone-test); test Replay/Clear, navigation/background, notification Stop, peer loss and port reuse. |
+| Operating sessions | Follow [manual](MANUAL_OPERATION.md), [AutoSeq](AUTOSEQ.md) and [continuous-session checks](CONTINUOUS_RECEPTION.md); use actual acoustic audio for output/timing changes. |
+| Log and ADIF | Follow [logbook](LOGBOOK.md#reproduce-checks) and [file checks](ADIF.md#reproduce-the-compatibility-check). ADIF/file-only changes need no acoustic setup. Preserve existing contacts/settings. |
+| Diagnostic reports | Follow [session diagnostics](SESSION_DIAGNOSTICS.md#sustained-operation-qualification) for opt-in, file/error/cancel/delete and interrupted-checkpoint behavior. |
 | USB | Follow [discovery/permission checks](USB_CAT.md#phone-verification). An empty inventory needs no OTG; real permission/detach/CAT evidence needs the actual hardware. |
 | CB messages | Follow [codec checks](CB_MESSAGE_CODEC.md#phone-verification) and [hash sessions](CB_HASH_SESSIONS.md#phone-verification). |
 | WAV generation | Follow [generation/export checks](OFFLINE_WAVEFORM.md#phone-and-desktop-checklist), keeping desktop GUI import distinct from the host adapter. |
@@ -193,6 +199,21 @@ The LAN simulator is `python3 scripts/wsjtcb_lan_probe.py --host PHONE_WIFI_IPV4
 it does not replace a real WSJT-CB desktop test. Test the app with a non-English
 phone locale: app text remains English, while Android system dialogs may use
 the system language. No current test establishes VOX, USB audio, PTT or RF support.
+
+## Reproduce and report a bug
+
+Record the app commit/CI run, phone model and Android version, selected source
+and the smallest sequence that reproduces the problem. Include expected versus
+actual behavior, whether it survives navigation/rotation or a cold restart, and
+whether it concerns UI, timing, local audio, LAN or files. Keep test inputs and
+steps distinct from assumptions about radio/RF behavior.
+
+Use the affected guide's focused checks before repeating an unrelated acoustic
+or sustained test. For file-only failures, retain a minimal synthetic input and
+the visible error; preserve the existing log before retrying imports or restores.
+Optional diagnostic reports omit audio/message content, but ordinary logs, ADIF,
+WAVs and screenshots may contain personal or station data. Review attachments
+before sharing them.
 
 ## CI artifacts and release boundary
 
@@ -204,7 +225,7 @@ The existing GitHub workflow runs on main pushes, PRs and manual dispatch:
 | `build` job | JVM tests, app/audio/DSP/Hamlib/probe lint and all development APK builds. No physical device test. |
 | `8CBdroid-debug` | Main debug APK. |
 | `8CBdroid-engine-probe` | Offline/acoustic instrumentation APK with test corpora. |
-| `8CBdroid-device-checks` | Test-only APK targeting the debug app: R07 provider-failure/retry, UI cancellation and real encoder checks. |
+| `8CBdroid-device-checks` | Test-only APK targeting the debug app: file/provider/UI, timing, acoustic, lifecycle, SQLite/ADIF and diagnostic scenarios. These run only when explicitly invoked. |
 | `validation-reports` | JVM test and app lint reports; uploaded even after failure when available. |
 
 Artifacts are retained for 14 days; long-lived evidence should link the run and

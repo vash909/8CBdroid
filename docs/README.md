@@ -1,9 +1,10 @@
 # Documentation index
 
-8CBdroid currently supports LAN monitoring and offline CB message/audio-file
-experiments, plus continuous microphone capture/local FT8 reception and explicit acoustic operating sessions. Start with the [repository README](../README.md) for screen-level
-capabilities and a first test. The [validation record](VALIDATION.md) separates
-implemented behavior, device evidence and checks still pending.
+Start with the [repository README](../README.md) for current capabilities and
+phone-audio setup. The app implements local FT8 RX/manual TX/AutoSeq, continuous
+sessions, a durable log with ADIF exchange/backups, and separate read-only LAN
+monitoring. [Validation](VALIDATION.md) records the exact scope of device evidence;
+CAT/PTT, qualified USB audio, desktop LAN TX/log events and chat remain unavailable.
 
 ## Use and test the app
 
@@ -12,8 +13,9 @@ implemented behavior, device evidence and checks still pending.
 | [Operating profiles](OPERATING_PROFILES.md) | Save radio/audio/LAN setups, restore disconnected configuration and handle validation/migration errors. |
 | [Interface and navigation](INTERFACE.md) | Operate, settings, source selection, manual acoustic TX controls and the Chat placeholder. |
 | [CB countries and receive filters](CB_OPERATING_CONTEXT.md) | Pinned offline divisions, sender context, All/CQ/To-me display filters and unknown identities. |
-| [Local QSO log](LOGBOOK.md) | Durable completion reviews, operator-confirmed contacts, manual entry, edit/search, recovery and Worked filtering. |
-| [Build and deployment](DEVELOPMENT.md) | Set up tools, build/check, obtain CI APKs and test through ADB without losing settings. |
+| [Local QSO log](LOGBOOK.md) | Durable completion reviews, saved/manual/imported contacts, edit/search, recovery and Worked filtering. |
+| [ADIF and log backups](ADIF.md) | Import/export/share, duplicate review, non-destructive restore and 11m consumer compatibility. |
+| [Continuous sessions](CONTINUOUS_RECEPTION.md) | RX/TX/AutoSeq ownership, notification Stop, permissions and lifecycle checks. |
 | [WSJT-CB LAN integration](WSJT_CB_INTEGRATION.md) | Configure the desktop endpoint, monitor decodes, request Replay and understand the UDP/lifecycle contract. |
 | [Offline CB message codec](CB_MESSAGE_CODEC.md) | Supported encodings, lossy previews and rejected input. |
 | [CB hash sessions](CB_HASH_SESSIONS.md) | Explicit receive simulation, staged learning, reset and collision ambiguity. |
@@ -43,11 +45,11 @@ implemented behavior, device evidence and checks still pending.
 | [Development environment](DEVELOPMENT.md) | Tool versions, build/check commands, CI artifacts and device testing. |
 | [Decoder profiles and work bounds](DECODER_PROFILES.md) | Fast/Standard budgets, native cancellation, admission limits and finite device measurements. |
 | [FT8 channel engine](FT8_ENGINE.md) | Native dependency pin, ABI/contracts, search limits and reference checks. |
-| [Validation evidence](VALIDATION.md) | Tested revisions, corpus sizes, A51 observations and remaining verification gaps. |
+| [Validation evidence](VALIDATION.md) | Tested revisions, corpus sizes, A51/S25 FE observations and remaining verification gaps. |
 | [WSJT-CB compatibility inventory](WSJT_CB_COMPATIBILITY.md) | Reference provenance, CB changes versus WSJT-X and deliberate Android differences. |
 | [Reference infrastructure](../reference/wsjtcb/README.md) | Fixture manifests, reproduction commands and source audits. |
 | [Payload/hash fixtures](../reference/wsjtcb/PACKING.md) | Original desktop packing/unpacking behavior and known edge cases. |
-| [QSO decision traces](../reference/wsjtcb/QSO.md) | Host-only parser/generation/AutoSeq adapters; no Android automation. |
+| [QSO decision traces](../reference/wsjtcb/QSO.md) | Host-only parser/generation/AutoSeq adapters, separate from runtime automation. |
 
 ## Distribution and upkeep
 
@@ -64,5 +66,3 @@ implemented behavior, device evidence and checks still pending.
 - Never turn a planned test into a recorded pass, or a small offline corpus into
   a claim of radio interoperability. Keep private backups, device identifiers
   and personal recordings out of committed documentation.
-
-- [Continuous sessions](CONTINUOUS_RECEPTION.md): RX/TX/AutoSeq ownership, notification Stop, permissions and phone checks.
