@@ -12,9 +12,10 @@ reviewed contacts; this guide covers manual output;
 1. Save a complete CB callsign and locator in **Settings → Station**. Apply a
    profile with **Phone** input and output, and select the built-in microphone.
    The profile's reference dial is entered configuration, not radio readback.
-2. Measure and apply NTP or GPS time in **Time synchronization**. Return to
+2. Let startup synchronize NTP/GPS automatically, or measure/apply manually in
+   **Time synchronization**. Check any source-outage warning. Return to
    **Operate**, select **Phone speaker** and press **Calibrate speaker**.
-   Silent calibration expires after five minutes; recalibrate when necessary.
+   Silent calibration expires after twenty minutes; recalibrate when necessary.
 3. Press **Start RX** and grant microphone permission. Live FT8 reception must
    be active before enabling or sending a message. Plain Monitor is insufficient.
 4. Set **TX Hz**, audio level and Even (00/30) or Odd (15/45). The TX cursor also
@@ -76,7 +77,7 @@ Stop cannot be recalled.
 
 **Stop** cancels queued/playing audio, disarms TX and stops reception. Message,
 peer, report, period, frequency, level or output edits also cancel/disarm.
-Source/profile/station changes, audio-focus loss, invalid/expired time or
+Source/profile/station changes, audio-focus loss, an invalid or explicitly reset time mapping or
 calibration, and route changes require explicit recovery. Output errors never
 restart RX. Check the displayed error, start RX and enable/send again; nothing
 resumes silently. The session notification and every page expose **Stop TX**

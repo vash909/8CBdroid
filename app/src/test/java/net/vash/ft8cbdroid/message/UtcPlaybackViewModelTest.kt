@@ -84,7 +84,7 @@ class UtcPlaybackViewModelTest {
     @Test fun unsynchronizedAndStaleCalibrationFailWithoutOpeningAudio()=runTest(dispatcher) {
         val p=Player(clock);val vm=model(p);runCurrent();vm.ready();runCurrent();vm.measureLatency();runCurrent()
         clock.reset();vm.queueSlot();runCurrent();assertEquals(0,p.scheduled);assertNotNull(vm.uiState.value.error)
-        sync();advanceTimeBy(300001);runCurrent();vm.queueSlot();runCurrent();assertEquals(0,p.scheduled)
+        sync();advanceTimeBy(1200001);runCurrent();vm.queueSlot();runCurrent();assertEquals(0,p.scheduled)
         assertTrue(vm.uiState.value.error!!.contains("latency"))
     }
     @Test fun cancelledCalibrationAndNewProcessNeverRestoreAnArmedQueue()=runTest(dispatcher) {

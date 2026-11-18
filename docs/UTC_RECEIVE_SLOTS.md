@@ -16,17 +16,26 @@ accepts an IPv4 address, IPv6 address or hostname, without a URL or port; UDP/12
 is used. Brackets around IPv6 are accepted; interface suffixes are not supported.
 No location permission or location lookup is used to choose an NTP region.
 
-Press **Measure NTP**, or **Measure GPS** with precise location permission,
-Location enabled and a clear sky view. Review the source, correction, age and
-estimated uncertainty, then press **Apply measured time**. Applying or saving
-time settings stops/clears microphone capture; restart explicitly. A measurement
-does not start capture or adjust Android time.
+Choose **NTP first** or **GPS first** and save the preference. At each app start,
+the preferred source is measured automatically; if it fails, the other is tried.
+GPS uses existing precise-location permission and requires Location enabled and
+satellite reception. Startup does not open a permission prompt, start RX or arm
+TX. Use **Measure GPS** to grant permission explicitly when needed.
 
-Only server preferences persist. Measurements stay in memory, expire after ten
-minutes and are discarded on process restart. A 50 ppm holdover estimate increases
-the displayed uncertainty with age; this is an assumption, not an oscillator
-calibration. Expiry, a changed correction or a detected Android clock step stops
-UTC assembly. Synchronize again; the app never falls back to the system clock.
+Automatic successful measurements are applied at a safe audio boundary. You can
+still use **Measure NTP** or **Measure GPS**, review a result and **Apply measured
+time** manually. Explicit application or saving settings stops capture/output;
+restart them explicitly. Android's system clock is never changed.
+
+Only preferences persist. Measurements stay in memory and a new process obtains
+a fresh measurement automatically. An unapplied observation must be applied
+within ten minutes, but an already applied correction does not expire with age.
+If both sources fail, RX/TX continue using that correction and a warning icon
+appears; automatic attempts retry every ten minutes while visible or receiving.
+A 50 ppm holdover estimate increases displayed uncertainty with age; this is an
+assumption, not an oscillator calibration. Changed clock revisions, backwards
+boot time or a detected Android clock step still invalidate active UTC plans.
+There is no unsynchronized device-clock fallback or manual offset.
 The system date must already be within one day for NTP era/offset validation.
 
 ## Regional NTP presets
@@ -46,25 +55,24 @@ access area. The list was checked on 2026-11-06.
 | Africa | `time.nmisa.org` | [NMISA's NTP registry entry](https://support.ntp.org/Servers/PublicTimeServer001771); intended service area South Africa. |
 | Oceania | `pool.msltime.measurement.govt.nz` | [MSL, New Zealand](https://www.measurement.govt.nz/about-us/official-new-zealand-time/about-time); connections outside NZ are blocked. |
 
-Initial NTP measurement/application is explicit. The selected, applied NTP source
-then refreshes nominally every five minutes while the app is visible, with no
-automatic server failover. Successful measurements wait for a safe audio boundary;
-queued/playing output is never retargeted. Corrections over 50 ms need explicit
-application. A compact accessible warning identifies failed refresh/expiry; a
-failure keeps the old measurement only until its original ten-minute expiry.
-GPS starts no periodic network work. See [AutoSeq time renewal](AUTOSEQ.md#time-renewal). All requests are separated by at least 64 seconds in the client;
-NICT additionally has its own 256-second limit. DNS has a three-second caller
-deadline and one bounded worker; if the OS resolver remains blocked, further DNS
-work is rejected rather than accumulating threads. UDP receive has a separate
-three-second deadline and cancellation checks every 200 ms. Failure leaves the
-previous applied correction unchanged until it expires.
+Automatic startup and renewal try the saved NTP/GPS preference, falling back to
+the other source. An NTP failure does not produce a warning when GPS succeeds,
+or vice versa. Both-success and both-failure attempts are separated by ten
+minutes; no per-slot requests occur. Queued/playing output is never retargeted.
+Automatic corrections over 50 ms remain available for explicit review and
+application while the previous correction continues; a source being available
+is not reported as a source outage. See [time renewal](AUTOSEQ.md#time-renewal).
+All NTP requests retain the client's minimum 64-second interval, with a separate
+256-second limit for NICT. DNS has a three-second caller deadline and one bounded
+worker; blocked resolvers cannot accumulate threads. UDP receive has its own
+three-second deadline and cancellation checks every 200 ms.
 
 The [RFC 5905](https://www.rfc-editor.org/rfc/rfc5905) parser validates the exact
 48-byte reply, server/version/leap/stratum, connected peer, echoed random origin,
 nonzero receive/transmit timestamps and ordering. It unfolds the 2036 era near
 the device date, rejects local clock steps, and includes round-trip/root delay,
 dispersion, precision and local quantization in the uncertainty estimate. Initial
-uncertainty above 100 ms is rejected. This is one-server SNTP, without NTS,
+uncertainty above 200 ms is rejected. This is one-server SNTP, without NTS,
 authentication, multi-source selection or a guarantee against network asymmetry.
 
 ## Offline GPS/GNSS time

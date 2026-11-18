@@ -60,9 +60,9 @@ fun activityMessages(source: OperatingSource, capture: CaptureUiState, lan: LanU
         ActivityMessage(utcTime.format(row.decode.slotStartUtc), when (val text = row.decode.message) {
             is UnpackResult.Decoded -> text.message.text
             is UnpackResult.Unsupported -> "Unsupported: ${text.reason}"
-        }, row.decode.frame.estimatedSnrDb?.let { String.format(Locale.ROOT, "%+.0f*", it) } ?: "—",
+        }, row.decode.frame.estimatedSnrDb?.let { String.format(Locale.ROOT, "%+.0f", it) } ?: "—",
             row.decode.frame.audioFrequencyHz.roundToInt(), buildList {
-                add("Local audio · estimated SNR* · DT ${String.format(Locale.ROOT, "%+.2f", row.decode.deltaTimeSeconds)} s")
+                add("Local audio · estimated SNR · DT ${String.format(Locale.ROOT, "%+.2f", row.decode.deltaTimeSeconds)} s")
                 if (RecordedDecodeFlag.UNKNOWN_HASH in row.decode.flags) add("Unknown hash")
                 if (RecordedDecodeFlag.AMBIGUOUS_HASH in row.decode.flags) add("Ambiguous hash")
             }.joinToString(" · "), manualPeer(row, ownCall),
@@ -135,6 +135,9 @@ fun OperatePanel(station: StationSettingsUiState, source: OperatingSource, captu
                         else if (lan.connection.phase == LanPhase.CONNECTED) "LAN CONNECTED" else "LISTENING"
                     } else if (capture.decodeLive) "RECEIVING" else "MONITORING",
                         style = MaterialTheme.typography.labelMedium, color = if (receiving) RadioColors.olive else RadioColors.muted)
+                    if (source == OperatingSource.LOCAL && manual.autoSequence.calling &&
+                        (manual.autoSequence.active || manual.autoSequence.cqTransmissions > 0))
+                        Text("CQ ${manual.autoSequence.cqTransmissions}/20", style = MaterialTheme.typography.labelSmall, color = RadioColors.olive)
                 }
             }
             Surface(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, RadioColors.line)) {

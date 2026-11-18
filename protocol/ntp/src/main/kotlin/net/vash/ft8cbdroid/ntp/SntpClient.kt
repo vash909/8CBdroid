@@ -54,7 +54,7 @@ object SntpPacket {
         require(abs(rootDelay) <= 1000 && dispersion <= 1000) { "NTP root distance is too large." }
         val precision = 2.0.pow(response[3].toInt()) * 1000
         val uncertainty = delay / 2 + abs(rootDelay) / 2 + dispersion + precision + 2
-        require(uncertainty <= 100) { "NTP uncertainty exceeds 100 ms. Choose a closer server or retry later." }
+        require(uncertainty <= 200) { "NTP uncertainty exceeds 200 ms. Choose a closer server or retry later." }
         val t4 = sent.unixMillis + elapsed
         val offset = ((t2 - sent.unixMillis) + (t3 - t4)) / 2
         require(abs(offset) <= 86_400_000) { "NTP differs by over one day. Check Android's date first." }

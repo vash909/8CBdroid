@@ -102,6 +102,7 @@ class WaveformPhoneChecks : Instrumentation() {
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); radioInput = arguments?.getString("radio_input") == "true"; scenario = arguments?.getString("scenario"); previewRun = arguments?.getString("preview_run") ?: ""; ntpHost = arguments?.getString("ntp_host") ?: "time.cloudflare.com"; ntpPort = arguments?.getString("ntp_port")?.toInt() ?: 123; start() }
     override fun onStart() {
         if (scenario == "operate-layout") { OperateLayoutPhoneChecks(this, previewRun).run(); return }
+        if (scenario == "time-startup" || scenario == "gps-startup") { TimeStartupPhoneChecks(this, previewRun, scenario == "gps-startup").run(); return }
         if (scenario in setOf("diagnostics-smoke", "diagnostics-interrupt", "diagnostics-cold", "diagnostics-sustained", "diagnostics-lan")) {
             DiagnosticsPhoneChecks(this, previewRun, requireNotNull(scenario), radioInput).run(); return
         }
@@ -117,6 +118,7 @@ class WaveformPhoneChecks : Instrumentation() {
         if (scenario == "continuous-operating") { AutomaticPhoneChecks(this, previewRun, continuous = true).run(); return }
         if (scenario == "automatic-audio") { AutomaticPhoneChecks(this, previewRun).run(); return }
         if (scenario == "hold-answer") { AutomaticPhoneChecks(this, previewRun, holdAnswer = true).run(); return }
+        if (scenario == "twenty-cq") { AutomaticPhoneChecks(this, previewRun, twentyCq = true).run(); return }
         if (scenario == "acoustic") { AcousticPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "manual-audio") { ManualPhoneChecks(this, previewRun, ntpHost, ntpPort).run(); return }
         if (scenario == "phone-audio") {

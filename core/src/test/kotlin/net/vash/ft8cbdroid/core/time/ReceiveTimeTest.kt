@@ -11,17 +11,18 @@ class ReceiveTimeTest {
         clock.applyPeriodic(sample(s).copy(source = "NTP: test", utcNanos = s.now.unixMillis * 1_000_000 + 45_000_000))
         assertTrue(clock.acceptsRecovery(original.revision))
         rejects { original.validate(s.now, clock.revision) }
-        assertEquals(s.now.monotonicNanos + 600_000_000_000, clock.snapshot().expiresAtNanos)
+        assertNull(clock.snapshot().expiresAtNanos)
+        assertEquals(s.now.monotonicNanos, clock.snapshot().measuredAtNanos)
         clock.apply(sample(s)); assertFalse(clock.acceptsRecovery(original.revision))
     }
-    @Test fun periodicSourceChangeAndLargeCorrectionKeepTheOriginalExpiry() {
+    @Test fun periodicSourceFallbackIsAllowedButLargeCorrectionsKeepTheOldMapping() {
         val s = Source(); val clock = ReceiveClock(s); clock.apply(sample(s).copy(source = "NTP: test"))
         val old = clock.snapshot(); s.advance(300_000)
-        for (next in listOf(sample(s), sample(s).copy(source = "NTP: other"),
-            sample(s).copy(source = "NTP: test", utcNanos = s.now.unixMillis * 1_000_000 + 91_000_000))) {
+        for (next in listOf(sample(s).copy(source = "NTP: test", utcNanos = s.now.unixMillis * 1_000_000 + 91_000_000))) {
             assertTrue(runCatching { clock.applyPeriodic(next) }.isFailure)
             assertEquals(old.revision, clock.revision); assertEquals(old.expiresAtNanos, clock.snapshot().expiresAtNanos)
         }
+        clock.applyPeriodic(sample(s)); assertEquals("GPS/GNSS", clock.snapshot().source)
     }
     private class Source(var now: ClockReading = ClockReading(10_000_000_000, 1_800_000_000_000)) : TimeSource {
         override fun read() = now
@@ -29,13 +30,22 @@ class ReceiveTimeTest {
     }
     private fun sample(s: Source) = TimeMeasurement("GPS/GNSS", s.now.monotonicNanos, s.now.unixMillis * 1_000_000 + 40_000_000, 2.0, s.now)
     private fun rejects(block: () -> Unit) { try { block(); fail("Expected rejection") } catch (_: IllegalStateException) { } }
-    @Test fun synchronizationIsRequiredAndNeverFallsBackAfterExpiryOrReset() {
+    @Test fun synchronizationIsRequiredAndHoldoverSurvivesTenMinutesUntilExplicitReset() {
         val source = Source(); val clock = ReceiveClock(source)
         rejects { clock.snapshot() }; clock.apply(sample(source)); val mapping = clock.snapshot()
         assertEquals(40_000_000L, mapping.at(source.now.monotonicNanos) - source.now.unixMillis * 1_000_000)
         source.advance(599_999); assertTrue(clock.snapshot().uncertaintyMillis!! > 31)
-        source.advance(1); rejects { clock.snapshot() }
+        source.advance(1); assertEquals(mapping.revision, clock.snapshot().revision)
+        source.advance(3_600_000); assertEquals(mapping.at(source.now.monotonicNanos), clock.snapshot().at(source.now.monotonicNanos))
         clock.reset(); rejects { mapping.validate(source.now, clock.revision) }; rejects { clock.snapshot() }
+    }
+    @Test fun observationsAcceptUpTo200msButOldUnappliedMeasurementsStillCannotBeApplied() {
+        val s = Source(); val c = ReceiveClock(s)
+        c.apply(sample(s).copy(uncertaintyMillis = 200.0))
+        assertTrue(runCatching { sample(s).copy(uncertaintyMillis = 200.001) }.isFailure)
+        val old = sample(s); s.advance(600_000)
+        assertTrue(runCatching { c.apply(old) }.isFailure)
+        assertNotNull(c.snapshot())
     }
     @Test fun changedSystemClockOrRevisionInvalidatesAnActiveMapping() {
         val source = Source(); val clock = ReceiveClock(source); clock.apply(sample(source)); val mapping = clock.snapshot()

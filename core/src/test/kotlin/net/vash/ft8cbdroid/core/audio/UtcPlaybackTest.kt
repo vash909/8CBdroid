@@ -67,20 +67,20 @@ class UtcPlaybackTest {
             change(s,c);assertThrows(SchedulingException::class.java) { p.validate(c) }
         }
     }
-    @Test fun unsynchronizedAndExpiredClockCannotQueue() {
+    @Test fun unsynchronizedClockCannotQueueButAnAppliedOldCorrectionCan() {
         val s=Source();assertThrows(SchedulingException::class.java) { planSlot(ReceiveClock(s),latency(s),7,SlotPeriod.EVEN) }
         val c=clock(s);s.advance(600001)
-        assertThrows(SchedulingException::class.java) { planSlot(c,latency(s),7,SlotPeriod.EVEN) }
+        assertNotNull(planSlot(c,latency(s),7,SlotPeriod.EVEN))
     }
-    @Test fun timeCorrectionMustSurviveTheEntireSlot() {
+    @Test fun anAppliedCorrectionCanSchedulePastTenMinutesWithoutAnAgeCutoff() {
         val s=Source();val c=clock(s);s.advance(585000)
-        assertThrows(SchedulingException::class.java) { planSlot(c,latency(s),7,SlotPeriod.EVEN) }
+        assertTrue(planSlot(c,latency(s),7,SlotPeriod.EVEN).utcMillis > s.utc)
     }
-    @Test fun outputMeasurementsCannotCrossDevicesInventoryChangesOrFiveMinutes() {
+    @Test fun outputMeasurementsCannotCrossDevicesInventoryChangesOrTwentyMinutes() {
         val s=Source();val l=latency(s)
         assertThrows(SchedulingException::class.java) { l.validate(s.mono,8) }
         assertThrows(SchedulingException::class.java) { l.validate(s.mono,7,3) }
-        assertThrows(SchedulingException::class.java) { l.validate(s.mono+300_000_000_000,7) }
+        assertThrows(SchedulingException::class.java) { l.validate(s.mono+1_200_000_000_000,7) }
         assertThrows(SchedulingException::class.java) { l.validate(s.mono-1,7) }
     }
     @Test fun timestampMeasurementRejectsDuplicatesInsufficientAndUnstableObservations() {

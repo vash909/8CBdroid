@@ -10,6 +10,18 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Navigate the shipped UI rather than changing route state from the test. */
 object PhoneNavigation {
+    fun scrollToTop(instrumentation: Instrumentation) {
+        fun firstScroller(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+            if (node == null) return null
+            if (node.isScrollable) return node
+            repeat(node.childCount) { firstScroller(node.getChild(it))?.let { return it } }
+            return null
+        }
+        repeat(12) {
+            if (firstScroller(root(instrumentation))?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) != true) return
+            SystemClock.sleep(100)
+        }
+    }
     fun root(instrumentation: Instrumentation): AccessibilityNodeInfo? {
         val ui = instrumentation.uiAutomation
         if (Build.VERSION.SDK_INT >= 34) ui.clearCache() else ui.serviceInfo = ui.serviceInfo

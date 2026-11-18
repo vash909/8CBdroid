@@ -45,7 +45,7 @@ object NtpServers {
     }
 }
 
-data class TimeSettings(val presetId: String = "global", val customHost: String = "") {
+data class TimeSettings(val presetId: String = "global", val customHost: String = "", val preferGps: Boolean = false) {
     val host: String get() = if (presetId == "custom") NtpServers.normalizeHost(customHost)
         else requireNotNull(NtpServers.presets.firstOrNull { it.id == presetId }) { "Select an available NTP server." }.host
     fun validated(): TimeSettings {

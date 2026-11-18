@@ -195,7 +195,7 @@ class ManualOperatingViewModelTest {
         val p = Player(); val vm = model(player = p); ready(vm)
         receiving = false; vm.enableTx(); assertFalse(vm.uiState.value.armed)
         receiving = true; clock.reset(); vm.enableTx(); assertFalse(vm.uiState.value.armed)
-        sync(); advanceTimeBy(300001); vm.enableTx(); assertFalse(vm.uiState.value.armed)
+        sync(); advanceTimeBy(1200001); vm.enableTx(); assertFalse(vm.uiState.value.armed)
         vm.context(StationIdentity("1AT106", "JN45"), false, 27_265_000, 2); assertFalse(vm.uiState.value.canArm)
         vm.context(StationIdentity("K1ABC", "JN45"), true, 27_265_000, 3); assertFalse(vm.uiState.value.canArm)
         vm.peer("123ABCDEFGHIJKLMNO"); assertEquals("123ABCDEFGHIJKLMNO", vm.uiState.value.peer)
@@ -244,6 +244,25 @@ class ManualOperatingViewModelTest {
     }
     private fun automaticInput() = liveInput().copy(earlyWindows = true)
     private suspend fun TestScope.at(ms: Long) { advanceTimeBy(ms - scheduler.currentTime); runCurrent() }
+    @Test fun twentyRealOutputConfirmationsContinuePastTenMinuteTimeAgeAndStopWithTheCounter() = runTest(dispatcher) {
+        val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
+        ready(vm); vm.startAutomatic(true); runCurrent()
+        for (index in 1..20) {
+            val target = index * 30_000L
+            at(target - 1700)
+            if (index > 1) {
+                rx.value = rx.value.copy(receiveRun = index.toLong(), receiveStartedUtcMillis = 1_800_000_000_000L + target - 16_000,
+                    live = LiveReceiveState(lastSlotUtcMillis = 1_800_000_000_000L + target - 15_000))
+                runCurrent()
+            }
+            at(target + 14_000)
+            assertEquals(index, vm.uiState.value.autoSequence.cqTransmissions)
+            assertEquals(index, player.slots)
+        }
+        assertFalse(vm.uiState.value.autoSequence.active); assertFalse(vm.uiState.value.armed)
+        assertEquals(20, vm.uiState.value.sent.size); assertTrue(vm.uiState.value.autoSequence.reason.contains("20 calls"))
+        assertNotNull(clock.snapshot()); assertNull(vm.uiState.value.error)
+    }
     @Test fun heldFreshDecodeSelectsSenderAndStartsTheNextOppositePeriodWithoutAnotherEnable() = runTest(dispatcher) {
         val rx = MutableStateFlow(automaticInput()); val player = Player(); val vm = model(player = player, rx = rx)
         ready(vm); at(13_550)

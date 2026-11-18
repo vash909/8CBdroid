@@ -81,9 +81,9 @@ Use `--ntp-host HOST --ntp-port PORT` for a real NTP endpoint. The suite measure
 and applies time within the test process. Each run has unique acknowledgements;
 the explicit RX restart renews NTP before the two complete exchanges. If that
 measurement reaches five minutes, the test stops RX and renews it before a later
-send, with TX idle and disarmed. There is no per-message renewal or relaxed
-ten-minute expiry. This test-only policy does not add periodic synchronization
-to the client UI.
+send, with TX idle and disarmed. This explicit test-only renewal is separate
+from the client’s current automatic NTP/GPS refresh and correction holdover;
+it does not qualify those features.
 Received payloads must belong to the precise scheduled UTC slot. Failed audio,
 capture or timestamp guards fail the scenario rather than silently retrying or
 weakening safety checks. Stop and restart explicitly after correcting setup.

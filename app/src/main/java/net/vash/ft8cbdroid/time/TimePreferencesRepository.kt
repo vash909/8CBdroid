@@ -16,9 +16,10 @@ interface TimePreferencesRepository {
 class DataStoreTimePreferencesRepository(private val store: DataStore<Preferences>) : TimePreferencesRepository {
     private val preset = stringPreferencesKey("ntp_preset")
     private val custom = stringPreferencesKey("ntp_custom_host")
-    override val settings = store.data.map { TimeSettings(it[preset] ?: "global", it[custom].orEmpty()).validated() }
+    private val gpsFirst = booleanPreferencesKey("gps_first")
+    override val settings = store.data.map { TimeSettings(it[preset] ?: "global", it[custom].orEmpty(), it[gpsFirst] ?: false).validated() }
     override suspend fun save(settings: TimeSettings) {
         val valid = settings.validated()
-        store.edit { it[preset] = valid.presetId; it[custom] = valid.customHost }
+        store.edit { it[preset] = valid.presetId; it[custom] = valid.customHost; it[gpsFirst] = valid.preferGps }
     }
 }

@@ -38,7 +38,7 @@ Measured presentation latency is subtracted from the planned PCM start. The
 core planner uses the NTP/GPS mapping and monotonic clock; there is no manual
 latency/UTC override or fallback to unsynchronized system time.
 
-Calibration is process-local, valid for five minutes and tied to the selected
+Calibration is process-local, valid for twenty minutes and tied to the selected
 output inventory. Unavailable, negative, over-500 ms or unstable (over-20 ms
 spread) estimates fail explicitly. Clear/reselect the output or applying a
 profile requires a fresh measurement. There is no silent route substitution.

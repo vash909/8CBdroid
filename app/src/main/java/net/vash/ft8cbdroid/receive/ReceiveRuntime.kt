@@ -149,7 +149,7 @@ class ReceiveRuntime(private val app: Application) : ViewModelStoreOwner {
     init {
         time.idleBoundary {
             val input = capture.uiState.value; val tx = manual.uiState.value
-            input.phase == CapturePhase.IDLE && !input.outputBusy && !serviceStarting &&
+            profiles.uiState.value.ready && input.phase == CapturePhase.IDLE && !input.outputBusy && !serviceStarting &&
                 audioCoordinator.phase.value == PhoneAudioPhase.IDLE && !tx.busy && !tx.armed && !tx.autoSequence.active
         }
         scope.launch {

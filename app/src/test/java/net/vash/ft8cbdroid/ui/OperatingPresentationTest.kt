@@ -47,6 +47,8 @@ class OperatingPresentationTest {
             CaptureUiState(live = LiveReceiveState(rows = listOf(LiveDecodeRow(decoded.copy(flags = flags), "UI fixture", null)))), LanUiState(), "1AT106").single()
         assertNull(row(emptySet()).peer)
         assertEquals("26AT101", row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID)).peer?.callsign)
+        assertEquals("-7", row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID)).signal)
+        assertFalse(row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID)).detail.contains("SNR*"))
         assertNull(row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.UNKNOWN_HASH)).peer)
         assertNull(row(setOf(RecordedDecodeFlag.CRC_LDPC_VALID, RecordedDecodeFlag.AMBIGUOUS_HASH)).peer)
     }

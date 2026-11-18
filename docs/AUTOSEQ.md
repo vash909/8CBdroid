@@ -27,8 +27,11 @@ UTC period; if preparation misses its fixed deadline, AutoSeq stops rather than
 transmitting late. After an ordinary 15-second decode, the next matching period
 can be a cycle later; early AutoSeq reception supports the immediate response.
 
-AutoSeq sends at most three copies of the same message, stops after two minutes
-without protocol progress, and has a four-minute session limit. Completed
+Auto CQ sends up to **20 calls** without a peer, with a compact **CQ n/20**
+counter on Operate. Calling has an eleven-minute watchdog, enough for all twenty
+normal alternating periods. After peer selection, the exchange retains three
+copies per message, a two-minute no-progress timeout and a fresh four-minute
+exchange limit. An overall 910-second watchdog also bounds preparation and cleanup. Completed
 exchanges stop; another CQ requires an explicit new start. A lost message can
 lead to a bounded repeat; duplicate or regressive messages do not invent
 progress. Unknown hashes, unrelated finals and invalid messages retain the
@@ -40,7 +43,7 @@ to the page, regaining focus, refreshing time or recreating the process never
 arms or restarts a stopped transmission. Once started explicitly, the operating
 service preserves the exchange across navigation, Activity recreation, background
 and screen-off. Use **Stop TX** or **Stop session** in the ongoing notification
-or global in-app controls. Recalibrate when the five-minute latency measurement
+or global in-app controls. Recalibrate when the twenty-minute latency measurement
 expires. See [continuous sessions](CONTINUOUS_RECEPTION.md).
 
 ## Immediate response timing
@@ -69,19 +72,19 @@ passing an offline decoder probe alone does not establish immediate RX recovery.
 
 ## Time renewal
 
-After an initial explicitly applied NTP measurement, the selected server is
-measured nominally every five minutes while the app is visible or reception is active. No per-message
-request or automatic server failover is used. A fresh measurement waits until
-input is released and no output plan exists. Queued/playing plans retain their
-immutable clock mapping. A periodic correction above 50 ms requires explicit
-review/application; it cannot silently move an active exchange.
+NTP/GPS synchronization starts automatically with the saved source preference
+at app startup. The other source is tried when the preferred source fails;
+GPS requires previously granted precise-location permission. Successful time
+updates wait for idle input/output boundaries and never change queued plans.
+Corrections over 50 ms require review/application; the previous correction is
+retained until then. No synchronization attempt starts or rearms audio.
 
-A small accessible warning on Operate links to Time synchronization when a
-refresh fails or time expires. Failure preserves the previous measurement's
-original ten-minute expiry; it does not extend it. Expiry disables TX. A later
-successful renewal can restore time at an idle boundary but cannot restart a stopped
-RX session or AutoSeq.
-GPS remains explicit, with no hidden NTP dependency. See [time synchronization](UTC_RECEIVE_SLOTS.md).
+Attempts run every ten minutes while visible or receiving. If neither source
+can synchronize, an accessible warning icon links to Time synchronization.
+An applied correction remains usable in holdover: ten-minute age or a failed
+refresh does not stop RX, manual TX or AutoSeq. A new process still needs its
+fresh automatic measurement. Clock jumps, route changes and audio/permission
+failures retain their existing stop behavior. See [time synchronization](UTC_RECEIVE_SLOTS.md).
 
 ## Reproduce checks
 
@@ -95,9 +98,12 @@ a working NTP service. Place an unlocked phone near physical PC speakers and
 microphone. Use a synchronized Linux host with reference compilers, NumPy/SciPy,
 PipeWire tools and an installed **WSJT-CB** `jt9` decoder:
 
+Select physical ALSA speakers and microphone before starting. The runner pins
+both stream targets so a Bluetooth default-device change cannot redirect the test.
+
 ```bash
 source scripts/env.sh
-timeout 1500 python3 scripts/autoseq_audio_checks.py \
+timeout 4000 python3 scripts/autoseq_audio_checks.py \
   --output /tmp/8cbdroid-autoseq --jt9 /path/to/wsjt-cb/jt9
 ```
 
@@ -105,18 +111,29 @@ For a focused hold-to-answer check, add `--hold-answer` and use a new output
 directory. It physically holds the row of a real acoustically decoded CQ and
 qualifies one complete answering exchange with three independently decoded
 phone waveforms. It does not repeat the full suite's calling, interruption,
-screen-off or NTP outage checks. Run `operate-layout` separately for RX highlights,
-short-tap details and busy-state gesture blocking.
+screen-off or source-outage checks. Run `operate-layout` separately for RX
+highlights, short-tap details and busy-state gesture blocking.
+
+`--twenty-cq` qualifies twenty actual speaker waveforms, the visible CQ counter,
+natural clock age beyond ten minutes, a dual-source warning and the real ten-minute
+retry interval. Its outage fixture temporarily saves an unreachable NTP host and
+reuses the genuine startup observation. Run it with GPS permission temporarily
+denied so GPS cannot resolve the intentional outage; preserve/restore permission
+and original time preferences. It does not simulate a satellite fix or qualify GPS
+acquisition. The `time-startup` and `gps-startup` device scenarios separately test
+fresh-process automatic acquisition without pressing Measure/Apply, persistence,
+Activity recreation and the absence of automatic audio starts.
 
 The test uses actual Operate buttons, five calling outputs with an intentionally
-lost reply and repeated reply, three answering outputs and three no-response
+lost reply and repeated reply, three answering outputs and twenty no-response
 CQs. All expected peer responses use the immediately following RX period; a
-whole-cycle delay fails acceptance. It observes a real five-minute NTP renewal,
+whole-cycle delay fails acceptance. It observes a real ten-minute time renewal,
 then checks queued/playing Stop, edits, clock reset, focus, profile and microphone
 access loss; navigation/recreation retain automation until an explicit Stop. The PC decodes each actual phone waveform with installed WSJT-CB
 before supplying its response, using a genuine 15-second observation ending at
-slot +13.4 seconds. It tries desktop depth 1 first, with a depth-2 retry on the
-same samples only while the fixed next-response deadline allows. All eleven
+slot +13.4 seconds. It uses desktop depth 2 within the fixed next-response
+deadline and accepts a complete decoded message printed before the decoder
+process finishes. All twenty-eight
 recordings must also pass depth-2 desktop candidate search,
 independent original packing/LDPC/CRC with the exact recovered 77-bit payload,
 desktop candidate synchronization, and measured onset/timestamp-anchor checks. All 79

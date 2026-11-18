@@ -97,7 +97,7 @@ fun WaveformPanel(
         Text("One UTC slot · bench only", style = MaterialTheme.typography.titleMedium)
         Text("Synchronize with NTP or GPS in Time synchronization. Measure speaker latency, choose even (00/30) or odd (15/45), then queue one slot. The first tone targets slot +0.5 s; PCM starts 0.3 s before the boundary; no PTT or automatic repetition.")
         OutlinedButton(onClick = onMeasureLatency, enabled = state.outputId != null && !state.isPlaying && !state.isGenerating && !state.isSaving && !state.isChoosingDestination) { Text("Measure speaker latency") }
-        state.latency?.let { Text(String.format(Locale.ROOT, "Measured output latency: %.1f ms • spread %.1f ms • valid for 5 minutes on this output", it.nanos/1e6, it.spreadNanos/1e6)) }
+        state.latency?.let { Text(String.format(Locale.ROOT, "Measured output latency: %.1f ms • spread %.1f ms • valid for 20 minutes on this output", it.nanos/1e6, it.spreadNanos/1e6)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             net.vash.ft8cbdroid.core.audio.SlotPeriod.entries.forEach { period ->
                 FilterChip(selected = state.period == period, onClick = { onSlotPeriod(period) }, label = { Text(if (period == net.vash.ft8cbdroid.core.audio.SlotPeriod.EVEN) "Even · 00/30" else "Odd · 15/45") })
