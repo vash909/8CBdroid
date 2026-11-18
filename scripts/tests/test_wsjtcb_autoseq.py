@@ -13,7 +13,7 @@ def trace():
         return dict(role=name, qso=qso, sent=[dict(text=text, utc_millis=first+i*30000) for i, text in enumerate(texts)], received=[])
     calling = role('calling', 30000, ['CQ 1AT106', 'CQ 1AT106', '26AT101 +10', '26AT101 +10', '26AT101 RR73'], 'COMPLETE')
     answering = role('answering', 300000, ['<26AT101> 1AT106', '26AT101 R-07', '26AT101 73'], 'COMPLETE')
-    quiet = role('no-response', 600000, ['CQ 1AT106']*3, 'ABORTED')
+    quiet = role('no-response', 600000, ['CQ 1AT106']*20, 'ABORTED')
     plays = []
     for item, expected in [(calling, [(1, 'reply'), (2, 'reply'), (3, 'roger'), (4, 'signoff')]),
                            (answering, [(0, 'report'), (1, 'final')])]:
@@ -26,6 +26,15 @@ def trace():
 
 
 class AutomaticPhysicalTraceTest(unittest.TestCase):
+    def test_twenty_cq_scope_rejects_nineteen_outputs_and_false_completion(self):
+        report, plays = trace()
+        report = dict(scope='twenty-cq', roles=[report['roles'][2]])
+        checks.validate_roles(report, plays)
+        complete = copy.deepcopy(report); complete['roles'][0]['qso'] = 'COMPLETE'
+        with self.assertRaises(AssertionError): checks.validate_roles(complete, plays)
+        report['roles'][0]['sent'].pop()
+        with self.assertRaises(AssertionError): checks.validate_roles(report, plays)
+
     def test_focused_held_answer_requires_real_responses_and_explicit_scope(self):
         report, plays = trace()
         report = dict(scope='hold-answer', physical_hold_on_actual_cq=True, roles=[report['roles'][1]])

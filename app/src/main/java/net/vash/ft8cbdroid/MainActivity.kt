@@ -267,7 +267,7 @@ class MainActivity : ComponentActivity() {
                     gps = { if (timeViewModel.requestGps(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED))
                         gpsPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) },
                     apply = { receiveRuntime.stop("Time correction changed. Start RX explicitly."); timeViewModel.applyMeasurement() },
-                    cancel = timeViewModel::cancel),
+                    cancel = timeViewModel::cancel, preferGps = timeViewModel::preferGps),
                 onAssembleUtc = captureViewModel::assembleUtc,
                 onDecodeLive = captureViewModel::decodeLive,
                 onLiveProfile = captureViewModel::liveProfile,
@@ -321,7 +321,7 @@ class MainActivity : ComponentActivity() {
         receiveRuntime.foreground(false)
         pendingReceive = null
         waveformViewModel.stopPreview("Preview stopped because the app left the foreground.")
-        timeViewModel.cancel()
+        timeViewModel.cancelManualMeasurement()
         if (captureViewModel.uiState.value.awaitingPermission) captureViewModel.stop()
         super.onStop()
     }

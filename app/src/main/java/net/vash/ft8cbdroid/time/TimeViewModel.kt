@@ -28,60 +28,71 @@ data class TimeUiState(
 }
 
 class TimeViewModel(private val repository: TimePreferencesRepository, private val ntp: NtpClient,
-    private val gps: GpsTimeClient, val clock: ReceiveClock, private val tick: Boolean = true) : ViewModel() {
+    private val gps: GpsTimeClient, val clock: ReceiveClock, private val tick: Boolean = true,
+    private val automatic: Boolean = true) : ViewModel() {
     private val state = MutableStateFlow(TimeUiState())
     val uiState = state.asStateFlow()
     private var job: Job? = null
     private var refreshJob: Job? = null
     private var pendingRefresh: TimeMeasurement? = null
-    private var lastAttemptNanos: Long? = null
-    private var activeNtpHost: String? = null
+    private var nextAttemptNanos: Long? = null
     private var foreground = true
     private var operating = false
     private var idleBoundary: () -> Boolean = { !operating }
     fun idleBoundary(check: () -> Boolean) { idleBoundary = check }
     private var refreshGeneration = 0L
-    private var wasApplied = false
     fun foreground(active: Boolean) {
         foreground = active
-        if (!active) refreshJob?.cancel()
     }
     fun operating(active: Boolean) { operating = active; if (!active && foreground) applyPendingAtBoundary() }
     private fun clearPeriodic() {
         refreshGeneration++; refreshJob?.cancel(); pendingRefresh = null
-        activeNtpHost = null; lastAttemptNanos = null
+        nextAttemptNanos = null
         state.value = state.value.copy(refreshing = false, refreshPending = false, refreshWarning = null)
     }
-    /** Main-thread tick; requests remain bounded and execute on the NTP client's IO dispatcher. */
+    /** Main-thread tick; one bounded automatic attempt, then ten minutes before the next. */
     fun poll() {
         refresh()
         if (!foreground || state.value.busy != null || state.value.saving || state.value.loading) return
-        val mapping = runCatching { clock.snapshot() }.getOrNull()
-        val host = state.value.saved?.host ?: return
-        if (mapping != null) {
-            if (mapping.source != "NTP: $host") { activeNtpHost = null; return }
-            activeNtpHost = host
-        }
         if (!operating) applyPendingAtBoundary()
+        if (!automatic || refreshJob?.isActive == true || pendingRefresh != null) return
+        if (!operating && runCatching { clock.snapshot() }.isFailure && !idleBoundary()) return
         val now = clock.source.read().monotonicNanos
-        val last = lastAttemptNanos ?: mapping?.anchor?.monotonicNanos ?: return
-        if (activeNtpHost != host || now - last < 300_000_000_000L || refreshJob?.isActive == true || pendingRefresh != null) return
-        lastAttemptNanos = now
+        val due = nextAttemptNanos ?: return
+        if (now < due) return
+        val settings = state.value.saved ?: return
+        nextAttemptNanos = now + RETRY_NANOS
         val generation = refreshGeneration
         state.value = state.value.copy(refreshing = true)
         refreshJob = viewModelScope.launch {
             try {
-                val measured = withTimeout(8000) { ntp.measure(host) }
-                if (generation == refreshGeneration && activeNtpHost == host) {
+                val measured = automaticMeasurement(settings)
+                if (generation == refreshGeneration) {
                     pendingRefresh = measured
-                    state.value = state.value.copy(refreshPending = true, refreshWarning = null)
+                    nextAttemptNanos = clock.source.read().monotonicNanos + RETRY_NANOS
+                    state.value = state.value.copy(measurement = measured, refreshPending = true, refreshWarning = null)
                     if (!operating && foreground) applyPendingAtBoundary()
                 }
-            } catch (_: TimeoutCancellationException) { state.value = state.value.copy(refreshWarning = "NTP refresh timed out. Previous time remains usable only until its original expiry.") }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { state.value = state.value.copy(refreshWarning = "NTP refresh failed. Check the network or server; previous time keeps its original expiry.") }
-            finally { state.value = state.value.copy(refreshing = false); refresh() }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (generation == refreshGeneration) {
+                    nextAttemptNanos = clock.source.read().monotonicNanos + RETRY_NANOS
+                    state.value = state.value.copy(refreshWarning =
+                        "NTP and GPS are unavailable. Using the last correction if available; retrying in 10 minutes.")
+                }
+            } finally {
+                if (generation == refreshGeneration) { state.value = state.value.copy(refreshing = false); refresh() }
+            }
         }
+    }
+    private suspend fun automaticMeasurement(settings: TimeSettings): TimeMeasurement {
+        for (useGps in if (settings.preferGps) listOf(true, false) else listOf(false, true)) {
+            try { return withTimeout(if (useGps) 90_000L else 8_000L) { if (useGps) gps.measure() else ntp.measure(settings.host) } }
+            catch (_: TimeoutCancellationException) { /* Try the other source after this bounded source timeout. */ }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { /* A missing permission/provider or failed packet is not a usable source. */ }
+        }
+        throw TimeException("Neither time source supplied a measurement.")
     }
     /** Only call with capture stopped and no queued/playing output. A successful refresh never arms TX. */
     fun applyPendingAtBoundary(audioPaused: Boolean = false): Boolean {
@@ -91,7 +102,8 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         val result = runCatching {
             if (runCatching { clock.snapshot() }.isSuccess) clock.applyPeriodic(measured) else clock.apply(measured)
         }
-        state.value = state.value.copy(refreshPending = false, refreshWarning = result.exceptionOrNull()?.message)
+        state.value = state.value.copy(refreshPending = false, refreshWarning = null,
+            notice = result.exceptionOrNull()?.message ?: "Automatic time correction applied to this app only.")
         refresh()
         return result.isSuccess
     }
@@ -107,21 +119,17 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         val sample = state.value.measurement
         val description = runCatching {
             val mapping = clock.snapshot()
-            val age = 600 - ((mapping.expiresAtNanos!! - clock.source.read().monotonicNanos) / 1_000_000_000).coerceIn(0, 600)
+            val age = ((clock.source.read().monotonicNanos - mapping.measuredAtNanos) / 1_000_000_000).coerceAtLeast(0)
             val quality = mapping.uncertaintyMillis?.let {
                 java.lang.String.format(java.util.Locale.ROOT, "estimated uncertainty ±%.1f ms", it)
             } ?: "timing uncertainty not reported by receiver"
             "${mapping.source} • age $age s • $quality"
         }.getOrElse { it.message ?: "Time correction unavailable" }
-        val usable = runCatching { clock.snapshot() }.isSuccess
-        if (usable) wasApplied = true
-        val expired = wasApplied && !usable
         val displayMapping = runCatching { clock.snapshot() }.getOrNull()
         val displayNow = clock.source.read()
         val displayUtc = displayMapping?.at(displayNow.monotonicNanos)?.div(1_000_000) ?: displayNow.unixMillis
         state.value = state.value.copy(sourceDescription = description, ageMillis = sample?.ageMillis(displayNow),
-            period = Ft8PeriodProgress.atUtcMillis(displayUtc), periodCorrected = displayMapping != null,
-            refreshWarning = if (expired) "Time synchronization is unavailable. TX is disabled until a valid measurement is applied." else state.value.refreshWarning)
+            period = Ft8PeriodProgress.atUtcMillis(displayUtc), periodCorrected = displayMapping != null)
     }
     fun load() {
         if (job?.isActive == true) return
@@ -129,9 +137,10 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         job = viewModelScope.launch {
             try {
                 val value = repository.settings.first().validated()
-                clearPeriodic(); wasApplied = false; clock.reset()
+                clearPeriodic(); clock.reset()
                 state.value = TimeUiState(draft = value, saved = value, loading = false)
-                refresh()
+                nextAttemptNanos = clock.source.read().monotonicNanos
+                poll()
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { state.value = state.value.copy(loading = false, error = "Could not read time settings. Retry loading before editing.") }
         }
@@ -139,6 +148,7 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
     private fun change(block: (TimeUiState) -> TimeUiState) {
         if (state.value.canEdit) state.value = block(state.value).copy(measurement = null, ageMillis = null, error = null, notice = null)
     }
+    fun preferGps(value: Boolean) = change { it.copy(draft = it.draft.copy(preferGps = value)) }
     fun selectPreset(id: String) = change { it.copy(draft = it.draft.copy(presetId = id)) }
     fun changeCustom(host: String) = change { it.copy(draft = it.draft.copy(customHost = host)) }
     fun save() {
@@ -147,16 +157,16 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
         state.value = state.value.copy(saving = true, error = null)
         job = viewModelScope.launch {
             try {
-                repository.save(value); clearPeriodic(); wasApplied = false; clock.reset()
+                repository.save(value); clearPeriodic(); clock.reset()
                 state.value = state.value.copy(draft = value, saved = value,
-                    measurement = null, notice = "Time settings saved. Synchronize with NTP or GPS before assembling UTC slots.")
-                refresh()
+                    measurement = null, notice = "Time settings saved. Synchronizing automatically.")
+                nextAttemptNanos = clock.source.read().monotonicNanos
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { state.value = state.value.copy(error = "Could not save time settings. Retry Save time settings.") }
-            finally { state.value = state.value.copy(saving = false) }
+            finally { state.value = state.value.copy(saving = false); poll() }
         }
     }
-    fun measureNtp() { if (state.value.canMeasure) { refreshJob?.cancel(); measure("NTP") { ntp.measure(state.value.saved!!.host) } } }
+    fun measureNtp() { if (state.value.canMeasure) { clearPeriodic(); measure("NTP") { ntp.measure(state.value.saved!!.host) } } }
     fun requestGps(granted: Boolean): Boolean {
         if (!state.value.canEdit) return false
         if (!granted) { state.value = state.value.copy(awaitingGpsPermission = true); return true }
@@ -180,28 +190,41 @@ class TimeViewModel(private val repository: TimePreferencesRepository, private v
                 is IllegalStateException, is IllegalArgumentException -> error.message ?: "$name measurement failed. Retry."
                 else -> "$name measurement failed. Retry."
             }) }
-            finally { state.value = state.value.copy(busy = null); refresh() }
+            finally {
+                state.value = state.value.copy(busy = null)
+                if (nextAttemptNanos == null) nextAttemptNanos = clock.source.read().monotonicNanos + RETRY_NANOS
+                refresh()
+            }
         }
     }
     fun applyMeasurement() {
         if (!state.value.canApply) return
         val value = state.value.measurement ?: return
         runCatching { clearPeriodic(); clock.apply(value) }.onSuccess {
-            if (value.source.startsWith("NTP:")) { activeNtpHost = state.value.saved?.host; lastAttemptNanos = value.monotonicNanos }
+            nextAttemptNanos = value.monotonicNanos + RETRY_NANOS
             state.value = state.value.copy(notice = "Measured time correction applied to this app only.", error = null) }
             .onFailure { state.value = state.value.copy(error = it.message ?: "Measure time again.") }
         refresh()
     }
-    fun cancel() { state.value = state.value.copy(awaitingGpsPermission = false); job?.takeIf { state.value.busy != null }?.cancel() }
+    fun cancelManualMeasurement() {
+        state.value = state.value.copy(awaitingGpsPermission = false)
+        job?.takeIf { state.value.busy != null }?.cancel()
+    }
+    fun cancel() {
+        cancelManualMeasurement()
+        clearPeriodic(); nextAttemptNanos = clock.source.read().monotonicNanos + RETRY_NANOS
+    }
     suspend fun resetForProfile() {
         val measurementJob = job?.takeIf { state.value.busy != null }
         state.value = state.value.copy(awaitingGpsPermission = false)
         measurementJob?.cancelAndJoin()
-        clearPeriodic(); wasApplied = false; clock.reset()
+        clearPeriodic(); clock.reset()
         state.value = state.value.copy(measurement = null, ageMillis = null, notice = null)
+        nextAttemptNanos = clock.source.read().monotonicNanos
         refresh()
     }
     companion object {
+        private const val RETRY_NANOS = 600_000_000_000L
         fun factory(context: Context) = viewModelFactory {
             initializer { TimeViewModel(DataStoreTimePreferencesRepository(context.applicationContext.timePreferences),
                 AndroidNtpClient(context), AndroidGpsTimeClient(context), ReceiveClock(AndroidTimeSource)) }

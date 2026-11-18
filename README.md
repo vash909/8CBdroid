@@ -5,9 +5,10 @@ An Android FT8 client in development for CB / 11 metres, built around
 project documentation use English.
 
 **Current state:** phone-microphone FT8 reception, phone-speaker manual exchanges
-and explicitly started acoustic AutoSeq are implemented. NTP/GPS time correction,
+and explicitly started acoustic AutoSeq (up to 20 CQ attempts) are implemented. NTP/GPS time correction,
 CB message generation, a 15-second period bar, compact message rows and a 2 Hz waterfall and continuous operating sessions
-support the phone-audio path. Started RX/TX/AutoSeq sessions continue across
+support the phone-audio path. NTP/GPS sync starts automatically and retries every
+ten minutes; an existing correction stays in use if both sources fail. Started RX/TX/AutoSeq sessions continue across
 navigation, rotation, background and screen-off, with explicit Stop controls.
 
 The durable [logbook](docs/LOGBOOK.md) supports completion reviews, manual and

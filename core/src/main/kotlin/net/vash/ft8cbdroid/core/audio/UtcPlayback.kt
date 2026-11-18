@@ -12,7 +12,7 @@ data class OutputLatency(val outputId: Int, val inventory: Long, val nanos: Long
     val spreadNanos: Long, val measuredAtNanos: Long) {
     init { require(nanos in 0..500_000_000L && spreadNanos in 0..20_000_000L && measuredAtNanos >= 0) }
     fun validate(now: Long, id: Int, generation: Long = inventory) {
-        if (id != outputId || generation != inventory || now - measuredAtNanos !in 0 until 300_000_000_000L)
+        if (id != outputId || generation != inventory || now - measuredAtNanos !in 0 until 1_200_000_000_000L)
             throw SchedulingException("Output latency is stale or the route changed. Measure speaker latency again.")
     }
 }

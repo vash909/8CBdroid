@@ -23,6 +23,16 @@ class SntpTest {
         assertEquals(52.5, result.offsetMillis(), .001); assertEquals(35.0, result.roundTripMillis!!, .001)
         assertEquals(19.5, result.uncertaintyMillis!!, .001)
     }
+    @Test fun acceptsTheNew100To200msWindowAndRejectsMeasurementsAbove200ms() {
+        val sent = ClockReading(10_000_000_000, 1_800_000_000_000)
+        val request = SntpPacket.request(sent, 123)
+        val reply = response(request, sent.unixMillis, sent.unixMillis)
+        val received = ClockReading(sent.monotonicNanos + 300_000_000, sent.unixMillis + 300)
+        val measured = SntpPacket.decode(request, reply, sent, received, "test")
+        assertTrue(measured.uncertaintyMillis!! in 100.0..200.0)
+        assertTrue(runCatching { SntpPacket.decode(request, reply, sent,
+            received.copy(monotonicNanos = sent.monotonicNanos + 400_000_000, unixMillis = sent.unixMillis + 400), "test") }.isFailure)
+    }
     @Test fun rejectsWrongOriginModeStratumLeapMissingTimeAndPoorQuality() {
         val sent = ClockReading(10_000_000_000, 1_800_000_000_000); val received = ClockReading(10_040_000_000, sent.unixMillis + 40)
         val request = SntpPacket.request(sent, 123)

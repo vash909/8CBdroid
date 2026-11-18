@@ -16,7 +16,7 @@ data class TimeMeasurement(
     val roundTripMillis: Double? = null,
 ) {
     init {
-        require(uncertaintyMillis == null || (uncertaintyMillis.isFinite() && uncertaintyMillis in 0.0..100.0))
+        require(uncertaintyMillis == null || (uncertaintyMillis.isFinite() && uncertaintyMillis in 0.0..200.0))
         require(monotonicNanos >= 0 && abs(observed.monotonicNanos - monotonicNanos) <= 2_000_000_000L)
     }
     fun ageMillis(now: ClockReading) = (now.monotonicNanos - monotonicNanos) / 1_000_000
@@ -30,6 +30,7 @@ data class UtcMapping(
     val source: String,
     val uncertaintyMillis: Double?,
     val expiresAtNanos: Long?,
+    val measuredAtNanos: Long = anchor.monotonicNanos,
 ) {
     fun at(monotonicNanos: Long) = utcNanos + monotonicNanos - anchor.monotonicNanos
     fun validate(now: ClockReading, revision: Long) {
@@ -55,16 +56,16 @@ class ReceiveClock(val source: TimeSource) {
         require(value.ageMillis(now) in 0 until 600_000) { "This time measurement has expired. Measure again." }
         val mapping = UtcMapping(revision, value.observed,
             value.utcNanos + value.observed.monotonicNanos - value.monotonicNanos,
-            value.source, value.uncertaintyMillis, value.monotonicNanos + 600_000_000_000L)
+            value.source, value.uncertaintyMillis, null, value.monotonicNanos)
         mapping.validate(now, revision)
         measurement = value; periodicParent = null; revision++
     }
     /** Called only with input stopped and no queued/playing output; never retargets a plan. */
     @Synchronized fun applyPeriodic(value: TimeMeasurement) {
         val old = snapshot(); val now = source.read()
-        require(old.source.startsWith("NTP:") && value.source == old.source) { "Select and apply the NTP source explicitly first." }
+        require(value.source.startsWith("NTP:") || value.source == "GPS/GNSS") { "Use an NTP or GPS measurement." }
         val nextUtc = value.utcNanos + now.monotonicNanos - value.monotonicNanos
-        require(abs(old.at(now.monotonicNanos) - nextUtc) <= 50_000_000L) { "NTP changed by more than 50 ms. Stop and apply a new measurement explicitly." }
+        require(abs(old.at(now.monotonicNanos) - nextUtc) <= 50_000_000L) { "Time changed by more than 50 ms. Review and apply the new measurement explicitly; the previous correction is retained." }
         val parent = revision
         apply(value); periodicParent = parent
     }
@@ -76,7 +77,7 @@ class ReceiveClock(val source: TimeSource) {
         val result = UtcMapping(revision, value.observed,
             value.utcNanos + value.observed.monotonicNanos - value.monotonicNanos, value.source,
             value.uncertaintyMillis?.plus(value.ageMillis(now).coerceAtLeast(0) * 0.00005),
-            value.monotonicNanos + 600_000_000_000L)
+            null, value.monotonicNanos)
         result.validate(now, revision)
         return result
     }

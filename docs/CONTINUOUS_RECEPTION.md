@@ -36,8 +36,10 @@ Local FT8 requires measured NTP/GPS time; Monitor does not. The existing periodi
 NTP policy continues during active background RX. A pending measurement is applied
 only after joined input cleanup at a receive-only boundary; partial slots and hash
 context are discarded, then that same authorized receive session opens a fresh run.
-An expired/unusable clock stops timed capture. GPS remains an explicit measurement;
-there is no silent source switch or manual offset.
+An unusable clock stops timed capture; ten-minute age alone does not. Automatic
+NTP/GPS startup and ten-minute retries use the saved source preference and fallback;
+only failure of both sources raises the warning. Existing corrections remain in
+holdover without a device-clock fallback or manual offset.
 
 The service holds a partial CPU wake lock while active, and a Wi-Fi lock for LAN.
 It never keeps the display lit or changes Wi-Fi networks, battery settings or lock
@@ -47,7 +49,7 @@ the process. No unlimited-runtime or all-Android-version qualification is implie
 
 Each Android NTP request also holds short CPU/Wi-Fi leases, with an eight-second
 deadline and release on success, failure or cancellation. Radio preparation precedes
-the timestamped packet; it changes neither the five-minute cadence nor the 100 ms
+the timestamped packet; it changes neither the ten-minute cadence nor the 200 ms
 quality limit. The Wi-Fi request is best effort and subject to the platform's
 [Wi-Fi lock policy](https://developer.android.com/reference/android/net/wifi/WifiManager#WIFI_MODE_FULL_HIGH_PERF);
 it cannot guarantee that an Internet server or route will meet that limit.
@@ -65,9 +67,9 @@ permission loss, audio-focus/route errors and service destruction invalidate wor
 Restoring a prerequisite never restarts TX. Completed audio alone is added to Sent.
 
 An unused manual TX arm expires after two minutes. Each audio operation, including
-preparation and cleanup, has a 60-second coroutine deadline. AutoSeq retains its
-three-copy, two-minute no-progress and four-minute session limits, with an
-additional monotonic four-minute deadline that includes preparation. These bounds
+preparation and cleanup, has a 60-second coroutine deadline. Auto CQ supports twenty calls with an eleven-minute calling watchdog. After
+peer selection, AutoSeq retains three-copy, two-minute no-progress and four-minute
+exchange limits. The overall monotonic watchdog is 910 seconds, including preparation. These bounds
 never reschedule late audio or bypass UTC, calibration or permission checks.
 Standalone calibration/test tone without RX and Message tools previews remain
 foreground-only. An explicit bench output cancels competing operating output
@@ -101,7 +103,7 @@ navigation, background and screen-off. It verifies decoded complete slots, the
 same capture/run across navigation/rotation/new Activity, one real recorder/service,
 notification/in-app Stop, actual microphone app-op interruption/restoration with
 explicit retry, real desktop-simulated UDP traffic across the same transitions, and an actual
-five-minute NTP refresh with receive recovery while the screen remains off.
+ten-minute time refresh with receive recovery while the screen remains off.
 The script temporarily denies the already-authorized microphone app-op for that
 failure case and restores its original mode even on failure. The phone may require
 one unlock between screen-off checks; the host prints an action marker and the

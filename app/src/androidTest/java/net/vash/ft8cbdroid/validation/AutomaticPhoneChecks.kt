@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import net.vash.ft8cbdroid.MainActivity
 import net.vash.ft8cbdroid.audio.CapturePhase
@@ -21,6 +22,9 @@ import net.vash.ft8cbdroid.operate.ManualOperatingViewModel
 import net.vash.ft8cbdroid.profile.ProfilesViewModel
 import net.vash.ft8cbdroid.time.AndroidNtpClient
 import net.vash.ft8cbdroid.time.TimeViewModel
+import net.vash.ft8cbdroid.time.DataStoreTimePreferencesRepository
+import net.vash.ft8cbdroid.time.timePreferences
+import net.vash.ft8cbdroid.core.time.TimeSettings
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -31,6 +35,7 @@ class AutomaticPhoneChecks(
     private val timeOnly: Boolean = false,
     private val continuous: Boolean = false,
     private val holdAnswer: Boolean = false,
+    private val twentyCq: Boolean = false,
 ) {
     private val context get() = instrumentation.targetContext
     private fun <T> main(block: () -> T): T {
@@ -62,11 +67,13 @@ class AutomaticPhoneChecks(
         var operating: ManualOperatingViewModel? = null
         var capture: CaptureViewModel? = null
         var observer: Job? = null
+        var timeObserver: Job? = null
+        var restoreTime: TimeSettings? = null
         var fixtures: AcousticLogFixtures? = null
         val result = Bundle(); val report = JSONObject(); var code = Activity.RESULT_CANCELED
         try {
             require(run.matches(Regex("[a-zA-Z0-9-]{1,64}")))
-            report.put("run", run).put("result", "RUNNING").put("scope", if (holdAnswer) "hold-answer" else if (timeOnly) "time-recovery" else if (continuous) "continuous" else "full")
+            report.put("run", run).put("result", "RUNNING").put("scope", if (twentyCq) "twenty-cq" else if (holdAnswer) "hold-answer" else if (timeOnly) "time-recovery" else if (continuous) "continuous" else "full")
             var activity = instrumentation.startActivitySync(Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             current = activity
@@ -86,8 +93,26 @@ class AutomaticPhoneChecks(
             await("Phone profile and time settings") { main { profiles.uiState.value.ready && model.uiState.value.available && time.uiState.value.saved != null } }
             check(main { model.uiState.value.station?.callsign == "1AT106" }) { "Save station 1AT106 and a Phone profile first." }
             val server = main { requireNotNull(time.uiState.value.saved).host }
-            val measured = runBlocking { AndroidNtpClient(context).measure(server) }
-            main { time.clock.apply(measured) }
+            var manualNtpObservations = 0
+            await("automatic startup synchronization", 110000) { main { runCatching { time.clock.snapshot() }.isSuccess } }
+            report.put("real_automatic_startup_time_without_manual_apply", true)
+            val refreshStarts = mutableListOf<Long>(); val failedEnds = mutableListOf<Long>()
+            if (twentyCq) {
+                val measured = main { requireNotNull(time.uiState.value.measurement) }
+                restoreTime = main { requireNotNull(time.uiState.value.saved) }
+                timeObserver = main { CoroutineScope(Dispatchers.Main.immediate).launch {
+                    var refreshing = false
+                    time.uiState.collect { value ->
+                        if (value.refreshing && !refreshing) refreshStarts.add(SystemClock.elapsedRealtime())
+                        if (!value.refreshing && refreshing && value.refreshWarning != null) failedEnds.add(SystemClock.elapsedRealtime())
+                        refreshing = value.refreshing
+                    }
+                } }
+                // Real source-outage fixture: keep the genuine startup NTP observation while both renewal sources fail.
+                main { time.selectPreset("custom"); time.changeCustom("192.0.2.1"); time.preferGps(false); time.save() }
+                await("unreachable renewal source saved") { main { !time.uiState.value.saving && time.uiState.value.saved?.host == "192.0.2.1" } }
+                main { time.clock.apply(measured) }
+            }
             val initialRevision = time.clock.revision
             val clockEvents = JSONArray(); var previousRevision = initialRevision
             if (!timeOnly) PhoneNavigation.click(instrumentation, main { model.uiState.value.outputs.single().label })
@@ -120,6 +145,7 @@ class AutomaticPhoneChecks(
                 }
                 check(main { time.uiState.value.error == null && time.uiState.value.measurement != null }) { main { time.uiState.value.error.orEmpty() } }
                 PhoneNavigation.click(instrumentation, "Apply measured time")
+                manualNtpObservations++
                 check(main { time.uiState.value.refreshWarning == null && !model.uiState.value.autoSequence.active && !model.uiState.value.armed })
                 previousRevision = time.clock.revision
             }
@@ -143,6 +169,7 @@ class AutomaticPhoneChecks(
                 JSONObject().put("run", run).put("role", role).put("active", value.autoSequence.active)
                     .put("android_api", android.os.Build.VERSION.SDK_INT).put("foreground_service_types", foregroundTypes)
                     .put("reason", value.autoSequence.reason).put("qso", value.qso?.phase?.name)
+                    .put("cq_count", value.autoSequence.cqTransmissions)
                     .put("sent", sends).put("rows", rows).put("last_slot_utc", rx.live.lastSlotUtcMillis)
                     .put("receive_started_utc", rx.receiveStartedUtcMillis).put("error", value.error ?: rx.error)
             }
@@ -226,7 +253,7 @@ class AutomaticPhoneChecks(
             }
             if (!timeOnly) {
                 if (continuous) runGuards()
-                for (role in if (holdAnswer) listOf("answering") else if (continuous) listOf("calling", "no-response", "answering") else listOf("calling", "answering", "no-response")) {
+                for (role in if (twentyCq) listOf("no-response") else if (holdAnswer) listOf("answering") else if (continuous) listOf("calling", "no-response", "answering") else listOf("calling", "answering", "no-response")) {
                     prepare()
                     observedReceives.clear()
                     val start = System.currentTimeMillis()
@@ -267,7 +294,7 @@ class AutomaticPhoneChecks(
                         } else shell("input keyevent KEYCODE_HOME")
                     }
                     val received = linkedMapOf<String, JSONObject>()
-                    val until = SystemClock.elapsedRealtime() + 210_000
+                    val until = SystemClock.elapsedRealtime() + if (role == "no-response") 700_000 else 210_000
                     var last: JSONObject
                     do {
                         last = progress(role, start)
@@ -279,12 +306,12 @@ class AutomaticPhoneChecks(
                         SystemClock.sleep(30)
                     } while (last.getBoolean("active"))
                     val sends = last.getJSONArray("sent")
-                    val expected = when (role) { "calling" -> 5; "answering" -> 3; else -> 3 }
+                    val expected = when (role) { "calling" -> 5; "answering" -> 3; else -> 20 }
                     check(sends.length() == expected) { "Unexpected $role sends: $last" }
-                    check(main { !model.uiState.value.armed && !model.uiState.value.busy })
+                    await("automatic output cleanup") { main { !model.uiState.value.armed && !model.uiState.value.busy } }
                     if (role == "no-response") {
                         check(main { model.uiState.value.qso?.phase != CbQsoPhase.COMPLETE && !model.uiState.value.autoSequence.completed })
-                        check(last.getString("reason").contains("three transmissions"))
+                        check(last.getString("reason").contains("20 calls")); check(last.getInt("cq_count") == 20)
                     } else check(main { model.uiState.value.qso?.phase == CbQsoPhase.COMPLETE && model.uiState.value.autoSequence.completed })
                     repeat(sends.length()) { i -> check(sends.getJSONObject(i).getLong("frames") == 161280L) }
                     last.put("received", JSONArray(observedReceives.values.toList()))
@@ -304,16 +331,35 @@ class AutomaticPhoneChecks(
                     }
                 }
                 report.put("roles", roles).put("periodic_ntp_refreshes", clockEvents)
-                if (!holdAnswer) check(clockEvents.length() > 0) { "The physical suite did not observe a real five-minute NTP refresh" }
-                if (!continuous && !holdAnswer) runGuards()
+                if (twentyCq) {
+                    check(main { time.uiState.value.refreshWarning != null && time.clock.snapshot().expiresAtNanos == null })
+                    check(main { SystemClock.elapsedRealtimeNanos() - time.clock.snapshot().measuredAtNanos > 600_000_000_000L })
+                    await("real ten-minute retry after both sources failed", 220000) { main { failedEnds.size >= 2 } }
+                    check(main { refreshStarts[1] - failedEnds[0] >= 600_000 })
+                    receiving()
+                    check(main { input.uiState.value.phase == CapturePhase.CAPTURING && !model.uiState.value.autoSequence.active && model.uiState.value.autoSequence.cqTransmissions == 20 })
+                    PhoneNavigation.click(instrumentation, "Settings"); PhoneNavigation.click(instrumentation, "Operate")
+                    PhoneNavigation.scrollToTop(instrumentation)
+                    fun counter(node: android.view.accessibility.AccessibilityNodeInfo?): Boolean {
+                        if (node == null) return false
+                        if (node.isVisibleToUser && node.text?.toString() == "CQ 20/20") return true
+                        return (0 until node.childCount).any { counter(node.getChild(it)) }
+                    }
+                    await("visible CQ counter") { counter(PhoneNavigation.root(instrumentation)) }
+                    report.put("twenty_cqs_and_natural_ten_minute_holdover", true)
+                        .put("both_source_warning_and_real_ten_minute_retry", true)
+                        .put("actual_visible_cq_counter", true)
+                        .put("automatic_retry_delay_millis", main { refreshStarts[1] - failedEnds[0] })
+                } else if (!holdAnswer) check(clockEvents.length() > 0) { "The physical suite did not observe a real ten-minute NTP refresh" }
+                if (!continuous && !holdAnswer && !twentyCq) runGuards()
             }
             report.put("roles", roles).put("guards", guards)
-            if (!continuous && !holdAnswer) {
+            if (!continuous && !holdAnswer && !twentyCq) {
             await("idle time refresh") { main { !time.uiState.value.refreshPending && !time.uiState.value.refreshing && !model.uiState.value.busy } }
             check(main { time.uiState.value.refreshWarning == null }) { main { "Unexpected time warning before offline scenario: ${time.uiState.value.refreshWarning}" } }
             stage("ntp-offline")
             val expiry = main { time.clock.snapshot().expiresAtNanos }
-            await("actual periodic NTP failure", 330000) { main { time.uiState.value.refreshWarning != null } }
+            await("actual periodic NTP failure", 720000) { main { time.uiState.value.refreshWarning != null } }
             check(main { time.clock.snapshot().expiresAtNanos == expiry && !model.uiState.value.autoSequence.active && !model.uiState.value.armed })
             report.put("failed_refresh_preserved_expiry", true)
             publish("autoseq-report", report)
@@ -329,11 +375,11 @@ class AutomaticPhoneChecks(
             }
             await("application-owned durable completions") { main { !activity.receiveRuntime.logbook.uiState.value.busy && activity.receiveRuntime.logbook.uiState.value.unsavedCompletions == 0 } }
             val staged = requireNotNull(fixtures).cleanup()
-            if (!timeOnly) check(staged == if (holdAnswer) 1 else 2) { "Expected one durable review candidate per completed bench exchange" }
+            if (!timeOnly) check(staged == if (twentyCq) 0 else if (holdAnswer) 1 else 2) { "Expected one durable review candidate per completed bench exchange" }
             fixtures = null
             report.put("application_owned_completions_staged_once_and_fixtures_removed", staged)
             report.put("guards", guards).put("result", "PASS").put("model", android.os.Build.MODEL)
-                .put("android", android.os.Build.VERSION.RELEASE).put("manual_ntp_observations", if (holdAnswer) 1 else if (timeOnly) 2 else 3)
+                .put("android", android.os.Build.VERSION.RELEASE).put("manual_ntp_observations", manualNtpObservations)
             File(context.cacheDir, "autoseq-report.json").writeText(report.toString(2))
             result.putString("autoseq_report", report.toString()); result.putString("autoseq_result", "PASS"); code = Activity.RESULT_OK
         } catch (error: Throwable) {
@@ -342,8 +388,11 @@ class AutomaticPhoneChecks(
             result.putString("autoseq_failure", "${error.javaClass.simpleName}: ${error.message}; ${error.stackTrace.take(3)}; manual=${operating?.uiState?.value}; capture=${capture?.uiState?.value?.copy(spectrum = SpectrumState())}")
         } finally {
             observer?.cancel()
+            timeObserver?.cancel()
+            current?.let { activity -> main { activity.receiveRuntime.time.cancel() } }
             operating?.let { runBlocking(Dispatchers.Main) { it.stopAndJoin() } }
             capture?.let { runBlocking(Dispatchers.Main) { it.stopAndJoin(clear = true) } }
+            restoreTime?.let { saved -> runBlocking { DataStoreTimePreferencesRepository(context.timePreferences).save(saved) } }
             if (fixtures != null) {
                 await("accepted log writes before fixture cleanup") { main { current?.receiveRuntime?.logbook?.uiState?.value?.let { !it.busy && it.unsavedCompletions == 0 } ?: true } }
                 fixtures.cleanup()

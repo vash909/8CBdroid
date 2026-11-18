@@ -120,7 +120,7 @@ def analyze(output, report, encoder, packer, decoder, jt9):
 
 
 def validate_roles(report, plays):
-    expected_roles = ['answering'] if report.get('scope') == 'hold-answer' else ['answering', 'calling', 'no-response']
+    expected_roles = ['no-response'] if report.get('scope') == 'twenty-cq' else ['answering'] if report.get('scope') == 'hold-answer' else ['answering', 'calling', 'no-response']
     if report.get('scope') == 'hold-answer':
         assert report.get('physical_hold_on_actual_cq') is True
     assert sorted(role['role'] for role in report['roles']) == expected_roles
@@ -136,7 +136,7 @@ def validate_roles(report, plays):
             assert texts[0] == '<26AT101> 1AT106' and re.fullmatch(r'26AT101 R[+-]\d{2}', texts[1]) and texts[2] == '26AT101 73'
             expected = [(0, TEXTS['report']), (1, TEXTS['final'])]
         else:
-            assert texts == ['CQ 1AT106']*3 and role['qso'] != 'COMPLETE'
+            assert texts == ['CQ 1AT106']*20 and role['qso'] != 'COMPLETE'
             continue
         assert role['qso'] == 'COMPLETE'
         for index, text in expected:
@@ -211,13 +211,16 @@ def main():
     parser.add_argument('--jt9', required=True, type=Path)
     parser.add_argument('--continuous', action='store_true', help='Qualify navigation, Activity destruction, background and a complete screen-off QSO; omit the separate NTP outage/UI-recovery scenario.')
     parser.add_argument('--hold-answer', action='store_true', help='Qualify one complete acoustic answer started by physically holding an actual decoded CQ row; omit unrelated calling, interruption and NTP outage scenarios.')
+    parser.add_argument('--twenty-cq', action='store_true', help='Qualify twenty actual CQ waveforms, automatic startup, natural ten-minute holdover and a real ten-minute retry after both renewal sources fail. Deny GPS permission temporarily before this outage fixture and restore it afterward.')
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--analyze-only', action='store_true')
     modes.add_argument('--time-only', action='store_true', help='Repeat only actual NTP failure/recovery; no audio qualification')
     args = parser.parse_args(); output = args.output.resolve(); jt9 = args.jt9.resolve()
-    if args.hold_answer and (args.continuous or args.time_only):
-        parser.error('--hold-answer cannot be combined with --continuous or --time-only')
-    expected_outputs = 3 if args.hold_answer else 11
+    if args.hold_answer and (args.continuous or args.time_only or args.twenty_cq):
+        parser.error('--hold-answer cannot be combined with --continuous, --twenty-cq or --time-only')
+    if args.twenty_cq and (args.continuous or args.time_only):
+        parser.error('--twenty-cq cannot be combined with --continuous or --time-only')
+    expected_outputs = 20 if args.twenty_cq else 3 if args.hold_answer else 28
     if args.time_only:
         time_recovery(output); return
     import numpy as np
@@ -311,11 +314,11 @@ def main():
     try:
         with (output/'instrumentation.log').open('w') as log, (output/'audio.log').open('w') as audio:
             process = subprocess.Popen(['adb', 'shell', 'am', 'instrument', '--user', '0', '-w', '-r',
-                '-e', 'scenario', 'hold-answer' if args.hold_answer else 'continuous-operating' if args.continuous else 'automatic-audio', '-e', 'preview_run', run,
+                '-e', 'scenario', 'twenty-cq' if args.twenty_cq else 'hold-answer' if args.hold_answer else 'continuous-operating' if args.continuous else 'automatic-audio', '-e', 'preview_run', run,
                 PACKAGE+'.test/'+PACKAGE+'.validation.WaveformPhoneChecks'], env=env, stdout=log, stderr=subprocess.STDOUT)
-            deadline = time.monotonic()+1400
+            deadline = time.monotonic()+(1100 if args.twenty_cq else 1400 if args.hold_answer else 3600)
             while process.poll() is None:
-                assert time.monotonic() < deadline, 'Automatic phone checks exceeded 1400 seconds'
+                assert time.monotonic() < deadline, 'Automatic phone checks exceeded their finite deadline'
                 if recorder is not None: assert recorder.poll() is None, 'Physical recording ended prematurely'
                 if scheduled is not None and time.time() >= scheduled[1]:
                     name, target = scheduled; assert time.time()-target < .2
@@ -331,7 +334,7 @@ def main():
                     if ready.get('run') == run and stage not in stages:
                         if stage in ['calling', 'answering', 'no-response']:
                             role = stage; directory = output/role; directory.mkdir(mode=0o700)
-                            recorder = subprocess.Popen([sys.executable, str(ROOT/'scripts/audio_timing_capture.py'), '--wav', str(directory/'scheduled.wav'), '--seconds', '240'], stdout=audio, stderr=subprocess.STDOUT)
+                            recorder = subprocess.Popen([sys.executable, str(ROOT/'scripts/audio_timing_capture.py'), '--wav', str(directory/'scheduled.wav'), '--seconds', '900' if role == 'no-response' else '240'], stdout=audio, stderr=subprocess.STDOUT)
                             limit = time.monotonic()+5
                             while not (directory/'scheduled.ready.json').exists():
                                 assert recorder.poll() is None and time.monotonic() < limit; time.sleep(.05)
@@ -384,9 +387,15 @@ def main():
         assert process.returncode == 0 and 'autoseq_result=PASS' in text and 'INSTRUMENTATION_CODE: -1' in text, text
         report = read('autoseq-report.json'); assert report['result'] == 'PASS'
         report['desktop_plays'] = plays; report['physical_source'] = source_name
-        assert len(online) == expected_outputs and (args.hold_answer or args.continuous or network_restored) and not pending_online
+        assert len(online) == expected_outputs and (args.twenty_cq or args.hold_answer or args.continuous or network_restored) and not pending_online
         report['live_desktop_decodes'] = online
-        if args.hold_answer:
+        if args.twenty_cq:
+            assert report['scope'] == 'twenty-cq'
+            assert report['twenty_cqs_and_natural_ten_minute_holdover']
+            assert report['both_source_warning_and_real_ten_minute_retry']
+            assert report['automatic_retry_delay_millis'] >= 600000
+            assert report['application_owned_completions_staged_once_and_fixtures_removed'] == 0
+        elif args.hold_answer:
             assert report['scope'] == 'hold-answer' and report['physical_hold_on_actual_cq'] is True
             assert report['application_owned_completions_staged_once_and_fixtures_removed'] == 1
         elif args.continuous:
@@ -403,7 +412,7 @@ def main():
         report['independent_captures'] = analyze(output, report, encoder, packer, decoder, jt9)
         assert len(report['independent_captures']) == expected_outputs
         (output/'report.json').write_text(json.dumps(report, indent=2))
-        print('Held-station acoustic answer and independent decodes PASS.' if args.hold_answer else 'Automatic physical exchanges, loss/repeat limits, interruptions and independent decodes PASS.', flush=True)
+        print('Twenty acoustic CQ outputs, holdover, retry and independent decodes PASS.' if args.twenty_cq else 'Held-station acoustic answer and independent decodes PASS.' if args.hold_answer else 'Automatic physical exchanges, loss/repeat limits, interruptions and independent decodes PASS.', flush=True)
     finally:
         restore_network()
         stop_recorder()

@@ -12,6 +12,7 @@ data class TimeActions(
     val selectPreset: (String) -> Unit = {}, val changeCustom: (String) -> Unit = {},
     val save: () -> Unit = {}, val retry: () -> Unit = {}, val ntp: () -> Unit = {},
     val gps: () -> Unit = {}, val apply: () -> Unit = {}, val cancel: () -> Unit = {},
+    val preferGps: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -23,9 +24,17 @@ fun TimePanel(state: TimeUiState, actions: TimeActions) {
         Text("Time synchronization", style = MaterialTheme.typography.titleLarge)
         Text("UTC slots require a valid NTP or GPS measurement. Only this app's time is corrected; Android's clock is unchanged.")
         Text("Active time: ${state.sourceDescription}")
-        Text("An applied NTP source refreshes every five minutes while the app is visible or reception is active. Updates wait for a safe audio boundary. GPS never starts an NTP request.")
-        if (state.refreshing) Text("Refreshing NTP…")
-        if (state.refreshPending) Text("NTP measurement ready; waiting for a safe audio boundary.")
+        Text("Time synchronizes automatically at startup and retries every 10 minutes while the app is visible or reception is active. The other source is tried if the preferred source fails. GPS needs existing precise location permission; no permission prompt opens automatically.")
+        Text("An applied correction remains in use if both sources fail; time age alone does not stop TX. Updates wait for a safe audio boundary. Accepted measurement uncertainty is up to 200 ms.")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = !state.draft.preferGps, enabled = state.canEdit, onClick = { actions.preferGps(false) }, label = { Text("NTP first") })
+            FilterChip(selected = state.draft.preferGps, enabled = state.canEdit, onClick = { actions.preferGps(true) }, label = { Text("GPS first") })
+        }
+        if (state.refreshing) {
+            Text("Synchronizing NTP/GPS…")
+            OutlinedButton(onClick = actions.cancel) { Text("Cancel automatic synchronization") }
+        }
+        if (state.refreshPending) Text("Time measurement ready; waiting for a safe audio boundary.")
         state.refreshWarning?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Box {
             OutlinedButton(onClick = { expanded = true }, enabled = state.canEdit) {
@@ -61,12 +70,12 @@ fun TimePanel(state: TimeUiState, actions: TimeActions) {
             Text(value.uncertaintyMillis?.let { String.format(Locale.ROOT, "Estimated uncertainty: ±%.1f ms", it) }
                 ?: "Timing uncertainty is not reported by this GPS receiver.")
             value.roundTripMillis?.let { Text(String.format(Locale.ROOT, "Network round trip: %.1f ms", it)) }
-            Text("Measurement age: ${(state.ageMillis ?: 0) / 1000} seconds • expires after 10 minutes")
+            Text("Measurement age: ${(state.ageMillis ?: 0) / 1000} seconds • apply within 10 minutes; an applied correction does not expire")
             Button(onClick = actions.apply, enabled = state.canApply && (state.ageMillis ?: Long.MAX_VALUE) in 0 until 600_000) {
                 Text("Apply measured time")
             }
         }
-        Text("GPS works without Internet and needs precise location permission and a clear sky view. Coordinates are not stored. Measurements stop on background or rotation.")
+        Text("GPS works without Internet and needs precise location permission and a clear sky view. Coordinates are not stored. Manual measurements stop on background or rotation; automatic synchronization belongs to the app session.")
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.notice?.let { Text(it) }
     }

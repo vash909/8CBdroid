@@ -20,12 +20,12 @@ class CbAutoSequenceTest {
     }
     @Test fun anEmptyButCompletedReceiveWindowAllowsBoundedRepeats() {
         val p = policy(); val qso = CbQsoSnapshot(cqSent = true)
-        for (target in listOf(30_000L, 60_000L, 90_000L)) {
+        for (target in (1L..20L).map { it * 30_000 }) {
             val action = requireNotNull(p.tick(target - 1000, qso, null, target - 15_000, false))
             p.sent(action, bits)
         }
-        assertNull(p.tick(119_000, qso, null, 105_000, false))
-        assertFalse(p.state.active); assertEquals(3, p.state.transmissions); assertFalse(p.state.completed)
+        assertNull(p.tick(629_000, qso, null, 615_000, false))
+        assertFalse(p.state.active); assertEquals(20, p.state.transmissions); assertEquals(20, p.state.cqTransmissions); assertFalse(p.state.completed)
     }
     @Test fun missingOrLateDecodeNeverCreatesALateTransmission() {
         val p = policy(); p.sent(requireNotNull(p.tick(29_000, CbQsoSnapshot(), null, null, false)), bits)
@@ -47,13 +47,24 @@ class CbAutoSequenceTest {
     @Test fun busyDoesNotSendAndNeitherRepeatedInputNorChangedFactsBypassTimeouts() {
         val p = policy()
         assertNull(p.tick(29_000, CbQsoSnapshot(), null, null, true))
-        assertNull(p.tick(149_000, CbQsoSnapshot(), null, null, true))
+        assertNull(p.tick(CbAutoSequence.CALLING_TIMEOUT_MILLIS, CbQsoSnapshot(), null, null, true))
         assertFalse(p.state.active)
         val session = policy()
         session.tick(119_000, CbQsoSnapshot(cqSent = true), null, null, true)
         session.tick(238_000, CbQsoSnapshot(peer = "26AT101", replyReceived = true), null, null, true)
-        session.tick(240_000, CbQsoSnapshot(peer = "26AT101", sentReport = -7), null, null, true)
+        session.tick(478_000, CbQsoSnapshot(peer = "26AT101", sentReport = -7), null, null, true)
         assertFalse(session.state.active); assertFalse(session.state.completed)
+    }
+    @Test fun aPeerAfterNineteenCqsGetsANewExchangeWindowAndTheDirectedRepeatLimitStaysThree() {
+        val p = policy()
+        for (n in 1..19) { val target = n * 30_000L; p.sent(requireNotNull(p.tick(target - 1000, CbQsoSnapshot(cqSent = true), null, target - 15_000, false)), bits) }
+        val qso = CbQsoSnapshot(peer = "26AT101", cqSent = true, replyReceived = true)
+        val advice = CbQsoSuggestion("26AT101", ManualMessage.REPORT, "26AT101 -07", -7, 1000, SlotPeriod.EVEN)
+        val reportBits = Ft8Payload77.fromBits("1".repeat(77))
+        for (target in listOf(600_000L, 630_000L, 660_000L)) p.sent(requireNotNull(p.tick(target - 1000, qso, advice, target - 15_000, false)), reportBits)
+        assertNull(p.tick(689_000, qso, advice, 675_000, false)); assertFalse(p.state.active)
+        assertEquals(19, p.state.cqTransmissions)
+        assertTrue(p.state.reason.contains("three transmissions"))
     }
     @Test fun answeringRequiresAdviceInTheExplicitlySelectedPeriod() {
         val p = CbAutoSequence(0, 30_000, false, SlotPeriod.EVEN)

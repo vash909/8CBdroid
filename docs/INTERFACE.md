@@ -44,6 +44,9 @@ system language. No connection or microphone session starts on launch.
   rows within ±25 Hz; it does not hide other stations. **TX Hz** also selects actual
   manual output within 200–2900 Hz. Neither tunes a radio or filters decoding.
   LAN offsets are unavailable; the separate offline waveform editor is unchanged.
+- **Auto CQ** shows a compact **CQ n/20** counter and stops after twenty calls
+  without a peer. Local SNR values no longer carry an asterisk; their details
+  still identify the estimate and source.
 - **Start RX** starts local synchronized FT8 reception or the desktop listener.
   **Monitor** starts plain local audio without time sync. **Stop** stops RX and
   cancels/disarms manual output.
@@ -66,7 +69,7 @@ keyboard, the operating page scrolls so its controls remain reachable.
 | Logbook | Persistent pending reviews, saved/manual/imported contacts, edit/search, ADIF exchange and full-log backup/restore. |
 | Station | Persistent callsign and Maidenhead locator. |
 | Audio & source | Local audio versus LAN, actual Android input devices and Fast/Standard profile. USB inputs appear when detected; manual output selects the phone speaker on Operate. |
-| Time synchronization | Regional/custom NTP server, GPS measurement, explicit application and current correction. |
+| Time synchronization | Regional/custom NTP server, NTP-first/GPS-first automatic startup and ten-minute retries, manual measurements/application and holdover status. |
 | WSJT-CB LAN | Desktop filter, UDP port, status, Replay and detailed decode history. |
 | USB / CAT | Explicit Hamlib catalog/search/details and software-only Dummy check, plus descriptor/driver discovery and Android permissions; no hardware CAT commands. |
 | Microphone tools | Full spectrum controls, input diagnostics, UTC options and recent/complete-slot WAV export. |

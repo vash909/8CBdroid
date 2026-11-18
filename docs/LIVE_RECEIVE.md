@@ -103,3 +103,6 @@ successful output starts a fresh local/hash/slot session; partial and self-TX
 slots are not retained. Stop, errors and leaving the page never recover it.
 See [phone audio](PHONE_AUDIO.md) for bench-output cancellation and recovery, and
 [continuous sessions](CONTINUOUS_RECEPTION.md) for operating RX/TX lifetime.
+
+Local SNR values use plain numbers in Operate, without an asterisk. Message
+details retain the local estimate/source label; the estimator itself is unchanged.

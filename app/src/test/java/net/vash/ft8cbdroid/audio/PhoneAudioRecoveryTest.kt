@@ -71,7 +71,7 @@ class PhoneAudioRecoveryTest {
             assertEquals(before, capture.starts); assertEquals(0, capture.active)
         }
     }
-    @Test fun expiredOrChangedCorrectionBlocksRecoveryAndClockUncertaintyAgeAloneDoesNot() = runTest(dispatcher) {
+    @Test fun changedCorrectionBlocksRecoveryButTenMinuteAgeAloneDoesNot() = runTest(dispatcher) {
         for (changeClock in 0..2) {
             var reading = ClockReading(10_000_000_000, 1_800_000_000_000)
             val clock = ReceiveClock(TimeSource { reading })
@@ -85,7 +85,7 @@ class PhoneAudioRecoveryTest {
             if (changeClock == 0) reading = ClockReading(611_000_000_000, 1_800_000_601_000)
             if (changeClock == 1) clock.reset()
             if (changeClock == 2) reading = ClockReading(11_000_000_000, 1_800_000_001_000)
-            assertEquals(changeClock == 2, recovery!!())
+            assertEquals(changeClock != 1, recovery!!())
             runCurrent(); assertFalse(recovery())
             vm.stop(); advanceUntilIdle()
         }

@@ -69,6 +69,8 @@ class OperateLayoutPhoneChecks(private val instrumentation: Instrumentation, pri
             var current = instrumentation.startActivitySync(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) as MainActivity
             activity = current; val runtime = current.receiveRuntime
             await("graph") { main { runtime.profiles.uiState.value.ready && runtime.time.uiState.value.saved != null } }
+            // Isolate this display fixture from the real automatic-startup time scenario.
+            main { runtime.time.cancel(); runtime.time.clock.reset() }
             check(main { !runtime.session.uiState.value.active && !runtime.manual.uiState.value.hasTxOperation })
             val previous = main { runtime.lan.uiState.value }; val source = main { runtime.profiles.uiState.value.receiveLan }
             cleanup = {

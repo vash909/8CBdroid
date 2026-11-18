@@ -445,7 +445,8 @@ class ManualOperatingViewModel(
             if (ticket == revision) state.value = state.value.copy(sent = (listOf(SentAudio(plan.utcMillis, encoded.transmittedText,
                 encoded.payload, settings.audioFrequencyHz, value.referenceDialHz, value.peer, report.playedFrames)) + state.value.sent).take(30),
                 notice = if (automaticUtc == null) "Speaker slot completed. TX is disabled; choose and enable the next message manually."
-                    else "FT8 waveform completed. AutoSeq is waiting for the peer.")
+                    else if (state.value.autoSequence.active) "FT8 waveform completed. AutoSeq is waiting for the peer."
+                    else state.value.autoSequence.reason)
         }
     }
     private fun runOutput(phase: ManualPhase, action: suspend (Long) -> Unit) {
@@ -514,6 +515,6 @@ class ManualOperatingViewModel(
     companion object {
         const val ARM_TIMEOUT_MILLIS = 120_000L
         const val OUTPUT_TIMEOUT_MILLIS = 60_000L
-        const val AUTO_TIMEOUT_MILLIS = 240_000L
+        const val AUTO_TIMEOUT_MILLIS = CbAutoSequence.CALLING_TIMEOUT_MILLIS + 250_000L
     }
 }

@@ -19,12 +19,12 @@ class TimePreferencesTest {
     }
     @Test fun customHostnameAndPresetSelectionSurviveActualFileReopening() = runBlocking {
         val file = File(folder.root, "time.preferences_pb")
-        withRepository(file) { it.save(TimeSettings("custom", "NTP.Example.Org.")) }
+        withRepository(file) { it.save(TimeSettings("custom", "NTP.Example.Org.", preferGps = true)) }
         withRepository(file) {
-            assertEquals(TimeSettings("custom", "ntp.example.org"), it.settings.first())
+            assertEquals(TimeSettings("custom", "ntp.example.org", preferGps = true), it.settings.first())
             it.save(it.settings.first().copy(presetId = "asia"))
         }
-        withRepository(file) { assertEquals(TimeSettings("asia", "ntp.example.org"), it.settings.first()) }
+        withRepository(file) { assertEquals(TimeSettings("asia", "ntp.example.org", preferGps = true), it.settings.first()) }
     }
     @Test fun invalidServerNeverReplacesSavedConfiguration() = runBlocking {
         withRepository(File(folder.root, "time.preferences_pb")) {
