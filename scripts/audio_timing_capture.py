@@ -20,8 +20,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wav',type=Path,required=True)
     parser.add_argument('--seconds',type=int,default=180)
+    parser.add_argument('--source',help='Explicit physical ALSA source name; avoids following default-device changes')
     args=parser.parse_args()
     if not 1<=args.seconds<=900: parser.error('Capture deadline must be 1–900 seconds.')
+    if args.source and not args.source.startswith('alsa_input.'): parser.error('Select a physical ALSA microphone source.')
     class Spec(C.Structure):
         _fields_=[('format',C.c_int),('rate',C.c_uint32),('channels',C.c_uint8)]
     class Attr(C.Structure):
@@ -37,7 +39,7 @@ def main():
     spec=Spec(3,48000,1)  # PA_SAMPLE_S16LE / PA_STREAM_RECORD.
     attr=Attr(192000,0xffffffff,0xffffffff,0xffffffff,4800)
     error=C.c_int()
-    stream=lib.pa_simple_new(None,b'8CBdroid timing check',2,None,b'Physical microphone',C.byref(spec),None,C.byref(attr),C.byref(error))
+    stream=lib.pa_simple_new(None,b'8CBdroid timing check',2,args.source.encode() if args.source else None,b'Physical microphone',C.byref(spec),None,C.byref(attr),C.byref(error))
     if not stream: raise RuntimeError('PulseAudio capture failed: '+str(error.value))
     stop=False
     def stopping(*_):

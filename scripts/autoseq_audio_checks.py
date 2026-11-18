@@ -239,6 +239,9 @@ def main():
     source = subprocess.check_output(['wpctl', 'inspect', '@DEFAULT_AUDIO_SOURCE@'], text=True, timeout=5)
     source_name = re.search(r'node.name = "([^"]+)"', source).group(1)
     assert source_name.startswith('alsa_input.'), 'Use a physical PC microphone, not an output monitor.'
+    sink = subprocess.check_output(['wpctl', 'inspect', '@DEFAULT_AUDIO_SINK@'], text=True, timeout=5)
+    sink_name = re.search(r'node.name = "([^"]+)"', sink).group(1)
+    assert sink_name.startswith('alsa_output.'), 'Select the physical PC speakers, not Bluetooth headphones.'
     reference = output/'reference'; reference.mkdir()
     encoder, manifest = channel.compile_reference(reference)
     packer = packing.compile_reference(reference, manifest, 'O0')
@@ -323,7 +326,7 @@ def main():
                 if scheduled is not None and time.time() >= scheduled[1]:
                     name, target = scheduled; assert time.time()-target < .2
                     assert player is None
-                    player = subprocess.Popen(['pw-play', '--volume', '0.5', str(incoming[name])], stdout=audio, stderr=subprocess.STDOUT)
+                    player = subprocess.Popen(['pw-play', '--target', sink_name, '--volume', '0.5', str(incoming[name])], stdout=audio, stderr=subprocess.STDOUT)
                     plays.append(dict(role=role, utc_millis=round(target*1000), text=TEXTS[name], launched_utc=time.time()))
                     print('Immediate desktop response:', role, name, flush=True); scheduled = None
                 if player is not None and player.poll() is not None:
@@ -334,7 +337,7 @@ def main():
                     if ready.get('run') == run and stage not in stages:
                         if stage in ['calling', 'answering', 'no-response']:
                             role = stage; directory = output/role; directory.mkdir(mode=0o700)
-                            recorder = subprocess.Popen([sys.executable, str(ROOT/'scripts/audio_timing_capture.py'), '--wav', str(directory/'scheduled.wav'), '--seconds', '900' if role == 'no-response' else '240'], stdout=audio, stderr=subprocess.STDOUT)
+                            recorder = subprocess.Popen([sys.executable, str(ROOT/'scripts/audio_timing_capture.py'), '--source', source_name, '--wav', str(directory/'scheduled.wav'), '--seconds', '900' if role == 'no-response' else '240'], stdout=audio, stderr=subprocess.STDOUT)
                             limit = time.monotonic()+5
                             while not (directory/'scheduled.ready.json').exists():
                                 assert recorder.poll() is None and time.monotonic() < limit; time.sleep(.05)
@@ -386,7 +389,7 @@ def main():
         text = (output/'instrumentation.log').read_text()
         assert process.returncode == 0 and 'autoseq_result=PASS' in text and 'INSTRUMENTATION_CODE: -1' in text, text
         report = read('autoseq-report.json'); assert report['result'] == 'PASS'
-        report['desktop_plays'] = plays; report['physical_source'] = source_name
+        report['desktop_plays'] = plays; report['physical_source'] = source_name; report['physical_sink'] = sink_name
         assert len(online) == expected_outputs and (args.twenty_cq or args.hold_answer or args.continuous or network_restored) and not pending_online
         report['live_desktop_decodes'] = online
         if args.twenty_cq:

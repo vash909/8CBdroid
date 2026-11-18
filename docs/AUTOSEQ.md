@@ -98,6 +98,9 @@ a working NTP service. Place an unlocked phone near physical PC speakers and
 microphone. Use a synchronized Linux host with reference compilers, NumPy/SciPy,
 PipeWire tools and an installed **WSJT-CB** `jt9` decoder:
 
+Select physical ALSA speakers and microphone before starting. The runner pins
+both stream targets so a Bluetooth default-device change cannot redirect the test.
+
 ```bash
 source scripts/env.sh
 timeout 4000 python3 scripts/autoseq_audio_checks.py \
