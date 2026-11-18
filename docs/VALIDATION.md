@@ -474,8 +474,9 @@ timestamp-derived UTC recordings; the pinned known-time/frequency adapter
 separately checks exact payloads and observed tones. Synthetic preflight checks
 alone cannot satisfy this bench. Tested commits, CI artifacts, device identity,
 measurements and outcomes are recorded in [PR #37](https://github.com/vash909/8CBdroid/pull/37).
-The suite renews test time at safe idle boundaries when needed; it does not add
-automatic NTP refresh to the client or change its ten-minute correction expiry.
+The suite renews test time explicitly at safe idle boundaries when needed.
+That historical matrix does not qualify the client’s current automatic NTP/GPS
+refresh or correction holdover.
 No RF contact, AutoSeq or sustained-operation qualification follows from this
 finite acoustic matrix.
 

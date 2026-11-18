@@ -138,7 +138,7 @@ timeout 1500 python3 scripts/autoseq_audio_checks.py --continuous \
 This checks queued/playing Stop, edits, clock reset, real focus and microphone
 access loss, profile replacement, navigation/Activity recreation and notification
 Stop before the acoustic exchanges. It verifies the actual microphone/mediaPlayback
-foreground type, live desktop decoding of all eleven physical phone outputs,
+foreground type, live desktop decoding of all twenty-eight physical phone outputs,
 complete peer responses, receive recovery and a real periodic NTP update. The
 last answering exchange runs with the screen off and needs no UI intervention.
 Completed bench exchanges must stage exactly one log review each; fixtures are

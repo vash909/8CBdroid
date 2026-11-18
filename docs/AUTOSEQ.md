@@ -131,8 +131,9 @@ whole-cycle delay fails acceptance. It observes a real ten-minute time renewal,
 then checks queued/playing Stop, edits, clock reset, focus, profile and microphone
 access loss; navigation/recreation retain automation until an explicit Stop. The PC decodes each actual phone waveform with installed WSJT-CB
 before supplying its response, using a genuine 15-second observation ending at
-slot +13.4 seconds. It tries desktop depth 1 first, with a depth-2 retry on the
-same samples only while the fixed next-response deadline allows. All twenty-eight
+slot +13.4 seconds. It uses desktop depth 2 within the fixed next-response
+deadline and accepts a complete decoded message printed before the decoder
+process finishes. All twenty-eight
 recordings must also pass depth-2 desktop candidate search,
 independent original packing/LDPC/CRC with the exact recovered 77-bit payload,
 desktop candidate synchronization, and measured onset/timestamp-anchor checks. All 79
