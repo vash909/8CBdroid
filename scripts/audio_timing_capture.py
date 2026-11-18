@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--wav',type=Path,required=True)
     parser.add_argument('--seconds',type=int,default=180)
     args=parser.parse_args()
-    if not 1<=args.seconds<=240: parser.error('Capture deadline must be 1–240 seconds.')
+    if not 1<=args.seconds<=900: parser.error('Capture deadline must be 1–900 seconds.')
     class Spec(C.Structure):
         _fields_=[('format',C.c_int),('rate',C.c_uint32),('channels',C.c_uint8)]
     class Attr(C.Structure):
