@@ -281,23 +281,21 @@ def main():
         captured = directory/f'online-{item["index"]+1}.wav'
         pcm_reference.write_wave(captured, resample_poly(raw, 1, 4))
         started = time.time()
-        decoded = subprocess.run([str(jt9), '-8', '-p', '15', '-m', '1', '-w', '0', '-d', '1',
-            '-a', str(directory), '-t', str(directory), '-c', '26AT101', '-x', '1AT106', str(captured)],
-            capture_output=True, text=True, timeout=10, check=True)
-        texts = [' '.join(line.split('~', 1)[1].split()) for line in decoded.stdout.splitlines() if '~' in line]
-        depth = 1
-        if slot['text'] not in texts:
-            # Ordinary ambient noise can defeat the fast desktop pass. Reuse
-            # the same real samples at full depth, within the fixed reply time.
-            remaining = slot['utc_millis']/1000+14.7-time.time()
-            assert remaining > .1, 'No time left for a full desktop decode'
-            decoded = subprocess.run([str(jt9), '-8', '-p', '15', '-m', '1', '-w', '0', '-d', '2',
-                '-a', str(directory), '-t', str(directory), '-c', '26AT101', '-x', '1AT106', str(captured)],
-                capture_output=True, text=True, timeout=min(1., remaining), check=True)
-            texts = [' '.join(line.split('~', 1)[1].split()) for line in decoded.stdout.splitlines() if '~' in line]
-            depth = 2
-        captured.with_suffix('.jt9.txt').write_text(decoded.stdout+decoded.stderr)
-        assert slot['text'] in texts, decoded.stdout
+        # Decode once at full depth. A decoded message can arrive before jt9's
+        # final marker; preserve it if the fixed next-slot deadline expires.
+        remaining = slot['utc_millis']/1000+14.7-time.time() if item['response'] is not None else 30.
+        assert remaining > .1, 'No time left for a desktop reply decode'
+        command = [str(jt9), '-8', '-p', '15', '-m', '1', '-w', '0', '-d', '2',
+            '-a', str(directory), '-t', str(directory), '-c', '26AT101', '-x', '1AT106', str(captured)]
+        try:
+            decoded = subprocess.run(command, capture_output=True, text=True, timeout=remaining, check=True)
+            transcript = decoded.stdout+decoded.stderr
+        except subprocess.TimeoutExpired as error:
+            transcript = (error.stdout or b'').decode()+(error.stderr or b'').decode()
+        texts = [' '.join(line.split('~', 1)[1].split()) for line in transcript.splitlines() if '~' in line]
+        depth = 2
+        captured.with_suffix('.jt9.txt').write_text(transcript)
+        assert slot['text'] in texts, transcript
         online.append(dict(role=item['role'], index=item['index']+1, text=slot['text'],
             started_utc=started, completed_utc=time.time(), desktop_depth=depth, actual_window_start_utc_millis=slot['utc_millis']-LIVE_WINDOW_LEAD_MILLIS))
         if item['response'] is not None: schedule(item['response'], slot['utc_millis']/1000+15)
