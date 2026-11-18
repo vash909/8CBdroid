@@ -112,6 +112,9 @@ class AutomaticPhoneChecks(
                 main { time.selectPreset("custom"); time.changeCustom("192.0.2.1"); time.preferGps(false); time.save() }
                 await("unreachable renewal source saved") { main { !time.uiState.value.saving && time.uiState.value.saved?.host == "192.0.2.1" } }
                 main { time.clock.apply(measured) }
+                // Twenty alternating calls can finish just short of ten minutes if the first starts immediately.
+                // Age the genuine observation naturally before the run so its last output must cross ten minutes.
+                await("genuine startup observation age", 45000) { measured.ageMillis(time.clock.source.read()) >= 30_000 }
             }
             val initialRevision = time.clock.revision
             val clockEvents = JSONArray(); var previousRevision = initialRevision
